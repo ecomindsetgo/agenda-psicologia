@@ -938,25 +938,11 @@
             }
         };
 
+        window.quickToggleStatus = async function(aid, currentStatus) {
+            const next = { pendiente: 'completada', completada: 'cancelada', cancelada: 'pendiente' };
             const ref  = doc(db, 'artifacts', appId, 'users', state.currentUser.uid, 'appointments', aid);
             await updateDoc(ref, { status: next[currentStatus] || 'pendiente' });
         };
-
-window.changeAppointmentStatus = async function(aid, newStatus) {
-    const ref = doc(
-        db,
-        'artifacts',
-        appId,
-        'users',
-        state.currentUser.uid,
-        'appointments',
-        aid
-    );
-
-    await updateDoc(ref, {
-        status: newStatus
-    });
-};
 
         window.editAppointment = function(aid) {
             const a = state.appointments.find(a => a.id === aid);
@@ -1018,14 +1004,7 @@ window.changeAppointmentStatus = async function(aid, newStatus) {
                         <p class="text-xs text-slate-500 italic">"${a.notes || 'Sin observaciones para esta sesión'}"</p>
                     </div>
                     <div class="flex items-center gap-3 self-end sm:self-center">
-                        <select 
-    onchange="changeAppointmentStatus('${a.id}', this.value)"
-    class="bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs px-3 py-1.5 rounded-xl font-semibold focus:outline-none"
->
-    <option value="pendiente" ${a.status === 'pendiente' ? 'selected' : ''}>Pendiente</option>
-    <option value="completada" ${a.status === 'completada' ? 'selected' : ''}>Completada</option>
-    <option value="cancelada" ${a.status === 'cancelada' ? 'selected' : ''}>Cancelada</option>
-</select>
+                        <button onclick="quickToggleStatus('${a.id}','${a.status}')" class="bg-slate-50 border hover:bg-slate-100 text-slate-600 text-xs px-3 py-1.5 rounded-xl font-semibold">🔄 Estado</button>
                         <button onclick="editAppointment('${a.id}')" class="text-indigo-600 hover:text-indigo-800 text-xs font-bold">✏️</button>
                         <button onclick="deleteAppointment('${a.id}')" class="text-red-500 hover:text-red-700 text-xs font-bold">🗑️</button>
                     </div>
@@ -1154,7 +1133,7 @@ window.changeAppointmentStatus = async function(aid, newStatus) {
             }
 
             document.getElementById('hist-modal-title').innerText = '📋 Historial — ' + p.name;
-            document.getElementById('hist-modal-subtitle').innerText = '📞 ' + p.phone + (p.birth ? '  •  🎂 ' + p.birth + ' (' + ageStr + ')' : '');
+            document.getElementById('hist-modal-subtitle').innerText = '📞 ' + p.phone + (p.birth ? '  ·  🎂 ' + p.birth + ' (' + ageStr + ')' : '');
 
             document.getElementById('hist-patient-info').innerHTML = `
                 <div><span class="font-bold text-slate-500 text-xs uppercase block mb-0.5">Nombre</span><span class="font-semibold">${p.name}</span></div>
