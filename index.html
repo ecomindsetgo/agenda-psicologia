@@ -135,6 +135,9 @@
                     <button onclick="openPrintModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-3.5 py-1.5 rounded-lg shadow-sm transition flex items-center gap-2 text-sm" title="Imprimir Reporte">
                         <span>🖨️</span><span class="hidden md:inline">Imprimir</span>
                     </button>
+                    <button onclick="openProfileModal()" class="bg-indigo-700 hover:bg-indigo-600 border border-indigo-500/50 p-2 rounded-lg transition flex items-center gap-2 text-sm font-medium" title="Mi Perfil">
+                        <span>👤</span><span id="header-user-name" class="hidden md:inline max-w-[120px] truncate text-xs"></span>
+                    </button>
                     <button id="logout-btn" class="bg-red-950/50 hover:bg-red-900 border border-red-800/60 p-2 rounded-lg transition" title="Cerrar Sesión">🚪</button>
                 </div>
             </div>
@@ -387,6 +390,85 @@
         </div>
     </div>
 
+
+    <!-- ================= MODAL: PERFIL DE USUARIO ================= -->
+    <div id="profile-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4 no-print">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+            <!-- Header del modal con tabs -->
+            <div class="bg-indigo-900 text-white px-6 py-5">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="font-bold text-base">⚙️ Mi Cuenta</h3>
+                        <p id="profile-modal-email" class="text-xs text-indigo-300 mt-0.5"></p>
+                    </div>
+                    <button onclick="closeProfileModal()" class="text-indigo-200 hover:text-white transition text-xl leading-none">&times;</button>
+                </div>
+                <!-- Tabs internos -->
+                <div class="flex gap-1 bg-indigo-950/40 p-1 rounded-xl">
+                    <button id="ptab-perfil" onclick="switchProfileTab('perfil')"
+                        class="flex-1 py-2 text-xs font-semibold rounded-lg bg-white text-indigo-700 shadow transition">
+                        👤 Editar Perfil
+                    </button>
+                    <button id="ptab-clave" onclick="switchProfileTab('clave')"
+                        class="flex-1 py-2 text-xs font-semibold rounded-lg text-indigo-200 hover:bg-indigo-800/50 transition">
+                        🔐 Cambiar Clave
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB: EDITAR PERFIL -->
+            <div id="psec-perfil" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Nombre Completo</label>
+                    <input type="text" id="profile-displayname" placeholder="Ej: Dra. Ana García"
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Especialidad / Cargo</label>
+                    <input type="text" id="profile-specialty" placeholder="Ej: Psicóloga Clínica"
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Teléfono / Contacto</label>
+                    <input type="tel" id="profile-phone" placeholder="Ej: 987654321"
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+                <div id="profile-edit-error" class="text-xs text-red-500 hidden font-semibold bg-red-50 p-3 rounded-lg border border-red-200"></div>
+                <div id="profile-edit-success" class="text-xs text-emerald-600 hidden font-semibold bg-emerald-50 p-3 rounded-lg border border-emerald-200"></div>
+                <div class="flex gap-3 pt-1">
+                    <button type="button" onclick="closeProfileModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-3 rounded-xl text-sm font-semibold transition">Cancelar</button>
+                    <button type="button" onclick="saveProfileData()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-sm font-semibold shadow-md transition">Guardar Cambios</button>
+                </div>
+            </div>
+
+            <!-- TAB: CAMBIAR CLAVE -->
+            <div id="psec-clave" class="p-6 space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Contraseña Actual</label>
+                    <input type="password" id="profile-current-pwd" placeholder="••••••••"
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Nueva Contraseña</label>
+                    <input type="password" id="profile-new-pwd" placeholder="Mínimo 8 caracteres"
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Confirmar Nueva Contraseña</label>
+                    <input type="password" id="profile-confirm-pwd" placeholder="Repite tu nueva contraseña"
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+                <div id="profile-pwd-error" class="text-xs text-red-500 hidden font-semibold bg-red-50 p-3 rounded-lg border border-red-200"></div>
+                <div id="profile-pwd-success" class="text-xs text-emerald-600 hidden font-semibold bg-emerald-50 p-3 rounded-lg border border-emerald-200"></div>
+                <div class="flex gap-3 pt-1">
+                    <button type="button" onclick="closeProfileModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-3 rounded-xl text-sm font-semibold transition">Cancelar</button>
+                    <button type="button" onclick="saveNewPassword()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-sm font-semibold shadow-md transition">Actualizar Clave</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <!-- MODAL IMPRESIÓN -->
     <div id="print-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4 no-print">
         <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col">
@@ -458,7 +540,8 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import {
             getAuth, signInWithEmailAndPassword, signOut,
-            onAuthStateChanged, sendPasswordResetEmail, updatePassword
+            onAuthStateChanged, sendPasswordResetEmail, updatePassword,
+            EmailAuthProvider, reauthenticateWithCredential
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import {
             getFirestore, doc, setDoc, deleteDoc,
@@ -481,6 +564,10 @@
         const db = getFirestore(app);
 
         let activeListeners = [];
+        // Exponer referencias globales para funciones del modal de perfil
+        window._firebaseAuthRef = { getAuth, EmailAuthProvider, reauthenticateWithCredential, updatePassword };
+        window._profileState = null; // se asignará cuando el user esté disponible
+
         let state = {
             appointments: [],
             patients: [],
@@ -488,6 +575,8 @@
             filterStatus: 'todas',
             currentUser: null
         };
+
+        window._profileState = state;
 
         // Fecha inicial
         const todayStr = new Date().toISOString().split('T')[0];
@@ -640,6 +729,11 @@
             document.getElementById('app-container').classList.remove('hidden');
             document.getElementById('app-container').classList.add('flex');
             setupFirestoreSync(user.uid);
+
+            // Cargar nombre de perfil en el header
+            const saved = JSON.parse(localStorage.getItem('userProfile_' + user.uid) || '{}');
+            const headerName = document.getElementById('header-user-name');
+            if (headerName) headerName.innerText = saved.displayName || user.email.split('@')[0];
         }
 
         document.getElementById('logout-btn').addEventListener('click', () => {
@@ -1018,6 +1112,133 @@
             const m = document.getElementById('print-modal');
             m.classList.add('hidden'); m.classList.remove('flex');
         }
+
+        function openProfileModal() {
+            const user = window._profileState && window._profileState.currentUser;
+            const email = user ? user.email : '';
+            document.getElementById('profile-modal-email').innerText = email;
+
+            // Cargar datos guardados del perfil
+            const saved = JSON.parse(localStorage.getItem('userProfile_' + (user ? user.uid : '')) || '{}');
+            document.getElementById('profile-displayname').value = saved.displayName || '';
+            document.getElementById('profile-specialty').value   = saved.specialty   || '';
+            document.getElementById('profile-phone').value       = saved.phone       || '';
+
+            // Limpiar campos de clave
+            document.getElementById('profile-current-pwd').value  = '';
+            document.getElementById('profile-new-pwd').value      = '';
+            document.getElementById('profile-confirm-pwd').value  = '';
+
+            // Limpiar mensajes
+            ['profile-edit-error','profile-edit-success','profile-pwd-error','profile-pwd-success']
+                .forEach(id => document.getElementById(id).classList.add('hidden'));
+
+            // Mostrar tab perfil por defecto
+            switchProfileTab('perfil');
+
+            const m = document.getElementById('profile-modal');
+            m.classList.remove('hidden'); m.classList.add('flex');
+        }
+
+        function closeProfileModal() {
+            const m = document.getElementById('profile-modal');
+            m.classList.add('hidden'); m.classList.remove('flex');
+        }
+
+        function switchProfileTab(tab) {
+            ['perfil','clave'].forEach(t => {
+                document.getElementById('psec-' + t).classList.add('hidden');
+                document.getElementById('ptab-' + t).className =
+                    'flex-1 py-2 text-xs font-semibold rounded-lg text-indigo-200 hover:bg-indigo-800/50 transition';
+            });
+            document.getElementById('psec-' + tab).classList.remove('hidden');
+            document.getElementById('ptab-' + tab).className =
+                'flex-1 py-2 text-xs font-semibold rounded-lg bg-white text-indigo-700 shadow transition';
+        }
+
+        function saveProfileData() {
+            const errDiv = document.getElementById('profile-edit-error');
+            const okDiv  = document.getElementById('profile-edit-success');
+            errDiv.classList.add('hidden');
+            okDiv.classList.add('hidden');
+
+            const displayName = document.getElementById('profile-displayname').value.trim();
+            const specialty   = document.getElementById('profile-specialty').value.trim();
+            const phone       = document.getElementById('profile-phone').value.trim();
+
+            if (!displayName) {
+                errDiv.innerText = 'El nombre no puede estar vacío.';
+                errDiv.classList.remove('hidden');
+                return;
+            }
+
+            const user = window._profileState && window._profileState.currentUser;
+            const key  = 'userProfile_' + (user ? user.uid : 'guest');
+            localStorage.setItem(key, JSON.stringify({ displayName, specialty, phone }));
+
+            // Actualizar nombre en el header
+            const headerName = document.getElementById('header-user-name');
+            if (headerName) headerName.innerText = displayName;
+
+            okDiv.innerText = '✅ Perfil actualizado correctamente.';
+            okDiv.classList.remove('hidden');
+            setTimeout(() => okDiv.classList.add('hidden'), 3000);
+        }
+
+        async function saveNewPassword() {
+            const errDiv = document.getElementById('profile-pwd-error');
+            const okDiv  = document.getElementById('profile-pwd-success');
+            errDiv.classList.add('hidden');
+            okDiv.classList.add('hidden');
+
+            const currentPwd = document.getElementById('profile-current-pwd').value;
+            const newPwd     = document.getElementById('profile-new-pwd').value;
+            const confirmPwd = document.getElementById('profile-confirm-pwd').value;
+
+            if (!currentPwd) {
+                errDiv.innerText = 'Ingresa tu contraseña actual.';
+                errDiv.classList.remove('hidden'); return;
+            }
+            if (newPwd.length < 8) {
+                errDiv.innerText = 'La nueva contraseña debe tener al menos 8 caracteres.';
+                errDiv.classList.remove('hidden'); return;
+            }
+            if (newPwd.startsWith('temp_')) {
+                errDiv.innerText = "No puedes usar una contraseña que empiece con 'temp_'.";
+                errDiv.classList.remove('hidden'); return;
+            }
+            if (newPwd !== confirmPwd) {
+                errDiv.innerText = 'Las contraseñas no coinciden.';
+                errDiv.classList.remove('hidden'); return;
+            }
+
+            // Re-autenticar con la contraseña actual antes de cambiar
+            try {
+                const { getAuth, EmailAuthProvider, reauthenticateWithCredential, updatePassword } = window._firebaseAuthRef;
+                const auth = getAuth();
+                const user = auth.currentUser;
+                const credential = EmailAuthProvider.credential(user.email, currentPwd);
+                await reauthenticateWithCredential(user, credential);
+                await updatePassword(user, newPwd);
+
+                okDiv.innerText = '✅ Contraseña actualizada con éxito.';
+                okDiv.classList.remove('hidden');
+                document.getElementById('profile-current-pwd').value  = '';
+                document.getElementById('profile-new-pwd').value      = '';
+                document.getElementById('profile-confirm-pwd').value  = '';
+                setTimeout(() => okDiv.classList.add('hidden'), 4000);
+            } catch (error) {
+                let msg = 'Error al actualizar la contraseña. Intenta de nuevo.';
+                if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    msg = 'La contraseña actual es incorrecta.';
+                } else if (error.code === 'auth/too-many-requests') {
+                    msg = 'Demasiados intentos. Espera unos minutos.';
+                }
+                errDiv.innerText = msg;
+                errDiv.classList.remove('hidden');
+            }
+        }
+
     </script>
 </body>
 </html>
