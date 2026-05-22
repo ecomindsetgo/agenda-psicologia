@@ -714,11 +714,33 @@
             const patientObj = state.patients.find(p => p.id === patientId);
             if (!patientObj) { alert("Selecciona un paciente válido."); return; }
 
+            const newDate = document.getElementById('app-date').value;
+            const newTime = document.getElementById('app-time').value;
+
+            // ─── VALIDACIÓN DE DUPLICADOS ────────────────────────────────────────
+            // Excluir la cita que se está editando (si aplica)
+            const otherAppts = state.appointments.filter(a => a.id !== aid);
+
+            // 1) Verificar si ya existe otra cita en la misma fecha y hora (cualquier paciente)
+            const sameSlot = otherAppts.find(a => a.date === newDate && a.time === newTime);
+            if (sameSlot) {
+                alert(`⚠️ Horario ocupado\n\nYa existe una cita el ${newDate} a las ${newTime} para el paciente "${sameSlot.patientName}".\n\nPor favor elige otro horario.`);
+                return;
+            }
+
+            // 2) Verificar si el mismo paciente ya tiene una cita en esa fecha (cualquier hora)
+            const samePatientDay = otherAppts.find(a => a.date === newDate && a.patientId === patientId);
+            if (samePatientDay) {
+                alert(`⚠️ Paciente ya agendado\n\n"${patientObj.name}" ya tiene una cita programada el ${newDate} a las ${samePatientDay.time}.\n\nNo se puede agendar el mismo paciente dos veces en el mismo día.`);
+                return;
+            }
+            // ────────────────────────────────────────────────────────────────────
+
             const payload = {
                 patientId:     patientId,
                 patientName:   patientObj.name,
-                date:          document.getElementById('app-date').value,
-                time:          document.getElementById('app-time').value,
+                date:          newDate,
+                time:          newTime,
                 cost:          parseFloat(document.getElementById('app-cost').value || 0),
                 paymentStatus: document.getElementById('app-payment').value,
                 status:        document.getElementById('app-status').value,
