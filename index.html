@@ -282,6 +282,14 @@
                         </div>
                     </div>
                 </div>
+
+<div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+    <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">
+        Pacientes con pagos pendientes
+    </h3>
+
+    <div id="patients-debt-list" class="space-y-2"></div>
+</div>
             </section>
         </main>
 
@@ -322,6 +330,24 @@
                         <input type="time" id="app-time" required class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
                     </div>
                 </div>
+
+
+<div>
+    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">
+        Duración
+    </label>
+
+    <select id="app-duration"
+        class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
+
+        <option value="45">45 minutos</option>
+        <option value="60" selected>1 hora</option>
+        <option value="90">1 hora 30 min</option>
+        <option value="120">2 horas</option>
+    </select>
+</div>
+
+
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Costo (S/) *</label>
@@ -835,6 +861,7 @@
                 patientName:   patientObj.name,
                 date:          newDate,
                 time:          newTime,
+duration: parseInt(document.getElementById('app-duration').value),
                 cost:          parseFloat(document.getElementById('app-cost').value || 0),
                 paymentStatus: document.getElementById('app-payment').value,
                 status:        document.getElementById('app-status').value,
@@ -865,6 +892,7 @@
             document.getElementById('app-patient-select').value      = a.patientId;
             document.getElementById('app-date').value                 = a.date;
             document.getElementById('app-time').value                 = a.time;
+document.getElementById('app-duration').value = a.duration || 60;
             document.getElementById('app-cost').value                 = a.cost;
             document.getElementById('app-payment').value              = a.paymentStatus;
             document.getElementById('app-status').value               = a.status;
@@ -897,11 +925,12 @@
                 return;
             }
             container.innerHTML = filtered.map(a => {
-                const badge = a.status === 'completada'
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    : a.status === 'cancelada'
-                    ? 'bg-red-50 text-red-600 border-red-200'
-                    : 'bg-amber-50 text-amber-700 border-amber-200';
+                const badge =
+    a.status === 'completada'
+    ? 'bg-emerald-100 text-emerald-700 border-emerald-300'
+    : a.status === 'cancelada'
+    ? 'bg-red-100 text-red-700 border-red-300'
+    : 'bg-amber-100 text-amber-700 border-amber-300';
                 const payBadge = a.paymentStatus === 'pagado' ? '💳 Pagado' : '⏳ Pendiente';
                 return `
                 <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-4 hover:shadow-md transition">
@@ -961,7 +990,6 @@
         function updateStatsDashboard() {
             const todayFilter = document.getElementById('date-filter').value;
             const todayApps   = state.appointments.filter(a => a.date === todayFilter);
-
             document.getElementById('stat-citas-hoy').innerText       = todayApps.length;
             document.getElementById('stat-citas-pendientes').innerText = todayApps.filter(a => a.status === 'pendiente').length;
             document.getElementById('stat-citas-completas').innerText  = todayApps.filter(a => a.status === 'completada').length;
@@ -981,6 +1009,34 @@
             document.getElementById('finance-pending-cobro').innerText = `S/ ${pendingCobro.toFixed(2)}`;
             document.getElementById('finance-future-cobro').innerText  = `S/ ${futureCobro.toFixed(2)}`;
         }
+
+const debtContainer = document.getElementById('patients-debt-list');
+
+const debtors = state.appointments.filter(a =>
+    a.paymentStatus === 'pendiente'
+);
+
+if (!debtors.length) {
+    debtContainer.innerHTML = `
+    <p class="text-sm text-slate-400">
+        No existen deudas pendientes.
+    </p>`;
+} else {
+
+    debtContainer.innerHTML = debtors.map(a => `
+        <div class="flex justify-between items-center bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+            <div>
+                <p class="text-sm font-semibold text-slate-700">${a.patientName}</p>
+                <p class="text-xs text-slate-500">${a.date} - ${a.time}</p>
+            </div>
+
+            <span class="text-sm font-bold text-amber-700">
+                S/ ${a.cost.toFixed(2)}
+            </span>
+        </div>
+    `).join('');
+}
+
 
         // ─── IMPRESIÓN ────────────────────────────────────────────────────────────
         window.executeReportPrint = function() {
@@ -1103,15 +1159,38 @@
             setTimeout(() => openPatientModal(), 200);
         }
 
-        function openPrintModal() {
-            document.getElementById('print-date-select').value = document.getElementById('date-filter').value;
-            const m = document.getElementById('print-modal');
-            m.classList.remove('hidden'); m.classList.add('flex');
-        }
-        function closePrintModal() {
-            const m = document.getElementById('print-modal');
-            m.classList.add('hidden'); m.classList.remove('flex');
-        }
+        window.openPrintModal = function() {
+    const modal = document.getElementById('print-modal');
+
+    // Fecha actual del filtro
+    document.getElementById('print-date-select').value =
+        document.getElementById('date-filter').value;
+
+    // PERFIL DEL USUARIO
+    if (state.currentUser) {
+        const saved = JSON.parse(
+            localStorage.getItem('userProfile_' + state.currentUser.uid) || '{}'
+        );
+
+        // Prioridad:
+        // 1. Nombre completo
+        // 2. Especialidad
+        // 3. Email
+        const specialist =
+            saved.displayName ||
+            saved.specialty ||
+            state.currentUser.email.split('@')[0];
+
+        document.getElementById('print-specialist-name').value = specialist;
+    }
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+};
+        window.closePrintModal = function() {
+    document.getElementById('print-modal').classList.add('hidden');
+    document.getElementById('print-modal').classList.remove('flex');
+};
 
         function openProfileModal() {
             const user = window._profileState && window._profileState.currentUser;
@@ -1242,3 +1321,4 @@
     </script>
 </body>
 </html>
+
