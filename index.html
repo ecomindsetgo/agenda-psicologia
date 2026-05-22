@@ -17,6 +17,8 @@
             .no-print { display: none !important; }
             .print-only { display: block !important; width: 100% !important; max-width: 100% !important; }
             body { background: white !important; color: black !important; padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; display: block !important; }
+            #print-patient-card.hidden { display: none !important; }
+            #print-section.hidden { display: none !important; }
         }
         .tab-transition { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
@@ -535,7 +537,90 @@
         </div>
     </div>
 
-    <!-- ================= FIREBASE + LÓGICA PRINCIPAL ================= -->
+    <!-- ================= MODAL: HISTORIAL DE PACIENTE ================= -->
+    <div id="patient-history-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4 no-print">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center">
+                <div>
+                    <h3 id="hist-modal-title" class="font-bold text-base">📋 Historial Clínico</h3>
+                    <p id="hist-modal-subtitle" class="text-xs text-indigo-300 mt-0.5"></p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="printPatientCard()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">🖨️ Imprimir Ficha</button>
+                    <button onclick="closeHistoryModal()" class="text-indigo-200 hover:text-white transition text-xl leading-none">&times;</button>
+                </div>
+            </div>
+            <div class="overflow-y-auto flex-grow p-6 space-y-4">
+                <!-- Datos del paciente -->
+                <div id="hist-patient-info" class="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-2 gap-3 text-sm"></div>
+                <!-- Antecedentes -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase text-slate-400 mb-2">Antecedentes / Historial General</h4>
+                    <p id="hist-patient-history" class="text-sm text-slate-600 bg-slate-50 border border-slate-100 rounded-xl p-3"></p>
+                </div>
+                <!-- Citas -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase text-slate-400 mb-2">Citas Registradas (<span id="hist-count">0</span>)</h4>
+                    <div id="hist-appointments-list" class="space-y-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PLANTILLA: FICHA DE PACIENTE (impresión) ================= -->
+    <div id="print-patient-card" class="print-only hidden p-8 text-slate-950 space-y-5">
+        <div class="flex justify-between items-start border-b-2 border-slate-950 pb-4">
+            <div>
+                <h1 class="text-2xl font-extrabold tracking-tight">FICHA CLÍNICA DEL PACIENTE</h1>
+                <p class="text-xs text-slate-500 mt-1">Documento clínico confidencial. Generado por Agenda Psicológica Pro+</p>
+            </div>
+            <div class="text-right text-xs">
+                <span class="font-bold block">Especialista:</span>
+                <span id="print-card-specialist" class="font-semibold"></span>
+                <span class="font-bold block mt-1">Fecha de impresión:</span>
+                <span id="print-card-date"></span>
+            </div>
+        </div>
+        <div class="border border-slate-200 rounded-lg p-4 space-y-2">
+            <h2 class="font-extrabold text-base uppercase border-b pb-1 mb-2">Datos del Paciente</h2>
+            <div class="grid grid-cols-2 gap-x-8 gap-y-1 text-sm">
+                <p><span class="font-bold">Nombre:</span> <span id="print-card-name"></span></p>
+                <p><span class="font-bold">Teléfono:</span> <span id="print-card-phone"></span></p>
+                <p><span class="font-bold">Fecha de nacimiento:</span> <span id="print-card-birth"></span></p>
+                <p><span class="font-bold">Edad:</span> <span id="print-card-age"></span></p>
+            </div>
+        </div>
+        <div class="border border-slate-200 rounded-lg p-4">
+            <h2 class="font-extrabold text-base uppercase border-b pb-1 mb-2">Antecedentes / Historial General</h2>
+            <p id="print-card-history" class="text-sm"></p>
+        </div>
+        <div class="border border-slate-200 rounded-lg p-4">
+            <h2 class="font-extrabold text-base uppercase border-b pb-1 mb-3">Historial de Citas</h2>
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="border-b bg-slate-100 font-extrabold uppercase">
+                        <th class="py-2 px-2">Fecha</th>
+                        <th class="py-2 px-2">Hora</th>
+                        <th class="py-2 px-2">Estado</th>
+                        <th class="py-2 px-2">Pago</th>
+                        <th class="py-2 px-2">Costo</th>
+                        <th class="py-2 px-2">Notas</th>
+                    </tr>
+                </thead>
+                <tbody id="print-card-appointments" class="divide-y"></tbody>
+            </table>
+        </div>
+        <div class="pt-20 flex justify-center">
+            <div class="w-[40%] text-center">
+                <div class="border-t border-slate-400 w-full pt-2"></div>
+                <p class="text-xs font-semibold">Firma del Especialista</p>
+                <p class="text-[10px] text-slate-500" id="print-card-specialist-foot"></p>
+            </div>
+        </div>
+    </div>
+
+
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import {
@@ -796,7 +881,8 @@
             document.getElementById('pat-phone').value   = p.phone;
             document.getElementById('pat-birth').value   = p.birth   || '';
             document.getElementById('pat-history').value = p.history || '';
-            openPatientModal();
+            document.getElementById('patient-modal-title').innerText = "✏️ Editar Paciente";
+            openPatientModal(true);
         };
 
         // ─── CRUD CITAS ───────────────────────────────────────────────────────────
@@ -862,14 +948,18 @@
             const a = state.appointments.find(a => a.id === aid);
             if (!a) return;
             document.getElementById('app-id').value                  = a.id;
-            document.getElementById('app-patient-select').value      = a.patientId;
             document.getElementById('app-date').value                 = a.date;
             document.getElementById('app-time').value                 = a.time;
             document.getElementById('app-cost').value                 = a.cost;
             document.getElementById('app-payment').value              = a.paymentStatus;
             document.getElementById('app-status').value               = a.status;
             document.getElementById('app-notes').value                = a.notes || '';
-            openAppointmentModal();
+            document.getElementById('app-modal-title').innerText      = "✏️ Editar Cita";
+            openAppointmentModal(true);
+            // El select necesita setearse DESPUÉS de que el modal esté visible
+            setTimeout(() => {
+                document.getElementById('app-patient-select').value = a.patientId;
+            }, 50);
         };
 
         // ─── RENDERS ─────────────────────────────────────────────────────────────
@@ -944,9 +1034,10 @@
                         <p class="text-xs text-slate-500"><strong>Nacimiento:</strong> ${p.birth || 'No especificada'}</p>
                         <p class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100"><strong>Antecedentes:</strong> ${p.history || 'Sin observaciones históricas.'}</p>
                     </div>
-                    <div class="flex justify-end gap-2 border-t pt-2 border-slate-100">
-                        <button onclick="editPatient('${p.id}')" class="text-indigo-600 text-xs font-semibold px-3 py-1.5 hover:underline">Editar</button>
-                        <button onclick="deletePatient('${p.id}')" class="text-red-500 text-xs font-semibold px-3 py-1.5 hover:underline">Eliminar</button>
+                    <div class="flex justify-end gap-2 border-t pt-2 border-slate-100 flex-wrap">
+                        <button onclick="openPatientHistory('${p.id}')" class="text-slate-600 text-xs font-semibold px-3 py-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 transition">📋 Historial</button>
+                        <button onclick="editPatient('${p.id}')" class="text-indigo-600 text-xs font-semibold px-3 py-1.5 hover:underline">✏️ Editar</button>
+                        <button onclick="deletePatient('${p.id}')" class="text-red-500 text-xs font-semibold px-3 py-1.5 hover:underline">🗑️ Eliminar</button>
                     </div>
                 </div>`).join('');
         };
@@ -1021,6 +1112,145 @@
             state.filterStatus = e.detail;
             renderAppointments();
         });
+
+        // ─── HISTORIAL DE PACIENTE ────────────────────────────────────────────────
+        window._currentHistoryPatientId = null;
+
+        window.openPatientHistory = function(pid) {
+            const p = state.patients.find(p => p.id === pid);
+            if (!p) return;
+            window._currentHistoryPatientId = pid;
+
+            // Calcular edad
+            let ageStr = 'No especificada';
+            if (p.birth) {
+                const born = new Date(p.birth + 'T00:00:00');
+                const today = new Date();
+                let age = today.getFullYear() - born.getFullYear();
+                const m = today.getMonth() - born.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < born.getDate())) age--;
+                ageStr = age + ' años';
+            }
+
+            document.getElementById('hist-modal-title').innerText = '📋 Historial — ' + p.name;
+            document.getElementById('hist-modal-subtitle').innerText = '📞 ' + p.phone + (p.birth ? '  ·  🎂 ' + p.birth + ' (' + ageStr + ')' : '');
+
+            document.getElementById('hist-patient-info').innerHTML = `
+                <div><span class="font-bold text-slate-500 text-xs uppercase block mb-0.5">Nombre</span><span class="font-semibold">${p.name}</span></div>
+                <div><span class="font-bold text-slate-500 text-xs uppercase block mb-0.5">Teléfono</span><span>${p.phone}</span></div>
+                <div><span class="font-bold text-slate-500 text-xs uppercase block mb-0.5">Nacimiento</span><span>${p.birth || '—'}</span></div>
+                <div><span class="font-bold text-slate-500 text-xs uppercase block mb-0.5">Edad</span><span>${ageStr}</span></div>
+            `;
+            document.getElementById('hist-patient-history').innerText = p.history || 'Sin antecedentes registrados.';
+
+            // Citas del paciente ordenadas por fecha desc
+            const appts = state.appointments
+                .filter(a => a.patientId === pid)
+                .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+
+            document.getElementById('hist-count').innerText = appts.length;
+
+            if (!appts.length) {
+                document.getElementById('hist-appointments-list').innerHTML =
+                    '<p class="text-sm text-slate-400 text-center py-4">No hay citas registradas para este paciente.</p>';
+            } else {
+                document.getElementById('hist-appointments-list').innerHTML = appts.map(a => {
+                    const badge = a.status === 'completada'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : a.status === 'cancelada'
+                        ? 'bg-red-50 text-red-600 border-red-200'
+                        : 'bg-amber-50 text-amber-700 border-amber-200';
+                    const payBadge = a.paymentStatus === 'pagado'
+                        ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
+                        : 'text-amber-600 bg-amber-50 border-amber-200';
+                    return `<div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1">
+                        <div class="flex flex-wrap gap-2 items-center">
+                            <span class="text-xs font-bold text-slate-700">📅 ${a.date}</span>
+                            <span class="text-xs font-semibold text-slate-600 bg-slate-200 px-2 py-0.5 rounded-lg">⏰ ${a.time}</span>
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${a.status.toUpperCase()}</span>
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${payBadge}">${a.paymentStatus === 'pagado' ? '💳 Pagado' : '⏳ Pendiente'} — S/ ${parseFloat(a.cost).toFixed(2)}</span>
+                        </div>
+                        ${a.notes ? `<p class="text-xs text-slate-500 italic">"${a.notes}"</p>` : ''}
+                    </div>`;
+                }).join('');
+            }
+
+            const m = document.getElementById('patient-history-modal');
+            m.classList.remove('hidden'); m.classList.add('flex');
+        };
+
+        window.closeHistoryModal = function() {
+            const m = document.getElementById('patient-history-modal');
+            m.classList.add('hidden'); m.classList.remove('flex');
+            window._currentHistoryPatientId = null;
+        };
+
+        window.printPatientCard = function() {
+            const pid = window._currentHistoryPatientId;
+            if (!pid) return;
+            const p = state.patients.find(p => p.id === pid);
+            if (!p) return;
+
+            // Especialista desde perfil
+            const user = window._profileState && window._profileState.currentUser;
+            let specialistName = 'Especialista';
+            if (user) {
+                const saved = JSON.parse(localStorage.getItem('userProfile_' + user.uid) || '{}');
+                specialistName = saved.displayName || user.email.split('@')[0];
+            }
+
+            // Calcular edad
+            let ageStr = '—';
+            if (p.birth) {
+                const born = new Date(p.birth + 'T00:00:00');
+                const today = new Date();
+                let age = today.getFullYear() - born.getFullYear();
+                const m2 = today.getMonth() - born.getMonth();
+                if (m2 < 0 || (m2 === 0 && today.getDate() < born.getDate())) age--;
+                ageStr = age + ' años';
+            }
+
+            document.getElementById('print-card-specialist').innerText = specialistName;
+            document.getElementById('print-card-specialist-foot').innerText = specialistName;
+            document.getElementById('print-card-date').innerText = new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
+            document.getElementById('print-card-name').innerText  = p.name;
+            document.getElementById('print-card-phone').innerText = p.phone;
+            document.getElementById('print-card-birth').innerText = p.birth || '—';
+            document.getElementById('print-card-age').innerText   = ageStr;
+            document.getElementById('print-card-history').innerText = p.history || 'Sin antecedentes registrados.';
+
+            const appts = state.appointments
+                .filter(a => a.patientId === pid)
+                .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+
+            const tbody = document.getElementById('print-card-appointments');
+            tbody.innerHTML = appts.length
+                ? appts.map(a => `
+                    <tr class="border-b">
+                        <td class="py-1.5 px-2 font-semibold">${a.date}</td>
+                        <td class="py-1.5 px-2">${a.time}</td>
+                        <td class="py-1.5 px-2 font-medium">${a.status.toUpperCase()}</td>
+                        <td class="py-1.5 px-2">${a.paymentStatus.toUpperCase()}</td>
+                        <td class="py-1.5 px-2">S/ ${parseFloat(a.cost).toFixed(2)}</td>
+                        <td class="py-1.5 px-2 text-slate-500">${a.notes || '—'}</td>
+                    </tr>`).join('')
+                : `<tr><td colspan="6" class="py-3 text-center text-slate-400">Sin citas registradas.</td></tr>`;
+
+            // Ocultar el modal de historial para la impresión y mostrar solo la ficha
+            const histModal = document.getElementById('patient-history-modal');
+            const cardSection = document.getElementById('print-patient-card');
+            const reportSection = document.getElementById('print-section');
+            histModal.classList.add('hidden');
+            cardSection.classList.remove('hidden');
+            reportSection.classList.add('hidden');
+            setTimeout(() => {
+                window.print();
+                histModal.classList.remove('hidden');
+                histModal.classList.add('flex');
+                cardSection.classList.add('hidden');
+                reportSection.classList.remove('hidden');
+            }, 300);
+        };
     </script>
 
     <!-- ─── UI GLOBAL (tabs, modales, fecha) ─────────────────────────── -->
@@ -1073,11 +1303,13 @@
             }
         }
 
-        function openAppointmentModal() {
-            document.getElementById('appointment-form').reset();
-            document.getElementById('app-id').value = '';
-            document.getElementById('app-modal-title').innerText = "🗓️ Programar Nueva Cita";
-            document.getElementById('app-date').value = document.getElementById('date-filter').value;
+        function openAppointmentModal(editMode) {
+            if (!editMode) {
+                document.getElementById('appointment-form').reset();
+                document.getElementById('app-id').value = '';
+                document.getElementById('app-modal-title').innerText = "🗓️ Programar Nueva Cita";
+                document.getElementById('app-date').value = document.getElementById('date-filter').value;
+            }
             const m = document.getElementById('appointment-modal');
             m.classList.remove('hidden'); m.classList.add('flex');
         }
@@ -1086,10 +1318,12 @@
             m.classList.add('hidden'); m.classList.remove('flex');
         }
 
-        function openPatientModal() {
-            document.getElementById('patient-form').reset();
-            document.getElementById('patient-id').value = '';
-            document.getElementById('patient-modal-title').innerText = "👤 Registrar Paciente Clínico";
+        function openPatientModal(editMode) {
+            if (!editMode) {
+                document.getElementById('patient-form').reset();
+                document.getElementById('patient-id').value = '';
+                document.getElementById('patient-modal-title').innerText = "👤 Registrar Paciente Clínico";
+            }
             const m = document.getElementById('patient-modal');
             m.classList.remove('hidden'); m.classList.add('flex');
         }
@@ -1105,6 +1339,13 @@
 
         function openPrintModal() {
             document.getElementById('print-date-select').value = document.getElementById('date-filter').value;
+            // Auto-cargar nombre del especialista desde el perfil guardado
+            const user = window._profileState && window._profileState.currentUser;
+            if (user) {
+                const saved = JSON.parse(localStorage.getItem('userProfile_' + user.uid) || '{}');
+                const name = saved.displayName || user.email.split('@')[0];
+                document.getElementById('print-specialist-name').value = name;
+            }
             const m = document.getElementById('print-modal');
             m.classList.remove('hidden'); m.classList.add('flex');
         }
