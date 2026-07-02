@@ -1272,7 +1272,16 @@ window.openClinicalHistory = function(patientId){
 
     document.getElementById("hc-observaciones").value = history?.observaciones || "";
 
-    const modal = document.getElementById("clinical-history-modal");
+    const container =
+document.getElementById("clinical-notes-container");
+
+container.innerHTML = "";
+
+state.notes
+.filter(n => n.patientId === patientId)
+.sort((a,b)=>a.fecha.localeCompare(b.fecha))
+.forEach(n => newClinicalNote(n));
+const modal = document.getElementById("clinical-history-modal");
 
     modal.classList.remove("hidden");
 
@@ -1314,6 +1323,49 @@ patientId
 
 ),
 
+const cards =
+document.querySelectorAll("#clinical-notes-container > div");
+
+for(const card of cards){
+
+    const id = card.dataset.id;
+
+    await setDoc(
+
+        doc(
+            db,
+            "artifacts",
+            appId,
+            "users",
+            state.currentUser.uid,
+            "clinicalNotes",
+            id
+        ),
+
+        {
+
+            patientId,
+
+            fecha:
+            card.querySelector(".note-date").value,
+
+            sesion:
+            card.querySelector(".note-session").value,
+
+            evolucion:
+            card.querySelector(".note-text").value,
+
+            updatedAt:
+            new Date().toISOString()
+
+        },
+
+        {merge:true}
+
+    );
+
+}
+
 {
 
 motivo:document.getElementById("hc-motivo").value,
@@ -1343,6 +1395,70 @@ merge:true
 }
 
 );
+
+window.newClinicalNote = function(note = {}) {
+
+    const id = note.id || ("note_" + Date.now());
+
+    const div = document.createElement("div");
+
+    div.className = "border rounded-xl p-4 bg-slate-50";
+
+    div.dataset.id = id;
+
+    div.innerHTML = `
+        <div class="grid md:grid-cols-2 gap-3">
+
+            <div>
+                <label class="font-semibold">Fecha</label>
+                <input type="date"
+                       class="note-date w-full border rounded-lg p-2"
+                       value="${note.fecha || new Date().toISOString().split("T")[0]}">
+            </div>
+
+            <div>
+                <label class="font-semibold">Sesión</label>
+                <input type="text"
+                       class="note-session w-full border rounded-lg p-2"
+                       value="${note.sesion || ""}"
+                       placeholder="Sesión 1">
+            </div>
+
+        </div>
+
+        <div class="mt-3">
+
+            <label class="font-semibold">
+
+                Evolución Clínica
+
+            </label>
+
+            <textarea
+                class="note-text w-full border rounded-xl p-3 mt-2"
+                rows="5">${note.evolucion || ""}</textarea>
+
+        </div>
+
+        <div class="text-right mt-3">
+
+            <button
+                type="button"
+                onclick="this.closest('.border').remove()"
+                class="bg-red-500 text-white px-3 py-2 rounded-lg">
+
+                Eliminar
+
+            </button>
+
+        </div>
+    `;
+
+    document.getElementById("clinical-notes-container")
+            .appendChild(div);
+
+}
+
 
 closeClinicalHistory();
 
