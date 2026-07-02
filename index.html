@@ -494,7 +494,342 @@
             </div>
         </div>
     </div>
+<!-- ============================
+     MODAL HISTORIA CLÍNICA
+============================= -->
 
+<div id="clinical-history-modal"
+class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999]">
+
+<div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden">
+
+    <!-- CABECERA -->
+
+    <div class="bg-indigo-700 text-white px-6 py-4 flex justify-between items-center">
+
+        <div>
+
+            <h2 class="text-xl font-bold">
+
+                🩺 Historia Clínica Psicológica
+
+            </h2>
+
+            <p class="text-sm text-indigo-100">
+
+                Registro clínico del paciente
+
+            </p>
+
+        </div>
+
+        <button
+        onclick="closeClinicalHistory()"
+        class="text-white text-2xl hover:text-red-300">
+
+            ×
+
+        </button>
+
+    </div>
+
+    <!-- CONTENIDO -->
+
+    <div class="overflow-y-auto max-h-[80vh] p-6">
+
+        <input
+        type="hidden"
+        id="hc-patient-id">
+
+        <!-- DATOS PACIENTE -->
+
+        <div class="bg-slate-100 rounded-xl p-4 mb-6">
+
+            <h3 class="font-bold text-lg mb-3">
+
+                Datos del Paciente
+
+            </h3>
+
+            <div class="grid md:grid-cols-2 gap-4">
+
+                <div>
+
+                    <label class="text-sm font-semibold">
+
+                        Nombre
+
+                    </label>
+
+                    <input
+                    id="hc-patient-name"
+                    class="w-full border rounded-lg p-2 bg-white"
+                    readonly>
+
+                </div>
+
+                <div>
+
+                    <label class="text-sm font-semibold">
+
+                        DNI
+
+                    </label>
+
+                    <input
+                    id="hc-patient-dni"
+                    class="w-full border rounded-lg p-2 bg-white"
+                    readonly>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- MOTIVO -->
+
+        <div class="mb-5">
+
+            <label class="font-semibold">
+
+                Motivo de Consulta
+
+            </label>
+
+            <textarea
+
+            id="hc-motivo"
+
+            rows="3"
+
+            class="w-full border rounded-xl p-3 mt-2"
+
+            placeholder="¿Por qué acude el paciente?"></textarea>
+
+        </div>
+
+        <!-- PROBLEMA -->
+
+        <div class="mb-5">
+
+            <label class="font-semibold">
+
+                Problema Actual
+
+            </label>
+
+            <textarea
+
+            id="hc-problema"
+
+            rows="5"
+
+            class="w-full border rounded-xl p-3 mt-2"></textarea>
+
+        </div>
+
+        <!-- ANTECEDENTES -->
+
+        <div class="grid md:grid-cols-2 gap-5">
+
+            <div>
+
+                <label class="font-semibold">
+
+                    Antecedentes Personales
+
+                </label>
+
+                <textarea
+
+                id="hc-antecedentes"
+
+                rows="6"
+
+                class="w-full border rounded-xl p-3 mt-2"></textarea>
+
+            </div>
+
+            <div>
+
+                <label class="font-semibold">
+
+                    Antecedentes Familiares
+
+                </label>
+
+                <textarea
+
+                id="hc-familiares"
+
+                rows="6"
+
+                class="w-full border rounded-xl p-3 mt-2"></textarea>
+
+            </div>
+
+        </div>
+
+        <!-- DIAGNOSTICO -->
+
+        <div class="mt-6">
+
+            <label class="font-semibold">
+
+                Diagnóstico Clínico
+
+            </label>
+
+            <textarea
+
+            id="hc-diagnostico"
+
+            rows="4"
+
+            class="w-full border rounded-xl p-3 mt-2"></textarea>
+
+        </div>
+
+        <!-- OBJETIVOS -->
+
+        <div class="mt-6">
+
+            <label class="font-semibold">
+
+                Objetivos Terapéuticos
+
+            </label>
+
+            <textarea
+
+            id="hc-objetivos"
+
+            rows="4"
+
+            class="w-full border rounded-xl p-3 mt-2"></textarea>
+
+        </div>
+
+        <!-- TRATAMIENTO -->
+
+        <div class="mt-6">
+
+            <label class="font-semibold">
+
+                Plan de Tratamiento
+
+            </label>
+
+            <textarea
+
+            id="hc-tratamiento"
+
+            rows="5"
+
+            class="w-full border rounded-xl p-3 mt-2"></textarea>
+
+        </div>
+
+        <!-- OBSERVACIONES -->
+
+        <div class="mt-6">
+
+            <label class="font-semibold">
+
+                Observaciones
+
+            </label>
+
+            <textarea
+
+            id="hc-observaciones"
+
+            rows="5"
+
+            class="w-full border rounded-xl p-3 mt-2"></textarea>
+
+        </div>
+
+<!-- =======================================
+        EVOLUCIÓN CLÍNICA
+======================================= -->
+
+<hr class="my-8 border-slate-300">
+
+<div class="space-y-4">
+
+    <div class="flex justify-between items-center">
+
+        <h2 class="text-xl font-bold text-slate-700">
+
+            📅 Evolución Clínica
+
+        </h2>
+
+        <button
+            type="button"
+            onclick="newClinicalNote()"
+            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl">
+
+            ➕ Agregar Evolución
+
+        </button>
+
+    </div>
+
+    <p class="text-sm text-slate-500">
+
+        Aquí se registrará cada sesión realizada con el paciente.
+
+    </p>
+
+    <div
+        id="clinical-notes-container"
+        class="space-y-4">
+
+        <!--
+        Aquí se agregarán automáticamente
+        las sesiones.
+        -->
+
+    </div>
+
+</div>
+
+
+
+        <!-- BOTONES -->
+
+        <div class="flex justify-end gap-3 mt-8">
+
+            <button
+
+            onclick="closeClinicalHistory()"
+
+            class="px-6 py-3 rounded-xl bg-gray-200 hover:bg-gray-300">
+
+                Cancelar
+
+            </button>
+
+            <button
+
+            onclick="saveClinicalHistory()"
+
+            class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white">
+
+                💾 Guardar Historia Clínica
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+</div>
     <!-- ================= PLANTILLA DE IMPRESIÓN ================= -->
     <div id="print-section" class="print-only p-8 text-slate-950 space-y-6">
         <div class="flex justify-between items-start border-b-2 border-slate-950 pb-5">
@@ -656,6 +991,8 @@
         let state = {
             appointments: [],
             patients: [],
+            histories: [],
+            notes:[],
             activeTab: 'citas',
             filterStatus: 'todas',
             currentUser: null
@@ -829,7 +1166,8 @@
         function setupFirestoreSync(userId) {
             const appointmentsRef = collection(db, 'artifacts', appId, 'users', userId, 'appointments');
             const patientsRef     = collection(db, 'artifacts', appId, 'users', userId, 'patients');
-
+            const historiesRef = collection(db, 'artifacts', appId, 'users', userId, 'clinicalHistories');
+            const notesRef = collection(db, 'artifacts', appId, 'users', userId, 'clinicalNotes');
             const unsubAppts = onSnapshot(appointmentsRef, (snapshot) => {
                 state.appointments = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                 renderAppointments();
@@ -842,8 +1180,34 @@
                 updatePatientDropdowns();
                 updateStatsDashboard();
             });
+            const unsubHistories = onSnapshot(
+            historiesRef,
+            (snapshot) => {
 
-            activeListeners.push(unsubAppts, unsubPatients);
+            State.histories = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+            }));
+
+    }
+);
+          
+const unsubNotes = onSnapshot(
+notesRef,
+(snapshot)=>{
+
+state.notes=snapshot.docs.map(doc=>({
+
+id:doc.id,
+
+...doc.data()
+
+}));
+
+}
+);
+
+  activeListeners.push(unsubAppts, unsubPatients, unsubHistories, unsubNotes);
         }
 
         // ─── CRUD PACIENTES ───────────────────────────────────────────────────────
@@ -872,6 +1236,139 @@
                 await deleteDoc(doc(db, 'artifacts', appId, 'users', state.currentUser.uid, 'patients', pid));
             }
         };
+window.openClinicalHistory = function(patientId){
+
+    const patient = state.patients.find(p => p.id === patientId);
+
+    if(!patient){
+
+        alert("No se encontró el paciente.");
+
+        return;
+
+    }
+
+    const history = state.histories.find(h => h.id === patientId);
+
+    document.getElementById("hc-patient-id").value = patientId;
+
+    document.getElementById("hc-patient-name").value = patient.name || "";
+
+    document.getElementById("hc-patient-dni").value = patient.dni || "";
+
+    document.getElementById("hc-motivo").value = history?.motivo || "";
+
+    document.getElementById("hc-problema").value = history?.problema || "";
+
+    document.getElementById("hc-antecedentes").value = history?.antecedentes || "";
+
+    document.getElementById("hc-familiares").value = history?.familiares || "";
+
+    document.getElementById("hc-diagnostico").value = history?.diagnostico || "";
+
+    document.getElementById("hc-objetivos").value = history?.objetivos || "";
+
+    document.getElementById("hc-tratamiento").value = history?.tratamiento || "";
+
+    document.getElementById("hc-observaciones").value = history?.observaciones || "";
+
+    const modal = document.getElementById("clinical-history-modal");
+
+    modal.classList.remove("hidden");
+
+    modal.classList.add("flex");
+
+}
+window.closeClinicalHistory=function(){
+
+const modal=document.getElementById("clinical-history-modal");
+
+modal.classList.remove("flex");
+
+modal.classList.add("hidden");
+
+}
+window.saveClinicalHistory = async function(){
+
+try{
+
+const patientId=document.getElementById("hc-patient-id").value;
+
+await setDoc(
+
+doc(
+
+db,
+
+'artifacts',
+
+appId,
+
+'users',
+
+state.currentUser.uid,
+
+'clinicalHistories',
+
+patientId
+
+),
+
+{
+
+motivo:document.getElementById("hc-motivo").value,
+
+problema:document.getElementById("hc-problema").value,
+
+antecedentes:document.getElementById("hc-antecedentes").value,
+
+familiares:document.getElementById("hc-familiares").value,
+
+diagnostico:document.getElementById("hc-diagnostico").value,
+
+objetivos:document.getElementById("hc-objetivos").value,
+
+tratamiento:document.getElementById("hc-tratamiento").value,
+
+observaciones:document.getElementById("hc-observaciones").value,
+
+updatedAt:new Date().toISOString()
+
+},
+
+{
+
+merge:true
+
+}
+
+);
+
+closeClinicalHistory();
+
+showToast(
+
+"Historia Clínica guardada correctamente",
+
+"success"
+
+);
+
+}catch(error){
+
+console.error(error);
+
+showToast(
+
+"No se pudo guardar la Historia Clínica",
+
+"error"
+
+);
+
+}
+
+}
 
         window.editPatient = function(pid) {
             const p = state.patients.find(p => p.id === pid);
@@ -1036,6 +1533,7 @@
                     </div>
                     <div class="flex justify-end gap-2 border-t pt-2 border-slate-100 flex-wrap">
                         <button onclick="openPatientHistory('${p.id}')" class="text-slate-600 text-xs font-semibold px-3 py-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 transition">📋 Historial</button>
+                        <button onclick="openClinicalHistory('${p.id}')" class="text-indigo-600 text-xs font-semibold px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200">🩺 Historia Clínica</button>
                         <button onclick="editPatient('${p.id}')" class="text-indigo-600 text-xs font-semibold px-3 py-1.5 hover:underline">✏️ Editar</button>
                         <button onclick="deletePatient('${p.id}')" class="text-red-500 text-xs font-semibold px-3 py-1.5 hover:underline">🗑️ Eliminar</button>
                     </div>
@@ -1133,7 +1631,7 @@
             }
 
             document.getElementById('hist-modal-title').innerText = '📋 Historial — ' + p.name;
-            document.getElementById('hist-modal-subtitle').innerText = '📞 ' + p.phone + (p.birth ? '  ·  🎂 ' + p.birth + ' (' + ageStr + ')' : '');
+            document.getElementById('hist-modal-subtitle').innerText = '📞 ' + p.phone + (p.birth ? '  •  🎂 ' + p.birth + ' (' + ageStr + ')' : '');
 
             document.getElementById('hist-patient-info').innerHTML = `
                 <div><span class="font-bold text-slate-500 text-xs uppercase block mb-0.5">Nombre</span><span class="font-semibold">${p.name}</span></div>
@@ -1483,3 +1981,4 @@
     </script>
 </body>
 </html>
+
