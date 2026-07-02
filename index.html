@@ -1184,7 +1184,7 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999]">
             historiesRef,
             (snapshot) => {
 
-            State.histories = snapshot.docs.map(doc => ({
+            state.histories = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
             }));
