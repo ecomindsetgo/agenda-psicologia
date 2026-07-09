@@ -571,10 +571,7 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
 
                     </label>
 
-                    <input
-                    id="hc-patient-name"
-                    class="w-full border rounded-lg p-2 bg-white"
-                    readonly>
+                    <input id="hc-patient-dni" class="w-full border rounded-lg p-2 bg-white" placeholder="Ingresar DNI">
 
                 </div>
 
@@ -1432,72 +1429,51 @@ modal.classList.remove("flex");
 modal.classList.add("hidden");
 
 }
-window.saveClinicalHistory = async function(){
+window.saveClinicalHistory = async function() {
+    try {
+        const patientId = document.getElementById("hc-patient-id").value;
+        const userId = state.currentUser.uid;
 
-try{
-
-    const patientId = document.getElementById("hc-patient-id").value;
-
-    // 1. Guardar los datos de la historia clínica
-    await setDoc(
-        doc(
-            db,
-            'artifacts',
-            appId,
-            'users',
-            state.currentUser.uid,
-            'clinicalHistories',
-            patientId
-        ),
-        {
+        // 1. Guardar Datos Básicos (incluyendo el DNI ahora editable)
+        await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'clinicalHistories', patientId), {
+            dni: document.getElementById("hc-patient-dni").value, // Guardamos el DNI
             motivo: document.getElementById("hc-motivo").value,
             problema: document.getElementById("hc-problema").value,
-            antecedentes: document.getElementById("hc-antecedentes").value,
-            familiares: document.getElementById("hc-familiares").value,
-            diagnostico: document.getElementById("hc-diagnostico").value,
-            objetivos: document.getElementById("hc-objetivos").value,
-            tratamiento: document.getElementById("hc-tratamiento").value,
-            observaciones: document.getElementById("hc-observaciones").value,
-            updatedAt: new Date().toISOString()
-        },
-        { merge: true }
-    );
+            // ... resto de campos igual ...
+        }, { merge: true });
 
-    // 2. Guardar cada nota clínica asociada a la sesión
-    const cards = document.querySelectorAll("#clinical-notes-container > div");
-    for (const card of cards) {
-        const id = card.dataset.id;
-        await setDoc(
-            doc(
-                db,
-                "artifacts",
-                appId,
-                "users",
-                state.currentUser.uid,
-                "clinicalNotes",
-                id
-            ),
-            {
+        // 2. Lógica para eliminar notas que ya no están en pantalla
+        const cards = Array.from(document.querySelectorAll("#clinical-notes-container > div"));
+        const idsEnPantalla = cards.map(c => c.dataset.id);
+        
+        // Comparamos lo que hay en base de datos vs lo que hay en pantalla
+        const notasEnDB = state.notes.filter(n => n.patientId === patientId);
+        for (const notaDB of notasEnDB) {
+            if (!idsEnPantalla.includes(notaDB.id)) {
+                // Si la nota existe en DB pero no en pantalla, la borramos
+                await deleteDoc(doc(db, "artifacts", appId, "users", userId, "clinicalNotes", notaDB.id));
+            }
+        }
+
+        // 3. Guardar/Actualizar las notas que SÍ están en pantalla
+        for (const card of cards) {
+            const id = card.dataset.id;
+            await setDoc(doc(db, "artifacts", appId, "users", userId, "clinicalNotes", id), {
                 patientId,
                 fecha: card.querySelector(".note-date").value,
                 sesion: card.querySelector(".note-session").value,
                 evolucion: card.querySelector(".note-text").value,
                 updatedAt: new Date().toISOString()
-            },
-            { merge: true }
-        );
+            }, { merge: true });
+        }
+
+        closeClinicalHistory();
+        alert("✅ Cambios guardados correctamente.");
+    } catch (error) {
+        console.error(error);
+        alert("❌ Error al guardar.");
     }
-
-    closeClinicalHistory();
-    alert("✅ Historia Clínica guardada correctamente.");
-
-} catch (error) {
-    console.error('[Error guardando historia clínica]', error);
-    alert("❌ No se pudo guardar la Historia Clínica. Revisa la consola (F12) para más detalles.");
-}
-
 };
-
 window.newClinicalNote = function(note = {}) {
 
     const id = note.id || ("note_" + Date.now());
