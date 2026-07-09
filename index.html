@@ -1368,59 +1368,64 @@ id:doc.id,
                 await deleteDoc(doc(db, 'artifacts', appId, 'users', state.currentUser.uid, 'patients', pid));
             }
         };
-window.openClinicalHistory = function(patientId){
+window.openClinicalHistory = function(patientId) {
+    try {
+        console.log("Intentando abrir historial para:", patientId);
 
-    const patient = state.patients.find(p => p.id === patientId);
+        const patient = state.patients.find(p => p.id === patientId);
+        if (!patient) {
+            alert("Error: No se encontró el paciente en la memoria.");
+            return;
+        }
 
-    if(!patient){
+        const history = state.histories.find(h => h.id === patientId);
 
-        alert("No se encontró el paciente.");
+        // Referencias a inputs
+        const elements = {
+            "hc-patient-id": patientId,
+            "hc-patient-name": patient.name || "",
+            "hc-patient-dni": patient.dni || "",
+            "hc-motivo": history?.motivo || "",
+            "hc-problema": history?.problema || "",
+            "hc-antecedentes": history?.antecedentes || "",
+            "hc-familiares": history?.familiares || "",
+            "hc-diagnostico": history?.diagnostico || "",
+            "hc-objetivos": history?.objetivos || "",
+            "hc-tratamiento": history?.tratamiento || "",
+            "hc-observaciones": history?.observaciones || ""
+        };
 
-        return;
+        // Llenar inputs de forma segura
+        for (const [id, value] of Object.entries(elements)) {
+            const el = document.getElementById(id);
+            if (el) el.value = value;
+            else console.warn("Elemento no encontrado:", id);
+        }
 
+        // Limpiar y cargar notas
+        const container = document.getElementById("clinical-notes-container");
+        if (container) {
+            container.innerHTML = "";
+            state.notes
+                .filter(n => n.patientId === patientId)
+                .sort((a, b) => a.fecha.localeCompare(b.fecha))
+                .forEach(n => newClinicalNote(n));
+        }
+
+        // Abrir Modal
+        const modal = document.getElementById("clinical-history-modal");
+        if (modal) {
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+        } else {
+            console.error("No se encontró el elemento #clinical-history-modal en el HTML");
+        }
+
+    } catch (err) {
+        console.error("Error crítico al abrir historial:", err);
+        alert("Ocurrió un error al intentar abrir la historia clínica. Revisa la consola (F12).");
     }
-
-    const history = state.histories.find(h => h.id === patientId);
-
-    document.getElementById("hc-patient-id").value = patientId;
-
-    document.getElementById("hc-patient-name").value = patient.name || "";
-
-    document.getElementById("hc-patient-dni").value = patient.dni || "";
-
-    document.getElementById("hc-motivo").value = history?.motivo || "";
-
-    document.getElementById("hc-problema").value = history?.problema || "";
-
-    document.getElementById("hc-antecedentes").value = history?.antecedentes || "";
-
-    document.getElementById("hc-familiares").value = history?.familiares || "";
-
-    document.getElementById("hc-diagnostico").value = history?.diagnostico || "";
-
-    document.getElementById("hc-objetivos").value = history?.objetivos || "";
-
-    document.getElementById("hc-tratamiento").value = history?.tratamiento || "";
-
-    document.getElementById("hc-observaciones").value = history?.observaciones || "";
-
-    const container =
-document.getElementById("clinical-notes-container");
-
-container.innerHTML = "";
-
-state.notes
-.filter(n => n.patientId === patientId)
-.sort((a,b)=>a.fecha.localeCompare(b.fecha))
-.forEach(n => newClinicalNote(n));
-const modal = document.getElementById("clinical-history-modal");
-
-    modal.classList.remove("hidden");
-
-    modal.classList.add("flex");
-
-}
-window.closeClinicalHistory=function(){
+}window.closeClinicalHistory=function(){
 
 const modal=document.getElementById("clinical-history-modal");
 
