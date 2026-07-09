@@ -1430,112 +1430,85 @@ modal.classList.add("hidden");
 
 }
 window.saveClinicalHistory = async function() {
-    try {
-        const patientId = document.getElementById("hc-patient-id").value;
-        const userId = state.currentUser.uid;
+    const patientId = document.getElementById("hc-patient-id").value;
+    const db = window._firebaseDbRef.getFirestore();
+    const collectionRef = window._firebaseDbRef.collection(db, "clinicalNotes"); // Ajusta según tu estructura
 
-        // 1. Guardar Datos Básicos (incluyendo el DNI ahora editable)
-        await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'clinicalHistories', patientId), {
-            dni: document.getElementById("hc-patient-dni").value, // Guardamos el DNI
-            motivo: document.getElementById("hc-motivo").value,
-            problema: document.getElementById("hc-problema").value,
-            // ... resto de campos igual ...
+    try {
+        // 1. Guardar/Actualizar datos principales del paciente (Incluyendo DNI)
+        const patientRef = window._firebaseDbRef.doc(db, "patients", patientId);
+        await window._firebaseDbRef.setDoc(patientRef, {
+            dni: document.getElementById("hc-patient-dni").value,
+            // ... resto de campos ...
         }, { merge: true });
 
-        // 2. Lógica para eliminar notas que ya no están en pantalla
-        const cards = Array.from(document.querySelectorAll("#clinical-notes-container > div"));
-        const idsEnPantalla = cards.map(c => c.dataset.id);
-        
-        // Comparamos lo que hay en base de datos vs lo que hay en pantalla
-        const notasEnDB = state.notes.filter(n => n.patientId === patientId);
-        for (const notaDB of notasEnDB) {
-            if (!idsEnPantalla.includes(notaDB.id)) {
-                // Si la nota existe en DB pero no en pantalla, la borramos
-                await deleteDoc(doc(db, "artifacts", appId, "users", userId, "clinicalNotes", notaDB.id));
+        // 2. Identificar qué notas siguen en pantalla
+        const cards = document.querySelectorAll("#clinical-notes-container > .note-card");
+        const idsEnPantalla = Array.from(cards).map(c => c.dataset.noteId).filter(id => id);
+
+        // 3. Borrado definitivo de las notas que el usuario eliminó en la interfaz
+        // Buscamos todas las notas de este paciente en la DB
+        const q = window._firebaseDbRef.query(collectionRef, window._firebaseDbRef.where("patientId", "==", patientId));
+        const snapshot = await window._firebaseDbRef.getDocs(q);
+
+        for (const doc of snapshot.docs) {
+            // Si el ID de la nota en la DB NO está en pantalla, lo borramos
+            if (!idsEnPantalla.includes(doc.id)) {
+                await window._firebaseDbRef.deleteDoc(doc.ref);
+            } else {
+                // Si existe, lo actualizamos con los valores actuales
+                const card = document.querySelector(`[data-note-id="${doc.id}"]`);
+                await window._firebaseDbRef.updateDoc(doc.ref, {
+                    evolucion: card.querySelector(".note-text").value,
+                    fecha: card.querySelector(".note-date").value
+                });
             }
         }
 
-        // 3. Guardar/Actualizar las notas que SÍ están en pantalla
-        for (const card of cards) {
-            const id = card.dataset.id;
-            await setDoc(doc(db, "artifacts", appId, "users", userId, "clinicalNotes", id), {
-                patientId,
-                fecha: card.querySelector(".note-date").value,
-                sesion: card.querySelector(".note-session").value,
-                evolucion: card.querySelector(".note-text").value,
-                updatedAt: new Date().toISOString()
-            }, { merge: true });
-        }
-
+        alert("Cambios guardados y evoluciones eliminadas correctamente.");
         closeClinicalHistory();
-        alert("✅ Cambios guardados correctamente.");
     } catch (error) {
-        console.error(error);
-        alert("❌ Error al guardar.");
+        console.error("Error:", error);
+        alert("Ocurrió un error al guardar.");
     }
-};
 window.newClinicalNote = function(note = {}) {
-
     const id = note.id || ("note_" + Date.now());
-
     const div = document.createElement("div");
-
-    div.className = "border rounded-xl p-4 bg-slate-50";
-
-    div.dataset.id = id;
+    
+    // IMPORTANTE: Agregamos la clase 'note-card' y el data-note-id
+    div.className = "note-card border rounded-xl p-4 bg-slate-50 mb-4"; 
+    div.dataset.noteId = id; // Esto es lo que usará 'deleteNote' para identificar la nota
 
     div.innerHTML = `
         <div class="grid md:grid-cols-2 gap-3">
-
             <div>
                 <label class="font-semibold">Fecha</label>
-                <input type="date"
-                       class="note-date w-full border rounded-lg p-2"
+                <input type="date" class="note-date w-full border rounded-lg p-2"
                        value="${note.fecha || new Date().toISOString().split("T")[0]}">
             </div>
-
             <div>
                 <label class="font-semibold">Sesión</label>
-                <input type="text"
-                       class="note-session w-full border rounded-lg p-2"
-                       value="${note.sesion || ""}"
-                       placeholder="Sesión 1">
+                <input type="text" class="note-session w-full border rounded-lg p-2"
+                       value="${note.sesion || ""}" placeholder="Sesión 1">
             </div>
-
         </div>
-
         <div class="mt-3">
-
-            <label class="font-semibold">
-
-                Evolución Clínica
-
-            </label>
-
-            <textarea
-                class="note-text w-full border rounded-xl p-3 mt-2"
-                rows="5">${note.evolucion || ""}</textarea>
-
+            <label class="font-semibold">Evolución Clínica</label>
+            <textarea class="note-text w-full border rounded-xl p-3 mt-2" rows="5">${note.evolucion || ""}</textarea>
         </div>
-
         <div class="text-right mt-3">
-
-            <button
-                type="button"
-                onclick="this.closest('.border').remove()"
-                class="bg-red-500 text-white px-3 py-2 rounded-lg">
-
+            <button type="button" onclick="deleteNote(this)" 
+                    class="bg-red-500 text-white px-3 py-2 rounded-lg text-sm">
                 Eliminar
-
             </button>
-
         </div>
     `;
 
-    document.getElementById("clinical-notes-container")
-            .appendChild(div);
+    document.getElementById("clinical-notes-container").appendChild(div);
+};
 
-}
+// AGREGA LA FUNCIÓN AQUÍ: window.deleteNote = function(button) { const noteCard = button.closest('.note-card'); if (noteCard) { noteCard.remove(); // Elimina visualmente la nota del modal } };
+
 
 window.printClinicalHistory = function() {
 
