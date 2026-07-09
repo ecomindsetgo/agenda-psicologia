@@ -373,13 +373,17 @@
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">DNI</label>
+                        <input type="text" id="pat-dni" placeholder="12345678" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
+                    </div>
+                    <div>
                         <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Teléfono *</label>
                         <input type="tel" id="pat-phone" required placeholder="987654321" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Fecha de Nacimiento</label>
-                        <input type="date" id="pat-birth" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
-                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Fecha de Nacimiento</label>
+                    <input type="date" id="pat-birth" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Antecedentes Generales / Historial</label>
@@ -571,7 +575,10 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
 
                     </label>
 
-                    <input id="hc-patient-dni" class="w-full border rounded-lg p-2 bg-white" placeholder="Ingresar DNI">
+                    <input
+                    id="hc-patient-name"
+                    class="w-full border rounded-lg p-2 bg-white"
+                    readonly>
 
                 </div>
 
@@ -1349,6 +1356,7 @@ id:doc.id,
             const pid = document.getElementById('patient-id').value || 'pat_' + Date.now();
             const payload = {
                 name:      document.getElementById('pat-name').value.trim(),
+                dni:       document.getElementById('pat-dni').value.trim(),
                 phone:     document.getElementById('pat-phone').value.trim(),
                 birth:     document.getElementById('pat-birth').value,
                 history:   document.getElementById('pat-history').value.trim(),
@@ -1368,64 +1376,59 @@ id:doc.id,
                 await deleteDoc(doc(db, 'artifacts', appId, 'users', state.currentUser.uid, 'patients', pid));
             }
         };
-window.openClinicalHistory = function(patientId) {
-    try {
-        console.log("Intentando abrir historial para:", patientId);
+window.openClinicalHistory = function(patientId){
 
-        const patient = state.patients.find(p => p.id === patientId);
-        if (!patient) {
-            alert("Error: No se encontró el paciente en la memoria.");
-            return;
-        }
+    const patient = state.patients.find(p => p.id === patientId);
 
-        const history = state.histories.find(h => h.id === patientId);
+    if(!patient){
 
-        // Referencias a inputs
-        const elements = {
-            "hc-patient-id": patientId,
-            "hc-patient-name": patient.name || "",
-            "hc-patient-dni": patient.dni || "",
-            "hc-motivo": history?.motivo || "",
-            "hc-problema": history?.problema || "",
-            "hc-antecedentes": history?.antecedentes || "",
-            "hc-familiares": history?.familiares || "",
-            "hc-diagnostico": history?.diagnostico || "",
-            "hc-objetivos": history?.objetivos || "",
-            "hc-tratamiento": history?.tratamiento || "",
-            "hc-observaciones": history?.observaciones || ""
-        };
+        alert("No se encontró el paciente.");
 
-        // Llenar inputs de forma segura
-        for (const [id, value] of Object.entries(elements)) {
-            const el = document.getElementById(id);
-            if (el) el.value = value;
-            else console.warn("Elemento no encontrado:", id);
-        }
+        return;
 
-        // Limpiar y cargar notas
-        const container = document.getElementById("clinical-notes-container");
-        if (container) {
-            container.innerHTML = "";
-            state.notes
-                .filter(n => n.patientId === patientId)
-                .sort((a, b) => a.fecha.localeCompare(b.fecha))
-                .forEach(n => newClinicalNote(n));
-        }
-
-        // Abrir Modal
-        const modal = document.getElementById("clinical-history-modal");
-        if (modal) {
-            modal.classList.remove("hidden");
-            modal.classList.add("flex");
-        } else {
-            console.error("No se encontró el elemento #clinical-history-modal en el HTML");
-        }
-
-    } catch (err) {
-        console.error("Error crítico al abrir historial:", err);
-        alert("Ocurrió un error al intentar abrir la historia clínica. Revisa la consola (F12).");
     }
-}window.closeClinicalHistory=function(){
+
+    const history = state.histories.find(h => h.id === patientId);
+
+    document.getElementById("hc-patient-id").value = patientId;
+
+    document.getElementById("hc-patient-name").value = patient.name || "";
+
+    document.getElementById("hc-patient-dni").value = patient.dni || "";
+
+    document.getElementById("hc-motivo").value = history?.motivo || "";
+
+    document.getElementById("hc-problema").value = history?.problema || "";
+
+    document.getElementById("hc-antecedentes").value = history?.antecedentes || "";
+
+    document.getElementById("hc-familiares").value = history?.familiares || "";
+
+    document.getElementById("hc-diagnostico").value = history?.diagnostico || "";
+
+    document.getElementById("hc-objetivos").value = history?.objetivos || "";
+
+    document.getElementById("hc-tratamiento").value = history?.tratamiento || "";
+
+    document.getElementById("hc-observaciones").value = history?.observaciones || "";
+
+    const container =
+document.getElementById("clinical-notes-container");
+
+container.innerHTML = "";
+
+state.notes
+.filter(n => n.patientId === patientId)
+.sort((a,b)=>a.fecha.localeCompare(b.fecha))
+.forEach(n => newClinicalNote(n));
+const modal = document.getElementById("clinical-history-modal");
+
+    modal.classList.remove("hidden");
+
+    modal.classList.add("flex");
+
+}
+window.closeClinicalHistory=function(){
 
 const modal=document.getElementById("clinical-history-modal");
 
@@ -1434,86 +1437,171 @@ modal.classList.remove("flex");
 modal.classList.add("hidden");
 
 }
-window.saveClinicalHistory = async function() {
+window.saveClinicalHistory = async function(){
+
+try{
+
     const patientId = document.getElementById("hc-patient-id").value;
-    const db = window._firebaseDbRef.getFirestore();
-    const collectionRef = window._firebaseDbRef.collection(db, "clinicalNotes"); // Ajusta según tu estructura
 
-    try {
-        // 1. Guardar/Actualizar datos principales del paciente (Incluyendo DNI)
-        const patientRef = window._firebaseDbRef.doc(db, "patients", patientId);
-        await window._firebaseDbRef.setDoc(patientRef, {
-            dni: document.getElementById("hc-patient-dni").value,
-            // ... resto de campos ...
-        }, { merge: true });
+    // 1. Guardar los datos de la historia clínica
+    await setDoc(
+        doc(
+            db,
+            'artifacts',
+            appId,
+            'users',
+            state.currentUser.uid,
+            'clinicalHistories',
+            patientId
+        ),
+        {
+            motivo: document.getElementById("hc-motivo").value,
+            problema: document.getElementById("hc-problema").value,
+            antecedentes: document.getElementById("hc-antecedentes").value,
+            familiares: document.getElementById("hc-familiares").value,
+            diagnostico: document.getElementById("hc-diagnostico").value,
+            objetivos: document.getElementById("hc-objetivos").value,
+            tratamiento: document.getElementById("hc-tratamiento").value,
+            observaciones: document.getElementById("hc-observaciones").value,
+            updatedAt: new Date().toISOString()
+        },
+        { merge: true }
+    );
 
-        // 2. Identificar qué notas siguen en pantalla
-        const cards = document.querySelectorAll("#clinical-notes-container > .note-card");
-        const idsEnPantalla = Array.from(cards).map(c => c.dataset.noteId).filter(id => id);
-
-        // 3. Borrado definitivo de las notas que el usuario eliminó en la interfaz
-        // Buscamos todas las notas de este paciente en la DB
-        const q = window._firebaseDbRef.query(collectionRef, window._firebaseDbRef.where("patientId", "==", patientId));
-        const snapshot = await window._firebaseDbRef.getDocs(q);
-
-        for (const doc of snapshot.docs) {
-            // Si el ID de la nota en la DB NO está en pantalla, lo borramos
-            if (!idsEnPantalla.includes(doc.id)) {
-                await window._firebaseDbRef.deleteDoc(doc.ref);
-            } else {
-                // Si existe, lo actualizamos con los valores actuales
-                const card = document.querySelector(`[data-note-id="${doc.id}"]`);
-                await window._firebaseDbRef.updateDoc(doc.ref, {
-                    evolucion: card.querySelector(".note-text").value,
-                    fecha: card.querySelector(".note-date").value
-                });
-            }
-        }
-
-        alert("Cambios guardados y evoluciones eliminadas correctamente.");
-        closeClinicalHistory();
-    } catch (error) {
-        console.error("Error:", error);
-        alert("Ocurrió un error al guardar.");
+    // 2. Guardar cada nota clínica asociada a la sesión
+    const cards = document.querySelectorAll("#clinical-notes-container > div");
+    for (const card of cards) {
+        const id = card.dataset.id;
+        await setDoc(
+            doc(
+                db,
+                "artifacts",
+                appId,
+                "users",
+                state.currentUser.uid,
+                "clinicalNotes",
+                id
+            ),
+            {
+                patientId,
+                fecha: card.querySelector(".note-date").value,
+                sesion: card.querySelector(".note-session").value,
+                evolucion: card.querySelector(".note-text").value,
+                updatedAt: new Date().toISOString()
+            },
+            { merge: true }
+        );
     }
+
+    closeClinicalHistory();
+    alert("✅ Historia Clínica guardada correctamente.");
+
+} catch (error) {
+    console.error('[Error guardando historia clínica]', error);
+    alert("❌ No se pudo guardar la Historia Clínica. Revisa la consola (F12) para más detalles.");
+}
+
+};
+
 window.newClinicalNote = function(note = {}) {
+
     const id = note.id || ("note_" + Date.now());
+
     const div = document.createElement("div");
-    
-    // IMPORTANTE: Agregamos la clase 'note-card' y el data-note-id
-    div.className = "note-card border rounded-xl p-4 bg-slate-50 mb-4"; 
-    div.dataset.noteId = id; // Esto es lo que usará 'deleteNote' para identificar la nota
+
+    div.className = "border rounded-xl p-4 bg-slate-50";
+
+    div.dataset.id = id;
 
     div.innerHTML = `
         <div class="grid md:grid-cols-2 gap-3">
+
             <div>
                 <label class="font-semibold">Fecha</label>
-                <input type="date" class="note-date w-full border rounded-lg p-2"
+                <input type="date"
+                       class="note-date w-full border rounded-lg p-2"
                        value="${note.fecha || new Date().toISOString().split("T")[0]}">
             </div>
+
             <div>
                 <label class="font-semibold">Sesión</label>
-                <input type="text" class="note-session w-full border rounded-lg p-2"
-                       value="${note.sesion || ""}" placeholder="Sesión 1">
+                <input type="text"
+                       class="note-session w-full border rounded-lg p-2"
+                       value="${note.sesion || ""}"
+                       placeholder="Sesión 1">
             </div>
+
         </div>
+
         <div class="mt-3">
-            <label class="font-semibold">Evolución Clínica</label>
-            <textarea class="note-text w-full border rounded-xl p-3 mt-2" rows="5">${note.evolucion || ""}</textarea>
+
+            <label class="font-semibold">
+
+                Evolución Clínica
+
+            </label>
+
+            <textarea
+                class="note-text w-full border rounded-xl p-3 mt-2"
+                rows="5">${note.evolucion || ""}</textarea>
+
         </div>
+
         <div class="text-right mt-3">
-            <button type="button" onclick="deleteNote(this)" 
-                    class="bg-red-500 text-white px-3 py-2 rounded-lg text-sm">
+
+            <button
+                type="button"
+                onclick="deleteClinicalNoteCard('${id}', this)"
+                class="bg-red-500 text-white px-3 py-2 rounded-lg">
+
                 Eliminar
+
             </button>
+
         </div>
     `;
 
-    document.getElementById("clinical-notes-container").appendChild(div);
+    document.getElementById("clinical-notes-container")
+            .appendChild(div);
+
+}
+
+window.deleteClinicalNoteCard = async function(noteId, btnEl) {
+
+    if (!confirm("¿Eliminar esta evolución? Esta acción no se puede deshacer.")) {
+        return;
+    }
+
+    try {
+        if (state.currentUser) {
+            // Se borra el documento real en Firestore para que no vuelva a aparecer al guardar.
+            await deleteDoc(
+                doc(
+                    db,
+                    'artifacts',
+                    appId,
+                    'users',
+                    state.currentUser.uid,
+                    'clinicalNotes',
+                    noteId
+                )
+            );
+        }
+        // También se quita cualquier referencia local en memoria, por si el listener
+        // de Firestore tarda en refrescar el arreglo state.notes.
+        if (Array.isArray(state.notes)) {
+            const idx = state.notes.findIndex(n => n.id === noteId);
+            if (idx !== -1) state.notes.splice(idx, 1);
+        }
+    } catch (error) {
+        console.error('[Error eliminando evolución]', error);
+        alert("❌ No se pudo eliminar la evolución. Revisa la consola (F12) para más detalles.");
+        return;
+    }
+
+    // Recién ahora se quita la tarjeta visualmente.
+    btnEl.closest('.border').remove();
 };
-
-// AGREGA LA FUNCIÓN AQUÍ: window.deleteNote = function(button) { const noteCard = button.closest('.note-card'); if (noteCard) { noteCard.remove(); // Elimina visualmente la nota del modal } };
-
 
 window.printClinicalHistory = function() {
 
@@ -1612,6 +1700,7 @@ window.printClinicalHistory = function() {
             if (!p) return;
             document.getElementById('patient-id').value  = p.id;
             document.getElementById('pat-name').value    = p.name;
+            document.getElementById('pat-dni').value     = p.dni    || '';
             document.getElementById('pat-phone').value   = p.phone;
             document.getElementById('pat-birth').value   = p.birth   || '';
             document.getElementById('pat-history').value = p.history || '';
