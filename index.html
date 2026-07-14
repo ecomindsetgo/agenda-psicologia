@@ -370,6 +370,19 @@
                         <input type="time" id="app-time" required class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
                     </div>
                 </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Modalidad de la Cita *</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 has-[:checked]:text-indigo-700 has-[:checked]:font-semibold transition">
+                            <input type="radio" name="app-modality" id="app-modality-presencial" value="presencial" class="accent-indigo-600" checked>
+                            🏢 Presencial
+                        </label>
+                        <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 has-[:checked]:text-indigo-700 has-[:checked]:font-semibold transition">
+                            <input type="radio" name="app-modality" id="app-modality-virtual" value="virtual" class="accent-indigo-600">
+                            💻 Virtual
+                        </label>
+                    </div>
+                </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Costo (S/) *</label>
@@ -931,11 +944,12 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
                 <thead>
                     <tr class="border-b bg-slate-100 text-xs font-extrabold uppercase">
                         <th id="print-date-column-header" class="py-2.5 px-2 w-[12%] hidden">Fecha</th>
-                        <th class="py-2.5 px-2 w-[12%]">Hora</th>
-                        <th class="py-2.5 px-2 w-[33%]">Paciente</th>
-                        <th class="py-2.5 px-2 w-[15%]">Cobro (S/)</th>
-                        <th class="py-2.5 px-2 w-[15%]">Estado</th>
-                        <th class="py-2.5 px-2 w-[25%]">Notas Clínicas</th>
+                        <th class="py-2.5 px-2 w-[10%]">Hora</th>
+                        <th class="py-2.5 px-2 w-[10%]">Modalidad</th>
+                        <th class="py-2.5 px-2 w-[28%]">Paciente</th>
+                        <th class="py-2.5 px-2 w-[13%]">Cobro (S/)</th>
+                        <th class="py-2.5 px-2 w-[13%]">Estado</th>
+                        <th class="py-2.5 px-2 w-[26%]">Notas Clínicas</th>
                     </tr>
                 </thead>
                 <tbody id="print-table-rows" class="divide-y text-xs"></tbody>
@@ -1066,6 +1080,7 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
                     <tr class="border-b bg-slate-100 font-extrabold uppercase">
                         <th class="py-2 px-2">Fecha</th>
                         <th class="py-2 px-2">Hora</th>
+                        <th class="py-2 px-2">Modalidad</th>
                         <th class="py-2 px-2">Estado</th>
                         <th class="py-2 px-2">Pago</th>
                         <th class="py-2 px-2">Costo</th>
@@ -1839,6 +1854,8 @@ window.printClinicalHistory = function() {
 
             const newDate = document.getElementById('app-date').value;
             const newTime = document.getElementById('app-time').value;
+            const modalityInput = document.querySelector('input[name="app-modality"]:checked');
+            const modality = modalityInput ? modalityInput.value : 'presencial';
 
             // ─── VALIDACIÓN DE DUPLICADOS ────────────────────────────────────────
             // Excluir la cita que se está editando (si aplica)
@@ -1864,6 +1881,7 @@ window.printClinicalHistory = function() {
                 patientName:   patientObj.name,
                 date:          newDate,
                 time:          newTime,
+                modality:      modality,
                 cost:          parseFloat(document.getElementById('app-cost').value || 0),
                 paymentStatus: document.getElementById('app-payment').value,
                 status:        document.getElementById('app-status').value,
@@ -1902,6 +1920,9 @@ window.printClinicalHistory = function() {
             // El select necesita setearse DESPUÉS de que el modal esté visible
             setTimeout(() => {
                 document.getElementById('app-patient-select').value = a.patientId;
+                const modalityValue = a.modality === 'virtual' ? 'app-modality-virtual' : 'app-modality-presencial';
+                const modalityRadio = document.getElementById(modalityValue);
+                if (modalityRadio) modalityRadio.checked = true;
             }, 50);
         };
 
@@ -1937,6 +1958,9 @@ window.printClinicalHistory = function() {
                     ? 'bg-red-50 text-red-600 border-red-200'
                     : 'bg-amber-50 text-amber-700 border-amber-200';
                 const payBadge = a.paymentStatus === 'pagado' ? '💳 Pagado' : '⏳ Pendiente';
+                const modalityBadge = a.modality === 'virtual'
+                    ? '<span class="text-xs font-semibold px-2 py-0.5 rounded-xl border bg-sky-50 text-sky-700 border-sky-200">💻 Virtual</span>'
+                    : '<span class="text-xs font-semibold px-2 py-0.5 rounded-xl border bg-slate-50 text-slate-600 border-slate-200">🏢 Presencial</span>';
                 return `
                 <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-4 hover:shadow-md transition">
                     <div class="space-y-1">
@@ -1944,6 +1968,7 @@ window.printClinicalHistory = function() {
                             <span class="text-sm font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-lg">⏰ ${a.time}</span>
                             <h4 class="font-extrabold text-slate-800 text-base">${a.patientName}</h4>
                             <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${a.status.toUpperCase()}</span>
+                            ${modalityBadge}
                         </div>
                         <p class="text-xs text-slate-500 italic">"${a.notes || 'Sin observaciones para esta sesión'}"</p>
                     </div>
@@ -2030,10 +2055,11 @@ window.printClinicalHistory = function() {
                         : a.status === 'cancelada'
                         ? 'bg-red-50 text-red-600 border-red-200'
                         : 'bg-amber-50 text-amber-700 border-amber-200';
+                    const modalityIcon = a.modality === 'virtual' ? '💻' : '🏢';
                     return `<div class="flex items-center justify-between py-1.5 border-b border-slate-50 last:border-0">
                         <div class="flex items-center gap-2 flex-wrap">
                             <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-lg">⏰ ${a.time}</span>
-                            <span class="text-sm font-semibold text-slate-700">${a.patientName}</span>
+                            <span class="text-sm font-semibold text-slate-700">${modalityIcon} ${a.patientName}</span>
                             <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${a.status.toUpperCase()}</span>
                         </div>
                         <span class="text-xs font-semibold text-slate-500">S/ ${parseFloat(a.cost).toFixed(2)}</span>
@@ -2192,6 +2218,8 @@ window.printClinicalHistory = function() {
             const dateHeader = document.getElementById('print-date-column-header');
             const tbody = document.getElementById('print-table-rows');
 
+            const modalityLabel = (a) => a.modality === 'virtual' ? '💻 Virtual' : '🏢 Presencial';
+
             if (isMonth) {
                 dateHeader.classList.remove('hidden');
                 tbody.innerHTML = reportApps.length
@@ -2199,24 +2227,26 @@ window.printClinicalHistory = function() {
                         <tr class="border-b">
                             <td class="py-2.5 px-2 font-bold whitespace-nowrap">${a.date}</td>
                             <td class="py-2.5 px-2 font-bold">${a.time}</td>
+                            <td class="py-2.5 px-2">${modalityLabel(a)}</td>
                             <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
                             <td class="py-2.5 px-2">S/ ${a.cost.toFixed(2)} (${a.paymentStatus.toUpperCase()})</td>
                             <td class="py-2.5 px-2 font-medium">${a.status.toUpperCase()}</td>
                             <td class="py-2.5 px-2 text-slate-600">${a.notes || 'Sin observaciones.'}</td>
                         </tr>`).join('')
-                    : `<tr><td colspan="6" class="py-4 text-center text-slate-400">No hay consultas agendadas para este mes.</td></tr>`;
+                    : `<tr><td colspan="7" class="py-4 text-center text-slate-400">No hay consultas agendadas para este mes.</td></tr>`;
             } else {
                 dateHeader.classList.add('hidden');
                 tbody.innerHTML = reportApps.length
                     ? reportApps.map(a => `
                         <tr class="border-b">
                             <td class="py-2.5 px-2 font-bold">${a.time}</td>
+                            <td class="py-2.5 px-2">${modalityLabel(a)}</td>
                             <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
                             <td class="py-2.5 px-2">S/ ${a.cost.toFixed(2)} (${a.paymentStatus.toUpperCase()})</td>
                             <td class="py-2.5 px-2 font-medium">${a.status.toUpperCase()}</td>
                             <td class="py-2.5 px-2 text-slate-600">${a.notes || 'Sin observaciones.'}</td>
                         </tr>`).join('')
-                    : `<tr><td colspan="5" class="py-4 text-center text-slate-400">No hay consultas agendadas para esta fecha.</td></tr>`;
+                    : `<tr><td colspan="6" class="py-4 text-center text-slate-400">No hay consultas agendadas para esta fecha.</td></tr>`;
             }
 
             // Asegurar que sólo se muestre la plantilla de citas
@@ -2366,11 +2396,15 @@ window.printClinicalHistory = function() {
                     const payBadge = a.paymentStatus === 'pagado'
                         ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
                         : 'text-amber-600 bg-amber-50 border-amber-200';
+                    const modalityBadge = a.modality === 'virtual'
+                        ? '<span class="text-xs font-semibold px-2 py-0.5 rounded-xl border bg-sky-50 text-sky-700 border-sky-200">💻 Virtual</span>'
+                        : '<span class="text-xs font-semibold px-2 py-0.5 rounded-xl border bg-slate-100 text-slate-600 border-slate-200">🏢 Presencial</span>';
                     return `<div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1">
                         <div class="flex flex-wrap gap-2 items-center">
                             <span class="text-xs font-bold text-slate-700">📅 ${a.date}</span>
                             <span class="text-xs font-semibold text-slate-600 bg-slate-200 px-2 py-0.5 rounded-lg">⏰ ${a.time}</span>
                             <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${a.status.toUpperCase()}</span>
+                            ${modalityBadge}
                             <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${payBadge}">${a.paymentStatus === 'pagado' ? '💳 Pagado' : '⏳ Pendiente'} — S/ ${parseFloat(a.cost).toFixed(2)}</span>
                         </div>
                         ${a.notes ? `<p class="text-xs text-slate-500 italic">"${a.notes}"</p>` : ''}
@@ -2432,12 +2466,13 @@ window.printClinicalHistory = function() {
                     <tr class="border-b">
                         <td class="py-1.5 px-2 font-semibold">${a.date}</td>
                         <td class="py-1.5 px-2">${a.time}</td>
+                        <td class="py-1.5 px-2">${a.modality === 'virtual' ? '💻 Virtual' : '🏢 Presencial'}</td>
                         <td class="py-1.5 px-2 font-medium">${a.status.toUpperCase()}</td>
                         <td class="py-1.5 px-2">${a.paymentStatus.toUpperCase()}</td>
                         <td class="py-1.5 px-2">S/ ${parseFloat(a.cost).toFixed(2)}</td>
                         <td class="py-1.5 px-2 text-slate-500">${a.notes || '—'}</td>
                     </tr>`).join('')
-                : `<tr><td colspan="6" class="py-3 text-center text-slate-400">Sin citas registradas.</td></tr>`;
+                : `<tr><td colspan="7" class="py-3 text-center text-slate-400">Sin citas registradas.</td></tr>`;
 
             // Ocultar el modal de historial para la impresión y mostrar solo la ficha
             const histModal = document.getElementById('patient-history-modal');
@@ -2512,6 +2547,7 @@ window.printClinicalHistory = function() {
                 document.getElementById('app-id').value = '';
                 document.getElementById('app-modal-title').innerText = "🗓️ Programar Nueva Cita";
                 document.getElementById('app-date').value = document.getElementById('date-filter').value;
+                document.getElementById('app-modality-presencial').checked = true;
             }
             const m = document.getElementById('appointment-modal');
             m.classList.remove('hidden'); m.classList.add('flex');
