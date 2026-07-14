@@ -197,33 +197,61 @@
                     </div>
                 </div>
 
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-3">
-                    <div class="flex flex-col md:flex-row gap-3">
-                        <div class="relative flex-grow">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none">🔍</span>
-                            <input type="text" id="appointment-search" oninput="renderAppointments()" placeholder="Buscar paciente por nombre o notas..."
-                                class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
-                        </div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <div class="flex items-center bg-slate-50 border border-slate-200 rounded-xl p-1">
-                                <button onclick="shiftDate(-1)" class="px-2.5 py-1.5 text-slate-600 hover:bg-white rounded-lg transition-all text-xs font-semibold">◀ Anterior</button>
-                                <input type="date" id="date-filter" onchange="renderAppointments()" class="bg-transparent border-none text-sm font-semibold text-slate-700 focus:outline-none px-2 py-1">
-                                <button onclick="shiftDate(1)" class="px-2.5 py-1.5 text-slate-600 hover:bg-white rounded-lg transition-all text-xs font-semibold">Siguiente ▶</button>
-                            </div>
-                            <button onclick="goToToday()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3.5 py-2.5 rounded-xl text-xs transition">Hoy</button>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-2 border-t border-slate-100 pt-3 flex-wrap">
-                        <span class="text-xs font-bold text-slate-400 uppercase mr-2">Filtrar Estado:</span>
-                        <button onclick="setFilterStatus('todas')" id="btn-f-todas" class="px-3 py-1 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">Todas</button>
-                        <button onclick="setFilterStatus('pendiente')" id="btn-f-pendiente" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Pendientes</button>
-                        <button onclick="setFilterStatus('completada')" id="btn-f-completada" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Completadas</button>
-                        <button onclick="setFilterStatus('cancelada')" id="btn-f-cancelada" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Canceladas</button>
-                    </div>
+                <!-- Toggle Vista Día / Vista Mes -->
+                <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-400 uppercase mr-1">Vista:</span>
+                    <button onclick="setCitasView('dia')" id="btn-view-dia" class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">📅 Día</button>
+                    <button onclick="setCitasView('mes')" id="btn-view-mes" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">🗓️ Mes</button>
                 </div>
 
-                <div id="appointments-list" class="space-y-3"></div>
+                <!-- VISTA DIARIA -->
+                <div id="citas-day-view" class="space-y-4">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+                        <div class="flex flex-col md:flex-row gap-3">
+                            <div class="relative flex-grow">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none">🔍</span>
+                                <input type="text" id="appointment-search" oninput="renderAppointments()" placeholder="Buscar paciente por nombre o notas..."
+                                    class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <div class="flex items-center bg-slate-50 border border-slate-200 rounded-xl p-1">
+                                    <button onclick="shiftDate(-1)" class="px-2.5 py-1.5 text-slate-600 hover:bg-white rounded-lg transition-all text-xs font-semibold">◀ Anterior</button>
+                                    <input type="date" id="date-filter" onchange="renderAppointments()" class="bg-transparent border-none text-sm font-semibold text-slate-700 focus:outline-none px-2 py-1">
+                                    <button onclick="shiftDate(1)" class="px-2.5 py-1.5 text-slate-600 hover:bg-white rounded-lg transition-all text-xs font-semibold">Siguiente ▶</button>
+                                </div>
+                                <button onclick="goToToday()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3.5 py-2.5 rounded-xl text-xs transition">Hoy</button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 border-t border-slate-100 pt-3 flex-wrap">
+                            <span class="text-xs font-bold text-slate-400 uppercase mr-2">Filtrar Estado:</span>
+                            <button onclick="setFilterStatus('todas')" id="btn-f-todas" class="px-3 py-1 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">Todas</button>
+                            <button onclick="setFilterStatus('pendiente')" id="btn-f-pendiente" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Pendientes</button>
+                            <button onclick="setFilterStatus('completada')" id="btn-f-completada" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Completadas</button>
+                            <button onclick="setFilterStatus('cancelada')" id="btn-f-cancelada" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Canceladas</button>
+                        </div>
+                    </div>
+
+                    <div id="appointments-list" class="space-y-3"></div>
+                </div>
+
+                <!-- VISTA MENSUAL -->
+                <div id="citas-month-view" class="space-y-4 hidden">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-3">
+                        <div class="flex items-center gap-2">
+                            <button onclick="shiftMonth(-1)" class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold transition">◀ Mes Anterior</button>
+                            <span id="month-view-label" class="text-sm font-bold text-slate-700 px-2 min-w-[140px] text-center"></span>
+                            <button onclick="shiftMonth(1)" class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold transition">Mes Siguiente ▶</button>
+                        </div>
+                        <div class="flex items-center gap-3 text-xs font-semibold text-slate-500 flex-wrap justify-center">
+                            <span>Total: <span id="month-view-total" class="text-indigo-600 font-bold">0</span></span>
+                            <span>Completadas: <span id="month-view-completed" class="text-emerald-600 font-bold">0</span></span>
+                            <span>Recaudado: <span id="month-view-revenue" class="text-slate-800 font-bold">S/ 0.00</span></span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-400 px-1">Toca cualquier día para ver el detalle en la vista diaria.</p>
+                    <div id="month-view-list" class="space-y-3"></div>
+                </div>
             </section>
 
             <!-- SECCIÓN: PACIENTES -->
@@ -249,8 +277,24 @@
 
             <!-- SECCIÓN: FINANZAS -->
             <section id="sec-finanzas" class="space-y-6 hidden">
+                <!-- Selector de Periodo + Impresión -->
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-3">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-xs font-bold text-slate-400 uppercase mr-1">Periodo:</span>
+                        <button onclick="setFinancePeriod('todo')" id="btn-fp-todo" class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">Todo el Tiempo</button>
+                        <button onclick="setFinancePeriod('mes')" id="btn-fp-mes" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Este Mes</button>
+                        <button onclick="setFinancePeriod('dia')" id="btn-fp-dia" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Hoy</button>
+                    </div>
+                    <button onclick="openPrintModal(window._profileState && window._profileState.financePeriod === 'mes' ? 'mes' : 'dia')" class="w-full sm:w-auto bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-4 py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+                        🖨️ Imprimir Reporte (Día o Mes)
+                    </button>
+                </div>
+
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <h2 class="text-lg font-bold text-slate-800 mb-4">Análisis del Consultorio</h2>
+                    <div class="flex items-center justify-between mb-4 flex-wrap gap-1">
+                        <h2 class="text-lg font-bold text-slate-800">Análisis del Consultorio</h2>
+                        <p id="finance-period-label" class="text-xs text-slate-400">Mostrando datos de: Todo el tiempo</p>
+                    </div>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div class="bg-indigo-50 border border-indigo-100 p-5 rounded-2xl text-center">
                             <span class="text-sm font-semibold text-indigo-500 block mb-1">Total de Pacientes Únicos</span>
@@ -485,8 +529,19 @@
             </div>
             <div class="p-6 space-y-4">
                 <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Tipo de Reporte</label>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="setPrintType('dia')" id="btn-pt-dia" class="flex-1 px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg transition">📅 Por Día</button>
+                        <button type="button" onclick="setPrintType('mes')" id="btn-pt-mes" class="flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">🗓️ Por Mes</button>
+                    </div>
+                </div>
+                <div id="print-date-wrap">
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Fecha de Reporte</label>
                     <input type="date" id="print-date-select" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
+                </div>
+                <div id="print-month-wrap" class="hidden">
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Mes de Reporte</label>
+                    <input type="month" id="print-month-select" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Especialista (Firma / Cabecera)</label>
@@ -848,12 +903,12 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
     <div id="print-section" class="print-only p-8 text-slate-950 space-y-6">
         <div class="flex justify-between items-start border-b-2 border-slate-950 pb-5">
             <div>
-                <h1 class="text-3xl font-extrabold tracking-tight">REPORTE DIARIO DE AGENDA</h1>
+                <h1 id="print-title-main" class="text-3xl font-extrabold tracking-tight">REPORTE DIARIO DE AGENDA</h1>
                 <p class="text-sm font-medium uppercase mt-1">Especialista: <span id="print-head-specialist" class="font-bold"></span></p>
                 <p class="text-xs text-slate-500">Documento clínico confidencial e intransferible.</p>
             </div>
             <div class="text-right">
-                <span class="text-lg font-bold block">FECHA</span>
+                <span id="print-head-date-label" class="text-lg font-bold block">FECHA</span>
                 <span id="print-head-date" class="text-sm font-semibold border px-3 py-1 bg-slate-100 rounded inline-block mt-1"></span>
             </div>
         </div>
@@ -867,6 +922,7 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="border-b bg-slate-100 text-xs font-extrabold uppercase">
+                        <th id="print-date-column-header" class="py-2.5 px-2 w-[12%] hidden">Fecha</th>
                         <th class="py-2.5 px-2 w-[12%]">Hora</th>
                         <th class="py-2.5 px-2 w-[33%]">Paciente</th>
                         <th class="py-2.5 px-2 w-[15%]">Cobro (S/)</th>
@@ -1122,6 +1178,9 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
             notes:[],
             activeTab: 'citas',
             filterStatus: 'todas',
+            citasView: 'dia',
+            monthViewDate: new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0'),
+            financePeriod: 'todo',
             currentUser: null
         };
 
@@ -1310,6 +1369,7 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
             const unsubAppts = onSnapshot(appointmentsRef, (snapshot) => {
                 state.appointments = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                 renderAppointments();
+                if (state.citasView === 'mes') renderMonthView();
                 updateStatsDashboard();
             });
 
@@ -1790,6 +1850,7 @@ window.printClinicalHistory = function() {
             renderAppointments();
             renderPatients();
             updatePatientDropdowns();
+            if (state.citasView === 'mes') renderMonthView();
         }
 
         window.renderAppointments = function() {
@@ -1835,6 +1896,100 @@ window.printClinicalHistory = function() {
             }).join('');
         };
 
+        // ─── VISTA MENSUAL DE CITAS ────────────────────────────────────────────────
+        window.setCitasView = function(view) {
+            state.citasView = view;
+            const dayView   = document.getElementById('citas-day-view');
+            const monthView = document.getElementById('citas-month-view');
+            const btnDia    = document.getElementById('btn-view-dia');
+            const btnMes    = document.getElementById('btn-view-mes');
+            const activeCls   = "px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition";
+            const inactiveCls = "px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition";
+
+            if (view === 'dia') {
+                dayView.classList.remove('hidden');
+                monthView.classList.add('hidden');
+                btnDia.className = activeCls;
+                btnMes.className = inactiveCls;
+            } else {
+                dayView.classList.add('hidden');
+                monthView.classList.remove('hidden');
+                btnMes.className = activeCls;
+                btnDia.className = inactiveCls;
+                const df = document.getElementById('date-filter').value || todayStr;
+                state.monthViewDate = df.substring(0, 7);
+                renderMonthView();
+            }
+        };
+
+        window.shiftMonth = function(delta) {
+            const [y, m] = state.monthViewDate.split('-').map(Number);
+            const d = new Date(y, (m - 1) + delta, 1);
+            state.monthViewDate = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+            renderMonthView();
+        };
+
+        window.jumpToDay = function(dateStr) {
+            document.getElementById('date-filter').value = dateStr;
+            window.setCitasView('dia');
+            window.renderAppointments();
+            updateStatsDashboard();
+        };
+
+        function renderMonthView() {
+            const [y, m] = state.monthViewDate.split('-').map(Number);
+            let monthLabel = new Date(y, m - 1, 1).toLocaleDateString('es-PE', { month: 'long', year: 'numeric' });
+            monthLabel = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
+            document.getElementById('month-view-label').innerText = monthLabel;
+
+            const monthApps = state.appointments.filter(a => a.date.startsWith(state.monthViewDate));
+            document.getElementById('month-view-total').innerText = monthApps.length;
+            document.getElementById('month-view-completed').innerText = monthApps.filter(a => a.status === 'completada').length;
+            const rev = monthApps.filter(a => a.status === 'completada').reduce((s, a) => s + a.cost, 0);
+            document.getElementById('month-view-revenue').innerText = `S/ ${rev.toFixed(2)}`;
+
+            const byDate = {};
+            monthApps.forEach(a => {
+                if (!byDate[a.date]) byDate[a.date] = [];
+                byDate[a.date].push(a);
+            });
+            const dates = Object.keys(byDate).sort();
+
+            const container = document.getElementById('month-view-list');
+            if (!dates.length) {
+                container.innerHTML = `<div class="text-center p-8 bg-white rounded-2xl border border-slate-100 text-slate-400 text-sm">No hay citas registradas para este mes.</div>`;
+                return;
+            }
+            container.innerHTML = dates.map(dateStr => {
+                const apps = byDate[dateStr].sort((a, b) => a.time.localeCompare(b.time));
+                let dayLabel = new Date(dateStr + 'T00:00:00').toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
+                dayLabel = dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1);
+                const rows = apps.map(a => {
+                    const badge = a.status === 'completada'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : a.status === 'cancelada'
+                        ? 'bg-red-50 text-red-600 border-red-200'
+                        : 'bg-amber-50 text-amber-700 border-amber-200';
+                    return `<div class="flex items-center justify-between py-1.5 border-b border-slate-50 last:border-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-lg">⏰ ${a.time}</span>
+                            <span class="text-sm font-semibold text-slate-700">${a.patientName}</span>
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${a.status.toUpperCase()}</span>
+                        </div>
+                        <span class="text-xs font-semibold text-slate-500">S/ ${parseFloat(a.cost).toFixed(2)}</span>
+                    </div>`;
+                }).join('');
+                return `<div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                    <div class="flex justify-between items-center mb-2 cursor-pointer" onclick="jumpToDay('${dateStr}')">
+                        <h4 class="font-bold text-slate-800 text-sm">📅 ${dayLabel}</h4>
+                        <span class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">${apps.length} cita${apps.length !== 1 ? 's' : ''} · Ver día ▶</span>
+                    </div>
+                    <div>${rows}</div>
+                </div>`;
+            }).join('');
+        }
+        window.renderMonthView = renderMonthView;
+
         window.renderPatients = function() {
             const grid      = document.getElementById('patients-grid');
             const searchVal = document.getElementById('patient-search-input').value.toLowerCase().trim();
@@ -1873,6 +2028,30 @@ window.printClinicalHistory = function() {
                 : '<option value="">-- No hay pacientes registrados --</option>';
         }
 
+        // ─── HELPERS DE PERIODO PARA FINANZAS ──────────────────────────────────────
+        function getFinanceAppointments() {
+            if (state.financePeriod === 'dia') {
+                return state.appointments.filter(a => a.date === todayStr);
+            } else if (state.financePeriod === 'mes') {
+                const monthStr = todayStr.substring(0, 7);
+                return state.appointments.filter(a => a.date.startsWith(monthStr));
+            }
+            return state.appointments;
+        }
+
+        window.setFinancePeriod = function(period) {
+            state.financePeriod = period;
+            ['todo', 'mes', 'dia'].forEach(p => {
+                document.getElementById('btn-fp-' + p).className = p === period
+                    ? "px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition"
+                    : "px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition";
+            });
+            const labels = { todo: 'Todo el tiempo', mes: 'Este mes', dia: 'Hoy' };
+            const lbl = document.getElementById('finance-period-label');
+            if (lbl) lbl.innerText = 'Mostrando datos de: ' + labels[period];
+            updateStatsDashboard();
+        };
+
         function updateStatsDashboard() {
             const todayFilter = document.getElementById('date-filter').value;
             const todayApps   = state.appointments.filter(a => a.date === todayFilter);
@@ -1883,14 +2062,21 @@ window.printClinicalHistory = function() {
             const ingresosHoy = todayApps.filter(a => a.status === 'completada').reduce((s, a) => s + a.cost, 0);
             document.getElementById('stat-citas-ingresos').innerText   = `S/ ${ingresosHoy.toFixed(2)}`;
 
-            document.getElementById('stats-total-patients').innerText     = state.patients.length;
-            document.getElementById('stats-total-appointments').innerText  = state.appointments.length;
-            const totalRev = state.appointments.filter(a => a.status === 'completada').reduce((s, a) => s + a.cost, 0);
+            // ── Sección Finanzas: filtrada por periodo seleccionado (todo / mes / día) ──
+            const financeApps = getFinanceAppointments();
+
+            const uniquePatientsInPeriod = state.financePeriod === 'todo'
+                ? state.patients.length
+                : new Set(financeApps.map(a => a.patientId)).size;
+
+            document.getElementById('stats-total-patients').innerText     = uniquePatientsInPeriod;
+            document.getElementById('stats-total-appointments').innerText  = financeApps.length;
+            const totalRev = financeApps.filter(a => a.status === 'completada').reduce((s, a) => s + a.cost, 0);
             document.getElementById('stats-revenue-total').innerText       = `S/ ${totalRev.toFixed(2)}`;
 
-            const avgCost      = state.appointments.length ? state.appointments.reduce((s, a) => s + a.cost, 0) / state.appointments.length : 0;
-            const pendingCobro = state.appointments.filter(a => a.paymentStatus === 'pendiente').reduce((s, a) => s + a.cost, 0);
-            const futureCobro  = state.appointments.filter(a => a.status === 'pendiente').reduce((s, a) => s + a.cost, 0);
+            const avgCost      = financeApps.length ? financeApps.reduce((s, a) => s + a.cost, 0) / financeApps.length : 0;
+            const pendingCobro = financeApps.filter(a => a.paymentStatus === 'pendiente').reduce((s, a) => s + a.cost, 0);
+            const futureCobro  = financeApps.filter(a => a.status === 'pendiente').reduce((s, a) => s + a.cost, 0);
 
             document.getElementById('finance-average-cost').innerText  = `S/ ${avgCost.toFixed(2)}`;
             document.getElementById('finance-pending-cobro').innerText = `S/ ${pendingCobro.toFixed(2)}`;
@@ -1899,14 +2085,34 @@ window.printClinicalHistory = function() {
 
         // ─── IMPRESIÓN ────────────────────────────────────────────────────────────
         window.executeReportPrint = function() {
-            const targetDate     = document.getElementById('print-date-select').value;
+            const printType = window._printType || 'dia';
             const specialistName = document.getElementById('print-specialist-name').value.trim() || 'Especialista General';
-            const reportApps     = state.appointments.filter(a => a.date === targetDate).sort((a, b) => a.time.localeCompare(b.time));
+            let reportApps = [];
+            let periodLabel = '';
+            const isMonth = printType === 'mes';
+
+            if (isMonth) {
+                const monthVal = document.getElementById('print-month-select').value; // YYYY-MM
+                reportApps = state.appointments
+                    .filter(a => a.date.startsWith(monthVal))
+                    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+                const [y, m] = monthVal.split('-').map(Number);
+                let lbl = new Date(y, m - 1, 1).toLocaleDateString('es-PE', { month: 'long', year: 'numeric' });
+                periodLabel = lbl.charAt(0).toUpperCase() + lbl.slice(1);
+                document.getElementById('print-title-main').innerText = 'REPORTE MENSUAL DE AGENDA';
+                document.getElementById('print-head-date-label').innerText = 'PERIODO';
+            } else {
+                const targetDate = document.getElementById('print-date-select').value;
+                reportApps = state.appointments.filter(a => a.date === targetDate).sort((a, b) => a.time.localeCompare(b.time));
+                periodLabel = new Date(targetDate + 'T00:00:00')
+                    .toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
+                document.getElementById('print-title-main').innerText = 'REPORTE DIARIO DE AGENDA';
+                document.getElementById('print-head-date-label').innerText = 'FECHA';
+            }
 
             document.getElementById('print-head-specialist').innerText = specialistName;
             document.getElementById('print-foot-specialist').innerText = specialistName;
-            document.getElementById('print-head-date').innerText = new Date(targetDate + 'T00:00:00')
-                .toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
+            document.getElementById('print-head-date').innerText = periodLabel;
 
             const completas  = reportApps.filter(a => a.status === 'completada').length;
             const recaudado  = reportApps.filter(a => a.status === 'completada').reduce((s, a) => s + a.cost, 0);
@@ -1914,17 +2120,35 @@ window.printClinicalHistory = function() {
             document.getElementById('print-stat-completed').innerText = completas;
             document.getElementById('print-stat-revenue').innerText   = `S/ ${recaudado.toFixed(2)}`;
 
+            const dateHeader = document.getElementById('print-date-column-header');
             const tbody = document.getElementById('print-table-rows');
-            tbody.innerHTML = reportApps.length
-                ? reportApps.map(a => `
-                    <tr class="border-b">
-                        <td class="py-2.5 px-2 font-bold">${a.time}</td>
-                        <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
-                        <td class="py-2.5 px-2">S/ ${a.cost.toFixed(2)} (${a.paymentStatus.toUpperCase()})</td>
-                        <td class="py-2.5 px-2 font-medium">${a.status.toUpperCase()}</td>
-                        <td class="py-2.5 px-2 text-slate-600">${a.notes || 'Sin observaciones.'}</td>
-                    </tr>`).join('')
-                : `<tr><td colspan="5" class="py-4 text-center text-slate-400">No hay consultas agendadas para esta fecha.</td></tr>`;
+
+            if (isMonth) {
+                dateHeader.classList.remove('hidden');
+                tbody.innerHTML = reportApps.length
+                    ? reportApps.map(a => `
+                        <tr class="border-b">
+                            <td class="py-2.5 px-2 font-bold whitespace-nowrap">${a.date}</td>
+                            <td class="py-2.5 px-2 font-bold">${a.time}</td>
+                            <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
+                            <td class="py-2.5 px-2">S/ ${a.cost.toFixed(2)} (${a.paymentStatus.toUpperCase()})</td>
+                            <td class="py-2.5 px-2 font-medium">${a.status.toUpperCase()}</td>
+                            <td class="py-2.5 px-2 text-slate-600">${a.notes || 'Sin observaciones.'}</td>
+                        </tr>`).join('')
+                    : `<tr><td colspan="6" class="py-4 text-center text-slate-400">No hay consultas agendadas para este mes.</td></tr>`;
+            } else {
+                dateHeader.classList.add('hidden');
+                tbody.innerHTML = reportApps.length
+                    ? reportApps.map(a => `
+                        <tr class="border-b">
+                            <td class="py-2.5 px-2 font-bold">${a.time}</td>
+                            <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
+                            <td class="py-2.5 px-2">S/ ${a.cost.toFixed(2)} (${a.paymentStatus.toUpperCase()})</td>
+                            <td class="py-2.5 px-2 font-medium">${a.status.toUpperCase()}</td>
+                            <td class="py-2.5 px-2 text-slate-600">${a.notes || 'Sin observaciones.'}</td>
+                        </tr>`).join('')
+                    : `<tr><td colspan="5" class="py-4 text-center text-slate-400">No hay consultas agendadas para esta fecha.</td></tr>`;
+            }
 
             closePrintModal();
             setTimeout(() => window.print(), 300);
@@ -2161,8 +2385,20 @@ window.printClinicalHistory = function() {
             setTimeout(() => openPatientModal(), 200);
         }
 
-        function openPrintModal() {
+        function setPrintType(type) {
+            window._printType = type;
+            const activeCls   = "flex-1 px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg transition";
+            const inactiveCls = "flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition";
+            document.getElementById('btn-pt-dia').className = type === 'dia' ? activeCls : inactiveCls;
+            document.getElementById('btn-pt-mes').className = type === 'mes' ? activeCls : inactiveCls;
+            document.getElementById('print-date-wrap').classList.toggle('hidden', type !== 'dia');
+            document.getElementById('print-month-wrap').classList.toggle('hidden', type !== 'mes');
+        }
+
+        function openPrintModal(presetType) {
             document.getElementById('print-date-select').value = document.getElementById('date-filter').value;
+            const now = new Date();
+            document.getElementById('print-month-select').value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
             // Auto-cargar nombre del especialista desde el perfil guardado
             const user = window._profileState && window._profileState.currentUser;
             if (user) {
@@ -2170,6 +2406,7 @@ window.printClinicalHistory = function() {
                 const name = saved.displayName || user.email.split('@')[0];
                 document.getElementById('print-specialist-name').value = name;
             }
+            setPrintType(presetType || 'dia');
             const m = document.getElementById('print-modal');
             m.classList.remove('hidden'); m.classList.add('flex');
         }
