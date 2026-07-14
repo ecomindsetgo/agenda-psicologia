@@ -20,6 +20,7 @@
             #print-patient-card.hidden { display: none !important; }
             #print-section.hidden { display: none !important; }
             #print-clinical-history.hidden { display: none !important; }
+            #print-section-finance.hidden { display: none !important; }
         }
         .tab-transition { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
@@ -285,7 +286,7 @@
                         <button onclick="setFinancePeriod('mes')" id="btn-fp-mes" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Este Mes</button>
                         <button onclick="setFinancePeriod('dia')" id="btn-fp-dia" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Hoy</button>
                     </div>
-                    <button onclick="openPrintModal(window._profileState && window._profileState.financePeriod === 'mes' ? 'mes' : 'dia')" class="w-full sm:w-auto bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-4 py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+                    <button onclick="openPrintModal(window._profileState && window._profileState.financePeriod === 'mes' ? 'mes' : 'dia', 'finanzas')" class="w-full sm:w-auto bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-4 py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
                         🖨️ Imprimir Reporte (Día o Mes)
                     </button>
                 </div>
@@ -528,6 +529,13 @@
                 <button onclick="closePrintModal()" class="text-indigo-200 hover:text-white transition text-lg">&times;</button>
             </div>
             <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Contenido del Reporte</label>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="setPrintCategory('citas')" id="btn-pc-citas" class="flex-1 px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg transition">🗓️ Citas</button>
+                        <button type="button" onclick="setPrintCategory('finanzas')" id="btn-pc-finanzas" class="flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">💰 Finanzas</button>
+                    </div>
+                </div>
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Tipo de Reporte</label>
                     <div class="flex gap-2">
@@ -938,6 +946,58 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
                 <div class="border-t border-slate-400 w-full pt-2"></div>
                 <p class="text-xs font-semibold">Firma del Especialista de Turno</p>
                 <p class="text-[10px] text-slate-500" id="print-foot-specialist"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PLANTILLA DE IMPRESIÓN: FINANZAS ================= -->
+    <div id="print-section-finance" class="print-only hidden p-8 text-slate-950 space-y-6">
+        <div class="flex justify-between items-start border-b-2 border-slate-950 pb-5">
+            <div>
+                <h1 id="pf-title-main" class="text-3xl font-extrabold tracking-tight">REPORTE FINANCIERO DIARIO</h1>
+                <p class="text-sm font-medium uppercase mt-1">Especialista: <span id="pf-head-specialist" class="font-bold"></span></p>
+                <p class="text-xs text-slate-500">Documento financiero confidencial e intransferible.</p>
+            </div>
+            <div class="text-right">
+                <span id="pf-head-date-label" class="text-lg font-bold block">FECHA</span>
+                <span id="pf-head-date" class="text-sm font-semibold border px-3 py-1 bg-slate-100 rounded inline-block mt-1"></span>
+            </div>
+        </div>
+        <div class="grid grid-cols-4 gap-4 border p-4 bg-slate-50 rounded">
+            <div><span class="text-xs uppercase text-slate-500 font-bold block">Total Citas</span><span id="pf-stat-total" class="text-xl font-bold">0</span></div>
+            <div><span class="text-xs uppercase text-slate-500 font-bold block">Completadas</span><span id="pf-stat-completed" class="text-xl font-bold">0</span></div>
+            <div><span class="text-xs uppercase text-slate-500 font-bold block">Recaudado</span><span id="pf-stat-revenue" class="text-xl font-bold">S/ 0.00</span></div>
+            <div><span class="text-xs uppercase text-slate-500 font-bold block">Pendiente de Cobro</span><span id="pf-stat-pending" class="text-xl font-bold">S/ 0.00</span></div>
+        </div>
+        <div class="space-y-3">
+            <h2 class="text-md font-extrabold border-b pb-1.5 uppercase">Montos por Fecha</h2>
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b bg-slate-100 text-xs font-extrabold uppercase">
+                        <th class="py-2.5 px-2 w-[20%]">Fecha</th>
+                        <th class="py-2.5 px-2 w-[15%]">N° Citas</th>
+                        <th class="py-2.5 px-2 w-[15%]">Completadas</th>
+                        <th class="py-2.5 px-2 w-[25%]">Recaudado (S/)</th>
+                        <th class="py-2.5 px-2 w-[25%]">Pendiente de Cobro (S/)</th>
+                    </tr>
+                </thead>
+                <tbody id="pf-table-rows" class="divide-y text-xs"></tbody>
+                <tfoot>
+                    <tr class="border-t-2 border-slate-950 font-extrabold text-xs">
+                        <td class="py-2.5 px-2">TOTAL</td>
+                        <td class="py-2.5 px-2" id="pf-total-citas">0</td>
+                        <td class="py-2.5 px-2" id="pf-total-completadas">0</td>
+                        <td class="py-2.5 px-2" id="pf-total-recaudado">S/ 0.00</td>
+                        <td class="py-2.5 px-2" id="pf-total-pendiente">S/ 0.00</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div class="pt-28 flex justify-center">
+            <div class="w-[50%] text-center">
+                <div class="border-t border-slate-400 w-full pt-2"></div>
+                <p class="text-xs font-semibold">Firma del Especialista de Turno</p>
+                <p class="text-[10px] text-slate-500" id="pf-foot-specialist"></p>
             </div>
         </div>
     </div>
@@ -2086,6 +2146,15 @@ window.printClinicalHistory = function() {
         // ─── IMPRESIÓN ────────────────────────────────────────────────────────────
         window.executeReportPrint = function() {
             const printType = window._printType || 'dia';
+            const printCategory = window._printCategory || 'citas';
+            if (printCategory === 'finanzas') {
+                executeFinanceReportPrint(printType);
+            } else {
+                executeAppointmentsReportPrint(printType);
+            }
+        };
+
+        function executeAppointmentsReportPrint(printType) {
             const specialistName = document.getElementById('print-specialist-name').value.trim() || 'Especialista General';
             let reportApps = [];
             let periodLabel = '';
@@ -2150,9 +2219,95 @@ window.printClinicalHistory = function() {
                     : `<tr><td colspan="5" class="py-4 text-center text-slate-400">No hay consultas agendadas para esta fecha.</td></tr>`;
             }
 
+            // Asegurar que sólo se muestre la plantilla de citas
+            document.getElementById('print-section').classList.remove('hidden');
+            document.getElementById('print-section-finance').classList.add('hidden');
+
             closePrintModal();
             setTimeout(() => window.print(), 300);
-        };
+        }
+
+        // ─── REPORTE FINANCIERO (solo montos por fecha, sin datos clínicos) ───────
+        function executeFinanceReportPrint(printType) {
+            const specialistName = document.getElementById('print-specialist-name').value.trim() || 'Especialista General';
+            let reportApps = [];
+            let periodLabel = '';
+            const isMonth = printType === 'mes';
+
+            if (isMonth) {
+                const monthVal = document.getElementById('print-month-select').value; // YYYY-MM
+                reportApps = state.appointments.filter(a => a.date.startsWith(monthVal));
+                const [y, m] = monthVal.split('-').map(Number);
+                let lbl = new Date(y, m - 1, 1).toLocaleDateString('es-PE', { month: 'long', year: 'numeric' });
+                periodLabel = lbl.charAt(0).toUpperCase() + lbl.slice(1);
+                document.getElementById('pf-title-main').innerText = 'REPORTE FINANCIERO MENSUAL';
+                document.getElementById('pf-head-date-label').innerText = 'PERIODO';
+            } else {
+                const targetDate = document.getElementById('print-date-select').value;
+                reportApps = state.appointments.filter(a => a.date === targetDate);
+                periodLabel = new Date(targetDate + 'T00:00:00')
+                    .toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
+                document.getElementById('pf-title-main').innerText = 'REPORTE FINANCIERO DIARIO';
+                document.getElementById('pf-head-date-label').innerText = 'FECHA';
+            }
+
+            document.getElementById('pf-head-specialist').innerText = specialistName;
+            document.getElementById('pf-foot-specialist').innerText = specialistName;
+            document.getElementById('pf-head-date').innerText = periodLabel;
+
+            // Agrupar por fecha: sólo montos, sin nombres de pacientes ni notas clínicas
+            const byDate = {};
+            reportApps.forEach(a => {
+                if (!byDate[a.date]) {
+                    byDate[a.date] = { total: 0, completadas: 0, recaudado: 0, pendiente: 0 };
+                }
+                byDate[a.date].total++;
+                if (a.status === 'completada') {
+                    byDate[a.date].completadas++;
+                    byDate[a.date].recaudado += a.cost;
+                }
+                if (a.paymentStatus === 'pendiente') {
+                    byDate[a.date].pendiente += a.cost;
+                }
+            });
+            const dates = Object.keys(byDate).sort();
+
+            const totalCitas       = reportApps.length;
+            const totalCompletadas = reportApps.filter(a => a.status === 'completada').length;
+            const totalRecaudado   = reportApps.filter(a => a.status === 'completada').reduce((s, a) => s + a.cost, 0);
+            const totalPendiente   = reportApps.filter(a => a.paymentStatus === 'pendiente').reduce((s, a) => s + a.cost, 0);
+
+            document.getElementById('pf-stat-total').innerText     = totalCitas;
+            document.getElementById('pf-stat-completed').innerText = totalCompletadas;
+            document.getElementById('pf-stat-revenue').innerText   = `S/ ${totalRecaudado.toFixed(2)}`;
+            document.getElementById('pf-stat-pending').innerText   = `S/ ${totalPendiente.toFixed(2)}`;
+
+            document.getElementById('pf-total-citas').innerText       = totalCitas;
+            document.getElementById('pf-total-completadas').innerText = totalCompletadas;
+            document.getElementById('pf-total-recaudado').innerText   = `S/ ${totalRecaudado.toFixed(2)}`;
+            document.getElementById('pf-total-pendiente').innerText   = `S/ ${totalPendiente.toFixed(2)}`;
+
+            const tbody = document.getElementById('pf-table-rows');
+            tbody.innerHTML = dates.length
+                ? dates.map(dateStr => {
+                    const d = byDate[dateStr];
+                    return `<tr class="border-b">
+                        <td class="py-2.5 px-2 font-bold whitespace-nowrap">${dateStr}</td>
+                        <td class="py-2.5 px-2">${d.total}</td>
+                        <td class="py-2.5 px-2">${d.completadas}</td>
+                        <td class="py-2.5 px-2 font-semibold">S/ ${d.recaudado.toFixed(2)}</td>
+                        <td class="py-2.5 px-2 font-semibold text-amber-700">S/ ${d.pendiente.toFixed(2)}</td>
+                    </tr>`;
+                }).join('')
+                : `<tr><td colspan="5" class="py-4 text-center text-slate-400">No hay datos financieros para este periodo.</td></tr>`;
+
+            // Asegurar que sólo se muestre la plantilla financiera
+            document.getElementById('print-section').classList.add('hidden');
+            document.getElementById('print-section-finance').classList.remove('hidden');
+
+            closePrintModal();
+            setTimeout(() => window.print(), 300);
+        }
 
         // Enlace de filtro de estado al estado interno del módulo
         // (evita el complejo puente de eventos del código original)
@@ -2385,6 +2540,14 @@ window.printClinicalHistory = function() {
             setTimeout(() => openPatientModal(), 200);
         }
 
+        function setPrintCategory(category) {
+            window._printCategory = category;
+            const activeCls   = "flex-1 px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg transition";
+            const inactiveCls = "flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition";
+            document.getElementById('btn-pc-citas').className    = category === 'citas'    ? activeCls : inactiveCls;
+            document.getElementById('btn-pc-finanzas').className = category === 'finanzas' ? activeCls : inactiveCls;
+        }
+
         function setPrintType(type) {
             window._printType = type;
             const activeCls   = "flex-1 px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg transition";
@@ -2395,7 +2558,7 @@ window.printClinicalHistory = function() {
             document.getElementById('print-month-wrap').classList.toggle('hidden', type !== 'mes');
         }
 
-        function openPrintModal(presetType) {
+        function openPrintModal(presetType, presetCategory) {
             document.getElementById('print-date-select').value = document.getElementById('date-filter').value;
             const now = new Date();
             document.getElementById('print-month-select').value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
@@ -2406,6 +2569,7 @@ window.printClinicalHistory = function() {
                 const name = saved.displayName || user.email.split('@')[0];
                 document.getElementById('print-specialist-name').value = name;
             }
+            setPrintCategory(presetCategory || 'citas');
             setPrintType(presetType || 'dia');
             const m = document.getElementById('print-modal');
             m.classList.remove('hidden'); m.classList.add('flex');
