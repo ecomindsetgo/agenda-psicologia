@@ -374,11 +374,11 @@
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Modalidad de la Cita *</label>
                     <div class="grid grid-cols-2 gap-2">
                         <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 has-[:checked]:text-indigo-700 has-[:checked]:font-semibold transition">
-                            <input type="radio" name="app-modality" id="app-modality-presencial" value="presencial" class="accent-indigo-600" checked>
+                            <input type="radio" name="app-modality" id="app-modality-presencial" value="presencial" class="accent-indigo-600" checked onchange="updateCostByModality()">
                             🏢 Presencial
                         </label>
                         <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 has-[:checked]:text-indigo-700 has-[:checked]:font-semibold transition">
-                            <input type="radio" name="app-modality" id="app-modality-virtual" value="virtual" class="accent-indigo-600">
+                            <input type="radio" name="app-modality" id="app-modality-virtual" value="virtual" class="accent-indigo-600" onchange="updateCostByModality()">
                             💻 Virtual
                         </label>
                     </div>
@@ -386,7 +386,7 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Costo (S/) *</label>
-                        <input type="number" id="app-cost" min="0" step="0.50" value="80.00" required class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
+                        <input type="number" id="app-cost" min="0" step="0.50" value="50.00" required class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Estado de Pago *</label>
@@ -2541,6 +2541,12 @@ window.printClinicalHistory = function() {
             }
         }
 
+        function updateCostByModality() {
+            const modalityInput = document.querySelector('input[name="app-modality"]:checked');
+            const modality = modalityInput ? modalityInput.value : 'presencial';
+            document.getElementById('app-cost').value = modality === 'virtual' ? '45.00' : '50.00';
+        }
+
         function openAppointmentModal(editMode) {
             if (!editMode) {
                 document.getElementById('appointment-form').reset();
@@ -2548,6 +2554,7 @@ window.printClinicalHistory = function() {
                 document.getElementById('app-modal-title').innerText = "🗓️ Programar Nueva Cita";
                 document.getElementById('app-date').value = document.getElementById('date-filter').value;
                 document.getElementById('app-modality-presencial').checked = true;
+                updateCostByModality();
             }
             const m = document.getElementById('appointment-modal');
             m.classList.remove('hidden'); m.classList.add('flex');
