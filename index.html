@@ -76,8 +76,7 @@
 
     <!-- ================= MODAL: CAMBIAR CONTRASEÑA TEMPORAL ================= -->
     <!--
-        Se muestra cuando el documento de perfil del usuario en Firestore tiene
-        mustChangePassword: true (ver artifacts/{appId}/users/{uid}/profile/data).
+        Se muestra cuando el usuario ingresa con una contraseña que empieza con "temp_".
         No se puede cerrar sin completar el cambio.
     -->
     <div id="change-password-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center z-[60] p-4">
@@ -1216,7 +1215,7 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
             EmailAuthProvider, reauthenticateWithCredential
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import {
-            getFirestore, doc, setDoc, getDoc, deleteDoc,
+            getFirestore, doc, setDoc, deleteDoc,
             onSnapshot, collection, updateDoc
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -1242,33 +1241,9 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
             mostrarErrorGlobal('⚠️ No se pudo conectar con el servidor de autenticación. Revisa la consola (F12) o contacta a soporte.');
         }
 
-        // ─── SEGURIDAD: SANEAMIENTO DE TEXTO ANTES DE INSERTAR EN innerHTML ───────
-        // Cualquier dato que provenga del usuario (nombre de paciente, notas,
-        // historia clínica, etc.) debe pasar por aquí antes de insertarse en el
-        // DOM vía innerHTML/template literals. Esto evita que un texto como
-        // <img src=x onerror=...> o un simple ' rompan el HTML/atributos.
-        function escapeHtml(value) {
-            if (value === null || value === undefined) return '';
-            return String(value)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
-
         let activeListeners = [];
         // Exponer referencias globales para funciones del modal de perfil
         window._firebaseAuthRef = { getAuth, EmailAuthProvider, reauthenticateWithCredential, updatePassword };
-
-        // Puente para que el <script> global (no-module) pueda guardar el
-        // perfil del usuario en Firestore sin duplicar imports de Firebase.
-        window._firestoreProfileRef = {
-            saveProfile: async function(uid, data) {
-                const ref = doc(db, 'artifacts', appId, 'users', uid, 'profile', 'data');
-                await setDoc(ref, data, { merge: true });
-            }
-        };
         window._profileState = null; // se asignará cuando el user esté disponible
 
         let state = {
@@ -1281,18 +1256,8 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
             citasView: 'dia',
             monthViewDate: new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0'),
             financePeriod: 'todo',
-            currentUser: null,
-            // Antes vivía en localStorage; ahora se sincroniza con Firestore
-            // (artifacts/{appId}/users/{uid}/profile/data) para no perderse
-            // al cambiar de dispositivo o limpiar el navegador.
-            userProfile: {}
+            currentUser: null
         };
-
-        // Helper único para leer el perfil del usuario actual (reemplaza las
-        // 5 lecturas duplicadas que antes hacían localStorage.getItem directo).
-        function getUserProfile() {
-            return state.userProfile || {};
-        }
 
         window._profileState = state;
 
@@ -1324,22 +1289,17 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
             errorDiv.classList.add('hidden');
 
             try {
-                const credential = await signInWithEmailAndPassword(auth, email, password);
+                await signInWithEmailAndPassword(auth, email, password);
 
-                // ── Detección de "primer ingreso / contraseña temporal" ─────────
-                // Antes se detectaba adivinando que la contraseña empezara con
-                // "temp_" (patrón adivinable y frágil). Ahora se lee un campo
-                // explícito en Firestore: artifacts/{appId}/users/{uid}/profile/data
-                // → { mustChangePassword: true }.
-                // Al crear una cuenta nueva para un colega, además de crearla en
-                // Firebase Auth, crea/edita ese documento en la consola de
-                // Firestore y pon mustChangePassword: true.
-                const profileRef = doc(db, 'artifacts', appId, 'users', credential.user.uid, 'profile', 'data');
-                const profileSnap = await getDoc(profileRef);
-                if (profileSnap.exists() && profileSnap.data().mustChangePassword === true) {
+                // ── Detección de contraseña temporal ──────────────────────────
+                // Convención: las contraseñas creadas por el admin empiezan con "temp_"
+                // Ej: temp_Clinica2024
+                if (password.startsWith('temp_')) {
+                    // Guardamos la referencia para usarla al cambiar la contraseña
+                    window._tempPassword = password;
                     showChangePwdModal();
                 }
-                // Si no requiere cambio, onAuthStateChanged se encarga de mostrar la app
+                // Si no es temporal, onAuthStateChanged se encarga de mostrar la app
             } catch (error) {
                 errorDiv.innerText = "Credenciales incorrectas o correo no autorizado.";
                 errorDiv.classList.remove('hidden');
@@ -1406,6 +1366,11 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
                 errorDiv.classList.remove('hidden');
                 return;
             }
+            if (newPwd.startsWith('temp_')) {
+                errorDiv.innerText = "No puedes usar una contraseña que empiece con 'temp_'. Elige otra.";
+                errorDiv.classList.remove('hidden');
+                return;
+            }
             if (newPwd !== confirmPwd) {
                 errorDiv.innerText = "Las contraseñas no coinciden. Vuelve a intentarlo.";
                 errorDiv.classList.remove('hidden');
@@ -1414,13 +1379,9 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
 
             try {
                 await updatePassword(auth.currentUser, newPwd);
-
-                // Apagamos el flag para que no se vuelva a pedir el cambio
-                const profileRef = doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, 'profile', 'data');
-                await setDoc(profileRef, { mustChangePassword: false }, { merge: true });
-
                 successDiv.innerText = "✅ ¡Contraseña actualizada con éxito! Ingresando a tu agenda...";
                 successDiv.classList.remove('hidden');
+                window._tempPassword = null;
 
                 // Esperamos 1.5s para que el usuario lea el mensaje y luego abrimos la app
                 setTimeout(() => {
@@ -1453,7 +1414,6 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
                 activeListeners = [];
                 state.appointments = [];
                 state.patients = [];
-                state.userProfile = {};
                 renderAll();
             }
         });
@@ -1463,10 +1423,12 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('app-container').classList.remove('hidden');
             document.getElementById('app-container').classList.add('flex');
-            // Nombre por defecto mientras carga el perfil desde Firestore
-            const headerName = document.getElementById('header-user-name');
-            if (headerName) headerName.innerText = user.email.split('@')[0];
             setupFirestoreSync(user.uid);
+
+            // Cargar nombre de perfil en el header
+            const saved = JSON.parse(localStorage.getItem('userProfile_' + user.uid) || '{}');
+            const headerName = document.getElementById('header-user-name');
+            if (headerName) headerName.innerText = saved.displayName || user.email.split('@')[0];
         }
 
         document.getElementById('logout-btn').addEventListener('click', () => {
@@ -1479,20 +1441,6 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
             const patientsRef     = collection(db, 'artifacts', appId, 'users', userId, 'patients');
             const historiesRef = collection(db, 'artifacts', appId, 'users', userId, 'clinicalHistories');
             const notesRef = collection(db, 'artifacts', appId, 'users', userId, 'clinicalNotes');
-            const profileRef = doc(db, 'artifacts', appId, 'users', userId, 'profile', 'data');
-
-            // Perfil (nombre, especialidad, teléfono): antes en localStorage, ahora
-            // en Firestore, así sincroniza entre dispositivos y sobrevive a que
-            // se borre el caché del navegador.
-            const unsubProfile = onSnapshot(profileRef, (snap) => {
-                state.userProfile = snap.exists() ? snap.data() : {};
-                const headerName = document.getElementById('header-user-name');
-                if (headerName) {
-                    headerName.innerText = state.userProfile.displayName
-                        || (state.currentUser ? state.currentUser.email.split('@')[0] : '');
-                }
-            });
-
             const unsubAppts = onSnapshot(appointmentsRef, (snapshot) => {
                 state.appointments = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                 renderAppointments();
@@ -1533,7 +1481,7 @@ id:doc.id,
 }
 );
 
-  activeListeners.push(unsubAppts, unsubPatients, unsubHistories, unsubNotes, unsubProfile);
+  activeListeners.push(unsubAppts, unsubPatients, unsubHistories, unsubNotes);
         }
 
         // ─── CRUD PACIENTES ───────────────────────────────────────────────────────
@@ -1707,14 +1655,14 @@ window.newClinicalNote = function(note = {}) {
                 <label class="font-semibold">Fecha</label>
                 <input type="date"
                        class="note-date w-full border rounded-lg p-2"
-                       value="${escapeHtml(note.fecha) || new Date().toISOString().split("T")[0]}">
+                       value="${note.fecha || new Date().toISOString().split("T")[0]}">
             </div>
 
             <div>
                 <label class="font-semibold">Sesión</label>
                 <input type="text"
                        class="note-session w-full border rounded-lg p-2"
-                       value="${escapeHtml(note.sesion)}"
+                       value="${note.sesion || ""}"
                        placeholder="Sesión 1">
             </div>
 
@@ -1730,7 +1678,7 @@ window.newClinicalNote = function(note = {}) {
 
             <textarea
                 class="note-text w-full border rounded-xl p-3 mt-2"
-                rows="5">${escapeHtml(note.evolucion)}</textarea>
+                rows="5">${note.evolucion || ""}</textarea>
 
         </div>
 
@@ -1804,7 +1752,8 @@ window.printClinicalHistory = function() {
     const user = window._profileState && window._profileState.currentUser;
     let specialistName = 'Especialista';
     if (user) {
-        specialistName = getUserProfile().displayName || user.email.split('@')[0];
+        const saved = JSON.parse(localStorage.getItem('userProfile_' + user.uid) || '{}');
+        specialistName = saved.displayName || user.email.split('@')[0];
     }
 
     document.getElementById('pch-specialist').innerText = specialistName;
@@ -2016,12 +1965,12 @@ window.printClinicalHistory = function() {
                 <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-4 hover:shadow-md transition">
                     <div class="space-y-1">
                         <div class="flex items-center gap-2 flex-wrap">
-                            <span class="text-sm font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-lg">⏰ ${escapeHtml(a.time)}</span>
-                            <h4 class="font-extrabold text-slate-800 text-base">${escapeHtml(a.patientName)}</h4>
+                            <span class="text-sm font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-lg">⏰ ${a.time}</span>
+                            <h4 class="font-extrabold text-slate-800 text-base">${a.patientName}</h4>
                             <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${a.status.toUpperCase()}</span>
                             ${modalityBadge}
                         </div>
-                        <p class="text-xs text-slate-500 italic">"${escapeHtml(a.notes) || 'Sin observaciones para esta sesión'}"</p>
+                        <p class="text-xs text-slate-500 italic">"${a.notes || 'Sin observaciones para esta sesión'}"</p>
                     </div>
                     <div class="flex items-center gap-3 self-end sm:self-center">
                         <button onclick="quickToggleStatus('${a.id}','${a.status}')" class="bg-slate-50 border hover:bg-slate-100 text-slate-600 text-xs px-3 py-1.5 rounded-xl font-semibold">🔄 Estado</button>
@@ -2109,8 +2058,8 @@ window.printClinicalHistory = function() {
                     const modalityIcon = a.modality === 'virtual' ? '💻' : '🏢';
                     return `<div class="flex items-center justify-between py-1.5 border-b border-slate-50 last:border-0">
                         <div class="flex items-center gap-2 flex-wrap">
-                            <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-lg">⏰ ${escapeHtml(a.time)}</span>
-                            <span class="text-sm font-semibold text-slate-700">${modalityIcon} ${escapeHtml(a.patientName)}</span>
+                            <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-lg">⏰ ${a.time}</span>
+                            <span class="text-sm font-semibold text-slate-700">${modalityIcon} ${a.patientName}</span>
                             <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${a.status.toUpperCase()}</span>
                         </div>
                         <span class="text-xs font-semibold text-slate-500">S/ ${parseFloat(a.cost).toFixed(2)}</span>
@@ -2143,11 +2092,11 @@ window.printClinicalHistory = function() {
                 <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between space-y-3">
                     <div class="space-y-2">
                         <div class="flex justify-between items-start">
-                            <h4 class="font-bold text-slate-800 text-base">${escapeHtml(p.name)}</h4>
-                            <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-xl">📞 ${escapeHtml(p.phone)}</span>
+                            <h4 class="font-bold text-slate-800 text-base">${p.name}</h4>
+                            <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-xl">📞 ${p.phone}</span>
                         </div>
-                        <p class="text-xs text-slate-500"><strong>Nacimiento:</strong> ${escapeHtml(p.birth) || 'No especificada'}</p>
-                        <p class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100"><strong>Antecedentes:</strong> ${escapeHtml(p.history) || 'Sin observaciones históricas.'}</p>
+                        <p class="text-xs text-slate-500"><strong>Nacimiento:</strong> ${p.birth || 'No especificada'}</p>
+                        <p class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100"><strong>Antecedentes:</strong> ${p.history || 'Sin observaciones históricas.'}</p>
                     </div>
                     <div class="flex justify-end gap-2 border-t pt-2 border-slate-100 flex-wrap">
                         <button onclick="openPatientHistory('${p.id}')" class="text-slate-600 text-xs font-semibold px-3 py-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 transition">📋 Historial</button>
@@ -2161,7 +2110,7 @@ window.printClinicalHistory = function() {
         function updatePatientDropdowns() {
             const select = document.getElementById('app-patient-select');
             select.innerHTML = state.patients.length
-                ? state.patients.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')
+                ? state.patients.map(p => `<option value="${p.id}">${p.name}</option>`).join('')
                 : '<option value="">-- No hay pacientes registrados --</option>';
         }
 
@@ -2276,13 +2225,13 @@ window.printClinicalHistory = function() {
                 tbody.innerHTML = reportApps.length
                     ? reportApps.map(a => `
                         <tr class="border-b">
-                            <td class="py-2.5 px-2 font-bold whitespace-nowrap">${escapeHtml(a.date)}</td>
-                            <td class="py-2.5 px-2 font-bold">${escapeHtml(a.time)}</td>
+                            <td class="py-2.5 px-2 font-bold whitespace-nowrap">${a.date}</td>
+                            <td class="py-2.5 px-2 font-bold">${a.time}</td>
                             <td class="py-2.5 px-2">${modalityLabel(a)}</td>
-                            <td class="py-2.5 px-2 font-semibold">${escapeHtml(a.patientName)}</td>
+                            <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
                             <td class="py-2.5 px-2">S/ ${a.cost.toFixed(2)} (${a.paymentStatus.toUpperCase()})</td>
                             <td class="py-2.5 px-2 font-medium">${a.status.toUpperCase()}</td>
-                            <td class="py-2.5 px-2 text-slate-600">${escapeHtml(a.notes) || 'Sin observaciones.'}</td>
+                            <td class="py-2.5 px-2 text-slate-600">${a.notes || 'Sin observaciones.'}</td>
                         </tr>`).join('')
                     : `<tr><td colspan="7" class="py-4 text-center text-slate-400">No hay consultas agendadas para este mes.</td></tr>`;
             } else {
@@ -2290,12 +2239,12 @@ window.printClinicalHistory = function() {
                 tbody.innerHTML = reportApps.length
                     ? reportApps.map(a => `
                         <tr class="border-b">
-                            <td class="py-2.5 px-2 font-bold">${escapeHtml(a.time)}</td>
+                            <td class="py-2.5 px-2 font-bold">${a.time}</td>
                             <td class="py-2.5 px-2">${modalityLabel(a)}</td>
-                            <td class="py-2.5 px-2 font-semibold">${escapeHtml(a.patientName)}</td>
+                            <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
                             <td class="py-2.5 px-2">S/ ${a.cost.toFixed(2)} (${a.paymentStatus.toUpperCase()})</td>
                             <td class="py-2.5 px-2 font-medium">${a.status.toUpperCase()}</td>
-                            <td class="py-2.5 px-2 text-slate-600">${escapeHtml(a.notes) || 'Sin observaciones.'}</td>
+                            <td class="py-2.5 px-2 text-slate-600">${a.notes || 'Sin observaciones.'}</td>
                         </tr>`).join('')
                     : `<tr><td colspan="6" class="py-4 text-center text-slate-400">No hay consultas agendadas para esta fecha.</td></tr>`;
             }
@@ -2420,9 +2369,9 @@ window.printClinicalHistory = function() {
             document.getElementById('hist-modal-subtitle').innerText = '📞 ' + p.phone + (p.birth ? '  •  🎂 ' + p.birth + ' (' + ageStr + ')' : '');
 
             document.getElementById('hist-patient-info').innerHTML = `
-                <div><span class="font-bold text-slate-500 text-xs uppercase block mb-0.5">Nombre</span><span class="font-semibold">${escapeHtml(p.name)}</span></div>
-                <div><span class="font-bold text-slate-500 text-xs uppercase block mb-0.5">Teléfono</span><span>${escapeHtml(p.phone)}</span></div>
-                <div><span class="font-bold text-slate-500 text-xs uppercase block mb-0.5">Nacimiento</span><span>${escapeHtml(p.birth) || '—'}</span></div>
+                <div><span class="font-bold text-slate-500 text-xs uppercase block mb-0.5">Nombre</span><span class="font-semibold">${p.name}</span></div>
+                <div><span class="font-bold text-slate-500 text-xs uppercase block mb-0.5">Teléfono</span><span>${p.phone}</span></div>
+                <div><span class="font-bold text-slate-500 text-xs uppercase block mb-0.5">Nacimiento</span><span>${p.birth || '—'}</span></div>
                 <div><span class="font-bold text-slate-500 text-xs uppercase block mb-0.5">Edad</span><span>${ageStr}</span></div>
             `;
             document.getElementById('hist-patient-history').innerText = p.history || 'Sin antecedentes registrados.';
@@ -2452,13 +2401,13 @@ window.printClinicalHistory = function() {
                         : '<span class="text-xs font-semibold px-2 py-0.5 rounded-xl border bg-slate-100 text-slate-600 border-slate-200">🏢 Presencial</span>';
                     return `<div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1">
                         <div class="flex flex-wrap gap-2 items-center">
-                            <span class="text-xs font-bold text-slate-700">📅 ${escapeHtml(a.date)}</span>
-                            <span class="text-xs font-semibold text-slate-600 bg-slate-200 px-2 py-0.5 rounded-lg">⏰ ${escapeHtml(a.time)}</span>
+                            <span class="text-xs font-bold text-slate-700">📅 ${a.date}</span>
+                            <span class="text-xs font-semibold text-slate-600 bg-slate-200 px-2 py-0.5 rounded-lg">⏰ ${a.time}</span>
                             <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${a.status.toUpperCase()}</span>
                             ${modalityBadge}
                             <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${payBadge}">${a.paymentStatus === 'pagado' ? '💳 Pagado' : '⏳ Pendiente'} — S/ ${parseFloat(a.cost).toFixed(2)}</span>
                         </div>
-                        ${a.notes ? `<p class="text-xs text-slate-500 italic">"${escapeHtml(a.notes)}"</p>` : ''}
+                        ${a.notes ? `<p class="text-xs text-slate-500 italic">"${a.notes}"</p>` : ''}
                     </div>`;
                 }).join('');
             }
@@ -2483,7 +2432,8 @@ window.printClinicalHistory = function() {
             const user = window._profileState && window._profileState.currentUser;
             let specialistName = 'Especialista';
             if (user) {
-                specialistName = getUserProfile().displayName || user.email.split('@')[0];
+                const saved = JSON.parse(localStorage.getItem('userProfile_' + user.uid) || '{}');
+                specialistName = saved.displayName || user.email.split('@')[0];
             }
 
             // Calcular edad
@@ -2514,13 +2464,13 @@ window.printClinicalHistory = function() {
             tbody.innerHTML = appts.length
                 ? appts.map(a => `
                     <tr class="border-b">
-                        <td class="py-1.5 px-2 font-semibold">${escapeHtml(a.date)}</td>
-                        <td class="py-1.5 px-2">${escapeHtml(a.time)}</td>
+                        <td class="py-1.5 px-2 font-semibold">${a.date}</td>
+                        <td class="py-1.5 px-2">${a.time}</td>
                         <td class="py-1.5 px-2">${a.modality === 'virtual' ? '💻 Virtual' : '🏢 Presencial'}</td>
                         <td class="py-1.5 px-2 font-medium">${a.status.toUpperCase()}</td>
                         <td class="py-1.5 px-2">${a.paymentStatus.toUpperCase()}</td>
                         <td class="py-1.5 px-2">S/ ${parseFloat(a.cost).toFixed(2)}</td>
-                        <td class="py-1.5 px-2 text-slate-500">${escapeHtml(a.notes) || '—'}</td>
+                        <td class="py-1.5 px-2 text-slate-500">${a.notes || '—'}</td>
                     </tr>`).join('')
                 : `<tr><td colspan="7" class="py-3 text-center text-slate-400">Sin citas registradas.</td></tr>`;
 
@@ -2658,7 +2608,8 @@ window.printClinicalHistory = function() {
             // Auto-cargar nombre del especialista desde el perfil guardado
             const user = window._profileState && window._profileState.currentUser;
             if (user) {
-                const name = getUserProfile().displayName || user.email.split('@')[0];
+                const saved = JSON.parse(localStorage.getItem('userProfile_' + user.uid) || '{}');
+                const name = saved.displayName || user.email.split('@')[0];
                 document.getElementById('print-specialist-name').value = name;
             }
             setPrintCategory(presetCategory || 'citas');
@@ -2676,8 +2627,8 @@ window.printClinicalHistory = function() {
             const email = user ? user.email : '';
             document.getElementById('profile-modal-email').innerText = email;
 
-            // Cargar datos guardados del perfil (sincronizados desde Firestore)
-            const saved = getUserProfile();
+            // Cargar datos guardados del perfil
+            const saved = JSON.parse(localStorage.getItem('userProfile_' + (user ? user.uid : '')) || '{}');
             document.getElementById('profile-displayname').value = saved.displayName || '';
             document.getElementById('profile-specialty').value   = saved.specialty   || '';
             document.getElementById('profile-phone').value       = saved.phone       || '';
@@ -2714,7 +2665,7 @@ window.printClinicalHistory = function() {
                 'flex-1 py-2 text-xs font-semibold rounded-lg bg-white text-indigo-700 shadow transition';
         }
 
-        async function saveProfileData() {
+        function saveProfileData() {
             const errDiv = document.getElementById('profile-edit-error');
             const okDiv  = document.getElementById('profile-edit-success');
             errDiv.classList.add('hidden');
@@ -2731,30 +2682,16 @@ window.printClinicalHistory = function() {
             }
 
             const user = window._profileState && window._profileState.currentUser;
-            if (!user) {
-                errDiv.innerText = 'No hay una sesión activa. Vuelve a iniciar sesión.';
-                errDiv.classList.remove('hidden');
-                return;
-            }
+            const key  = 'userProfile_' + (user ? user.uid : 'guest');
+            localStorage.setItem(key, JSON.stringify({ displayName, specialty, phone }));
 
-            try {
-                // Guardado en Firestore (antes era localStorage): así el perfil
-                // sincroniza entre dispositivos y no se pierde al limpiar el navegador.
-                await window._firestoreProfileRef.saveProfile(user.uid, { displayName, specialty, phone });
+            // Actualizar nombre en el header
+            const headerName = document.getElementById('header-user-name');
+            if (headerName) headerName.innerText = displayName;
 
-                // Actualizar nombre en el header de inmediato (el listener de
-                // Firestore también lo hará, pero esto da feedback instantáneo)
-                const headerName = document.getElementById('header-user-name');
-                if (headerName) headerName.innerText = displayName;
-
-                okDiv.innerText = '✅ Perfil actualizado correctamente.';
-                okDiv.classList.remove('hidden');
-                setTimeout(() => okDiv.classList.add('hidden'), 3000);
-            } catch (error) {
-                console.error('[Error guardando perfil]', error);
-                errDiv.innerText = '❌ No se pudo guardar el perfil. Revisa tu conexión e intenta de nuevo.';
-                errDiv.classList.remove('hidden');
-            }
+            okDiv.innerText = '✅ Perfil actualizado correctamente.';
+            okDiv.classList.remove('hidden');
+            setTimeout(() => okDiv.classList.add('hidden'), 3000);
         }
 
         async function saveNewPassword() {
@@ -2773,6 +2710,10 @@ window.printClinicalHistory = function() {
             }
             if (newPwd.length < 8) {
                 errDiv.innerText = 'La nueva contraseña debe tener al menos 8 caracteres.';
+                errDiv.classList.remove('hidden'); return;
+            }
+            if (newPwd.startsWith('temp_')) {
+                errDiv.innerText = "No puedes usar una contraseña que empiece con 'temp_'.";
                 errDiv.classList.remove('hidden'); return;
             }
             if (newPwd !== confirmPwd) {
