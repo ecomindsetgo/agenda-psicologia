@@ -96,20 +96,67 @@
 
         <!-- SECCIONES PRINCIPALES -->
         <main class="flex-grow max-w-5xl w-full mx-auto p-4 md:p-6 space-y-6 no-print">
+            <!-- 1. SECCIÓN CITAS -->
             <section id="sec-citas" class="space-y-4">
-                <!-- Contenido de citas (mantenido de tu versión original) -->
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                    <p class="text-sm text-slate-500">Módulo de citas cargado correctamente mediante arquitectura modular.</p>
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">Gestión de Citas Diarias</h2>
+                        <p class="text-xs text-slate-500">Organiza y supervisa las atenciones clínicas programadas.</p>
+                    </div>
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <input type="date" id="filter-date" class="p-2 border border-slate-200 rounded-xl text-sm bg-slate-50 font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <button id="btn-new-cita" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-sm shadow-sm transition flex items-center gap-2">
+                            <span>+</span> Nueva Cita
+                        </button>
+                    </div>
+                </div>
+                <div id="citas-container" class="grid gap-3">
+                    <!-- Dinámico -->
                 </div>
             </section>
+
+            <!-- 2. SECCIÓN PACIENTES -->
             <section id="sec-pacientes" class="space-y-4 hidden">
-                <!-- Contenido de pacientes -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">Directorio de Pacientes</h2>
+                        <p class="text-xs text-slate-500">Expedientes e historiales clínicos centralizados.</p>
+                    </div>
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <input type="text" id="search-patient" placeholder="Buscar por nombre o DNI..." class="p-2 border border-slate-200 rounded-xl text-sm bg-slate-50 w-full sm:w-64 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <button id="btn-new-patient" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-sm shadow-sm transition whitespace-nowrap">
+                            + Registrar
+                        </button>
+                    </div>
+                </div>
+                <div id="patients-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Dinámico -->
+                </div>
             </section>
+
+            <!-- 3. SECCIÓN FINANZAS -->
             <section id="sec-finanzas" class="space-y-6 hidden">
-                <!-- Contenido de finanzas -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-1">
+                        <p class="text-xs font-bold uppercase text-slate-400">Ingresos del Mes</p>
+                        <h3 class="text-2xl font-black text-emerald-600" id="fin-month-income">S/ 0.00</h3>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-1">
+                        <p class="text-xs font-bold uppercase text-slate-400">Citas Atendidas</p>
+                        <h3 class="text-2xl font-black text-indigo-600" id="fin-total-sessions">0</h3>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-1">
+                        <p class="text-xs font-bold uppercase text-slate-400">Pendiente de Cobro</p>
+                        <h3 class="text-2xl font-black text-amber-600" id="fin-pending-income">S/ 0.00</h3>
+                    </div>
+                </div>
             </section>
         </main>
     </div>
+
+    <!-- ================= MODALES Y PANTALLAS DE IMPRESIÓN ================= -->
+    <div id="modal-container"></div>
+    <div id="print-section" class="print-only"></div>
 
     <!-- Script Principal Modularizado -->
     <script type="module" src="app.js"></script>
