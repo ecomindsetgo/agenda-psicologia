@@ -1,0 +1,23 @@
+body { 
+    font-family: 'Inter', sans-serif; 
+    background: #f8fafc; 
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+.print-only { display: none; }
+
+@media print {
+    .no-print { display: none !important; }
+    .print-only { display: block !important; width: 100% !important; max-width: 100% !important; }
+    body { background: white !important; color: black !important; padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; display: block !important; }
+    #print-patient-card.hidden { display: none !important; }
+    #print-section.hidden { display: none !important; }
+    #print-clinical-history.hidden { display: none !important; }
+    #print-section-finance.hidden { display: none !important; }
+}
+
+.tab-transition { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
