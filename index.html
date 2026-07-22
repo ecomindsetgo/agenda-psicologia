@@ -7,27 +7,28 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; font-size: 13px; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #fbf9f6; font-size: 13px; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        ::-webkit-scrollbar-track { background: #f1ede6; }
+        ::-webkit-scrollbar-thumb { background: #c2b5a3; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4d7c75; }
         
         :root {
-            --brand-primary: #3d7c75;
-            --brand-secondary: #c4a482;
-            --brand-dark: #233b38;
+            --brand-primary: #4d7c75;
+            --brand-secondary: #c2a285;
+            --brand-dark: #2c3e3b;
         }
         
-        .bg-brand { background-color: #3d7c75; }
-        .text-brand { color: #3d7c75; }
-        .border-brand { border-color: #3d7c75; }
+        .bg-brand { background-color: #4d7c75; }
+        .text-brand { color: #4d7c75; }
+        .border-brand { border-color: #4d7c75; }
         
         .print-only { display: none; }
         @media print {
             .no-print { display: none !important; }
             .print-only { display: block !important; width: 100% !important; max-width: 100% !important; }
             body { background: white !important; color: black !important; padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; display: block !important; }
+            .print-container { box-shadow: none !important; border: none !important; padding: 0 !important; }
         }
         .tab-transition { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
@@ -35,15 +36,12 @@
 <body class="text-slate-800 min-h-screen flex flex-col">
 
     <!-- ================= PANTALLA DE AUTENTICACIÓN ================= -->
-    <div id="auth-screen" class="fixed inset-0 bg-[#233b38] flex items-center justify-center z-50 p-4">
-        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 sm:p-8 space-y-6 relative overflow-hidden border-t-4 border-[#3d7c75]">
-            <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#3d7c75]/10 rounded-full -z-10"></div>
+    <div id="auth-screen" class="fixed inset-0 bg-[#2c3e3b] flex items-center justify-center z-50 p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 sm:p-8 space-y-6 relative overflow-hidden border-t-4 border-[#4d7c75]">
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#4d7c75]/10 rounded-full -z-10"></div>
             <div class="text-center space-y-3">
-                <div class="flex justify-center mb-1">
-                    <div class="flex items-center space-x-2 bg-[#3d7c75]/5 px-4 py-2 rounded-2xl border border-[#3d7c75]/20">
-                        <svg class="w-6 h-6 text-[#3d7c75]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
-                        <span class="font-bold text-[#233b38] text-base tracking-wide">Lisbeth Méndez <span class="text-[#3d7c75] font-light">Psicóloga</span></span>
-                    </div>
+                <div class="flex justify-center mb-2">
+                    <img src="Logotipo-_Psicologa_verde_2000_x_800_px.png" alt="Lisbeth Méndez Psicóloga" class="h-14 object-contain">
                 </div>
                 <h1 class="text-xl font-bold text-slate-800">Iniciar Sesión</h1>
                 <p class="text-xs text-slate-500">Ingresa tus credenciales para acceder a tu agenda clínica profesional.</p>
@@ -52,19 +50,19 @@
             <form id="login-form" class="space-y-4">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Correo Electrónico</label>
-                    <input type="email" id="login-email" required value="lisbethpa1628@gmail.com" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-slate-50 text-sm font-medium">
+                    <input type="email" id="login-email" required value="lisbethpa1628@gmail.com" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#4d7c75] bg-slate-50 text-sm font-medium">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Contraseña</label>
-                    <input type="password" id="login-password" required value="123456" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-slate-50 text-sm font-medium">
+                    <input type="password" id="login-password" required value="123456" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#4d7c75] bg-slate-50 text-sm font-medium">
                 </div>
-                <button type="submit" class="w-full py-3.5 bg-[#3d7c75] hover:bg-[#326761] text-white font-bold rounded-xl shadow-lg shadow-[#3d7c75]/20 transition-all flex items-center justify-center space-x-2 text-sm">
+                <button type="submit" class="w-full py-3.5 bg-[#4d7c75] hover:bg-[#3d635e] text-white font-bold rounded-xl shadow-lg shadow-[#4d7c75]/20 transition-all flex items-center justify-center space-x-2 text-sm">
                     <span>Entrar al Consultorio</span>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                 </button>
             </form>
             <div class="text-center">
-                <a href="#" onclick="alert('Contacta al administrador técnico para recuperar acceso.'); return false;" class="text-xs text-[#3d7c75] hover:underline font-medium">¿Olvidaste tu contraseña?</a>
+                <a href="#" onclick="alert('Contacta al administrador técnico para recuperar acceso.'); return false;" class="text-xs text-[#4d7c75] hover:underline font-medium">¿Olvidaste tu contraseña?</a>
             </div>
         </div>
     </div>
@@ -72,17 +70,14 @@
     <!-- ================= CONTENEDOR PRINCIPAL DE LA APLICACIÓN ================= -->
     <div id="app-container" class="min-h-screen flex flex-col hidden">
         <!-- HEADER -->
-        <header class="bg-white border-b border-slate-200 sticky top-0 z-40 no-print">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <header class="bg-white border-b border-slate-200 sticky top-0 z-40 no-print shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
                 <div class="flex items-center space-x-3">
-                    <div class="flex items-center space-x-2 bg-[#3d7c75]/10 px-3 py-1.5 rounded-xl border border-[#3d7c75]/20">
-                        <svg class="w-5 h-5 text-[#3d7c75]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
-                        <span class="font-bold text-[#233b38] text-sm tracking-wide">Lisbeth Méndez <span class="text-[#3d7c75] font-light text-xs">Psicóloga</span></span>
-                    </div>
+                    <img src="Logotipo-_Psicologa_verde_2000_x_800_px.png" alt="Lisbeth Méndez" class="h-10 sm:h-12 object-contain">
                 </div>
 
                 <nav class="hidden md:flex items-center space-x-1">
-                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-3.5 py-2 rounded-xl text-xs font-semibold tab-transition bg-[#3d7c75] text-white shadow-sm">Dashboard</button>
+                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-3.5 py-2 rounded-xl text-xs font-semibold tab-transition bg-[#4d7c75] text-white shadow-sm">Dashboard</button>
                     <button onclick="switchTab('citas')" id="nav-citas" class="px-3.5 py-2 rounded-xl text-xs font-semibold tab-transition text-slate-600 hover:bg-slate-100">Citas / Agenda</button>
                     <button onclick="switchTab('pacientes')" id="nav-pacientes" class="px-3.5 py-2 rounded-xl text-xs font-semibold tab-transition text-slate-600 hover:bg-slate-100">Pacientes</button>
                     <button onclick="switchTab('finanzas')" id="nav-finanzas" class="px-3.5 py-2 rounded-xl text-xs font-semibold tab-transition text-slate-600 hover:bg-slate-100">Finanzas</button>
@@ -91,9 +86,9 @@
                 <div class="flex items-center space-x-3">
                     <div class="text-right hidden sm:block">
                         <p class="text-xs font-bold text-slate-800">Lisbeth Méndez</p>
-                        <p class="text-[10px] text-[#3d7c75] font-medium">Psicóloga Clínica</p>
+                        <p class="text-[10px] text-[#4d7c75] font-medium">Psicóloga Clínica</p>
                     </div>
-                    <button onclick="logout()" class="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all" title="Cerrar Sesión">
+                    <button onclick="logout()" class="p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all" title="Cerrar Sesión">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                     </button>
                 </div>
@@ -101,7 +96,7 @@
 
             <!-- Menú inferior flotante/móvil -->
             <div class="md:hidden flex items-center justify-around bg-white border-t border-slate-100 py-2 px-2">
-                <button onclick="switchTab('dashboard')" id="nav-mobile-dashboard" class="flex flex-col items-center space-y-0.5 text-[10px] font-semibold text-[#3d7c75]">
+                <button onclick="switchTab('dashboard')" id="nav-mobile-dashboard" class="flex flex-col items-center space-y-0.5 text-[10px] font-semibold text-[#4d7c75]">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                     <span>Dash</span>
                 </button>
@@ -127,7 +122,7 @@
             <section id="tab-dashboard" class="space-y-6">
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-3 sm:space-x-4">
-                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#4d7c75]/10 text-[#4d7c75] flex items-center justify-center font-bold shrink-0">
                             <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                         </div>
                         <div class="min-w-0">
@@ -136,7 +131,7 @@
                         </div>
                     </div>
                     <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-3 sm:space-x-4">
-                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#c2a285]/10 text-[#c2a285] flex items-center justify-center font-bold shrink-0">
                             <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                         </div>
                         <div class="min-w-0">
@@ -154,7 +149,7 @@
                         </div>
                     </div>
                     <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-3 sm:space-x-4">
-                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#3d7c75]/10 text-[#3d7c75] flex items-center justify-center font-bold shrink-0">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#4d7c75]/10 text-[#4d7c75] flex items-center justify-center font-bold shrink-0">
                             <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         </div>
                         <div class="min-w-0">
@@ -168,7 +163,7 @@
                     <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-2 space-y-4">
                         <div class="flex items-center justify-between">
                             <h3 class="font-bold text-slate-800 text-sm">Próximas Citas Programadas</h3>
-                            <button onclick="switchTab('citas')" class="text-xs text-[#3d7c75] font-semibold hover:underline">Ver agenda completa</button>
+                            <button onclick="switchTab('citas')" class="text-xs text-[#4d7c75] font-semibold hover:underline">Ver agenda completa</button>
                         </div>
                         <div id="dashboard-upcoming-appointments" class="divide-y divide-slate-100">
                             <!-- Inyectado dinámicamente -->
@@ -178,7 +173,7 @@
                     <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                         <h3 class="font-bold text-slate-800 text-sm">Acciones Rápidas</h3>
                         <div class="space-y-2">
-                            <button onclick="openNewAppointmentModal()" class="w-full py-2.5 px-4 bg-[#3d7c75] hover:bg-[#326761] text-white font-semibold rounded-xl text-xs transition-all flex items-center justify-center space-x-2">
+                            <button onclick="openNewAppointmentModal()" class="w-full py-2.5 px-4 bg-[#4d7c75] hover:bg-[#3d635e] text-white font-semibold rounded-xl text-xs transition-all flex items-center justify-center space-x-2 shadow-sm">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                                 <span>Nueva Cita</span>
                             </button>
@@ -199,13 +194,17 @@
                             <h2 class="text-lg font-bold text-slate-800">Gestión de Citas</h2>
                             <p class="text-xs text-slate-500">Administra las sesiones terapéuticas y visualiza la agenda.</p>
                         </div>
-                        <div class="flex items-center space-x-2 w-full sm:w-auto justify-between sm:justify-start">
+                        <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
                             <div class="bg-slate-100 p-1 rounded-xl flex items-center space-x-1 border border-slate-200">
                                 <button onclick="setCalendarView('month')" id="view-btn-month" class="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-800 shadow-sm transition-all">Mensual</button>
                                 <button onclick="setCalendarView('week')" id="view-btn-week" class="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-800 transition-all">Semanal</button>
                                 <button onclick="setCalendarView('day')" id="view-btn-day" class="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-800 transition-all">Diaria</button>
                             </div>
-                            <button onclick="openNewAppointmentModal()" class="px-3 sm:px-4 py-2 bg-[#3d7c75] hover:bg-[#326761] text-white font-semibold rounded-xl text-xs transition-all flex items-center space-x-1.5 shadow-sm whitespace-nowrap">
+                            <button onclick="openPrintAppointmentModal()" class="px-3 py-2 bg-[#c2a285] hover:bg-[#b09174] text-white font-semibold rounded-xl text-xs transition-all flex items-center space-x-1.5 shadow-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                                <span>Reporte Citas</span>
+                            </button>
+                            <button onclick="openNewAppointmentModal()" class="px-3 sm:px-4 py-2 bg-[#4d7c75] hover:bg-[#3d635e] text-white font-semibold rounded-xl text-xs transition-all flex items-center space-x-1.5 shadow-sm whitespace-nowrap">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                                 <span class="hidden sm:inline">Nueva Cita</span>
                                 <span class="sm:hidden">Nuevo</span>
@@ -228,7 +227,7 @@
 
                         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                             <div>
-                                <select id="filter-status" onchange="renderAppointmentsView()" class="w-full sm:w-auto px-3 py-2 sm:py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3d7c75]">
+                                <select id="filter-status" onchange="renderAppointmentsView()" class="w-full sm:w-auto px-3 py-2 sm:py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#4d7c75]">
                                     <option value="all">Todos los estados</option>
                                     <option value="Programada">Programada</option>
                                     <option value="Completada">Completada</option>
@@ -236,7 +235,7 @@
                                 </select>
                             </div>
                             <div>
-                                <select id="filter-patient" onchange="renderAppointmentsView()" class="w-full sm:w-auto px-3 py-2 sm:py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3d7c75] max-w-none sm:max-w-[200px]">
+                                <select id="filter-patient" onchange="renderAppointmentsView()" class="w-full sm:w-auto px-3 py-2 sm:py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#4d7c75] max-w-none sm:max-w-[200px]">
                                     <option value="all">Todos los pacientes</option>
                                 </select>
                             </div>
@@ -263,9 +262,13 @@
                                 <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                                 </span>
-                                <input type="text" id="search-patient-input" oninput="renderPatientsList()" placeholder="Buscar paciente..." class="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75]">
+                                <input type="text" id="search-patient-input" oninput="currentPatientPage = 1; renderPatientsList()" placeholder="Buscar paciente..." class="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#4d7c75]">
                             </div>
-                            <button onclick="openNewPatientModal()" class="px-4 py-2 bg-[#3d7c75] hover:bg-[#326761] text-white font-semibold rounded-xl text-xs transition-all flex items-center space-x-1.5 shadow-sm whitespace-nowrap">
+                            <button onclick="printPatientsList()" class="px-3 py-2 bg-[#c2a285] hover:bg-[#b09174] text-white font-semibold rounded-xl text-xs transition-all flex items-center space-x-1.5 shadow-sm whitespace-nowrap" title="Imprimir Listado de Pacientes">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                                <span class="hidden sm:inline">Imprimir</span>
+                            </button>
+                            <button onclick="openNewPatientModal()" class="px-4 py-2 bg-[#4d7c75] hover:bg-[#3d635e] text-white font-semibold rounded-xl text-xs transition-all flex items-center space-x-1.5 shadow-sm whitespace-nowrap">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                                 <span class="hidden sm:inline">Nuevo Paciente</span>
                                 <span class="sm:hidden">Nuevo</span>
@@ -273,7 +276,7 @@
                         </div>
                     </div>
 
-                    <div class="overflow-x-auto">
+                    <div class="overflow-x-auto min-h-[350px]">
                         <table class="w-full text-left border-collapse min-w-[600px]">
                             <thead>
                                 <tr class="border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
@@ -289,6 +292,11 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- Paginación Pacientes -->
+                    <div id="patients-pagination" class="flex items-center justify-between pt-4 border-t border-slate-100 text-xs">
+                        <!-- Inyectado por JS -->
+                    </div>
                 </div>
             </section>
 
@@ -300,10 +308,14 @@
                             <h2 class="text-lg font-bold text-slate-800">Control Financiero</h2>
                             <p class="text-xs text-slate-500">Registro de pagos, honorarios de sesiones y control de deudas pendientes.</p>
                         </div>
-                        <div class="flex items-center space-x-3 w-full sm:w-auto">
-                            <select id="finance-month-filter" onchange="renderFinanceView()" class="w-full sm:w-auto px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3d7c75]">
+                        <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                            <select id="finance-month-filter" onchange="currentFinancePage = 1; renderFinanceView()" class="w-full sm:w-auto px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#4d7c75]">
                                 <!-- Generado por JS -->
                             </select>
+                            <button onclick="openPrintFinanceModal()" class="px-3 py-2 bg-[#c2a285] hover:bg-[#b09174] text-white font-semibold rounded-xl text-xs transition-all flex items-center space-x-1.5 shadow-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                                <span>Reporte Finanzas</span>
+                            </button>
                         </div>
                     </div>
 
@@ -322,7 +334,7 @@
                         </div>
                     </div>
 
-                    <div class="overflow-x-auto">
+                    <div class="overflow-x-auto min-h-[350px]">
                         <table class="w-full text-left border-collapse min-w-[600px]">
                             <thead>
                                 <tr class="border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
@@ -338,6 +350,11 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- Paginación Finanzas -->
+                    <div id="finance-pagination" class="flex items-center justify-between pt-4 border-t border-slate-100 text-xs">
+                        <!-- Inyectado por JS -->
+                    </div>
                 </div>
             </section>
 
@@ -346,9 +363,61 @@
 
     <!-- ================= MODALES DE LA APLICACIÓN ================= -->
 
+    <!-- Modal: Rango de Fechas para Reporte de Citas -->
+    <div id="print-appointment-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 relative border-t-4 border-[#4d7c75]">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-slate-800 text-base">Imprimir Reporte de Citas</h3>
+                <button onclick="closePrintAppointmentModal()" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            </div>
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Desde</label>
+                        <input type="date" id="print-appt-start" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#4d7c75] bg-white font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Hasta</label>
+                        <input type="date" id="print-appt-end" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#4d7c75] bg-white font-medium">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closePrintAppointmentModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-semibold">Cancelar</button>
+                    <button type="button" onclick="executePrintAppointments()" class="px-5 py-2.5 bg-[#4d7c75] hover:bg-[#3d635e] text-white font-semibold rounded-xl text-xs shadow-md">Imprimir Reporte</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Rango de Fechas para Reporte de Finanzas -->
+    <div id="print-finance-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 relative border-t-4 border-[#4d7c75]">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-slate-800 text-base">Imprimir Reporte de Finanzas</h3>
+                <button onclick="closePrintFinanceModal()" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            </div>
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Desde</label>
+                        <input type="date" id="print-fin-start" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#4d7c75] bg-white font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Hasta</label>
+                        <input type="date" id="print-fin-end" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#4d7c75] bg-white font-medium">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closePrintFinanceModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-semibold">Cancelar</button>
+                    <button type="button" onclick="executePrintFinances()" class="px-5 py-2.5 bg-[#4d7c75] hover:bg-[#3d635e] text-white font-semibold rounded-xl text-xs shadow-md">Imprimir Reporte</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal: Nueva / Editar Cita -->
     <div id="appointment-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
-        <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 relative border-t-4 border-[#3d7c75] max-h-[90vh] overflow-y-auto">
+        <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 relative border-t-4 border-[#4d7c75] max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between">
                 <h3 id="appointment-modal-title" class="font-bold text-slate-800 text-base">Programar Nueva Cita</h3>
                 <button onclick="closeAppointmentModal()" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
@@ -357,28 +426,28 @@
                 <input type="hidden" id="appointment-id">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Paciente</label>
-                    <select id="appointment-patient-id" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium">
+                    <select id="appointment-patient-id" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#4d7c75] bg-white font-medium">
                         <!-- Generado por JS -->
                     </select>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Fecha</label>
-                        <input type="date" id="appointment-date" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium">
+                        <input type="date" id="appointment-date" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#4d7c75] bg-white font-medium">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Hora</label>
-                        <input type="time" id="appointment-time" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium">
+                        <input type="time" id="appointment-time" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#4d7c75] bg-white font-medium">
                     </div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Costo (S/.)</label>
-                        <input type="number" step="0.01" id="appointment-cost" required value="80.00" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium">
+                        <input type="number" step="0.01" id="appointment-cost" required value="80.00" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#4d7c75] bg-white font-medium">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Estado de Cita</label>
-                        <select id="appointment-status" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium">
+                        <select id="appointment-status" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#4d7c75] bg-white font-medium">
                             <option value="Programada">Programada</option>
                             <option value="Completada">Completada</option>
                             <option value="Cancelada">Cancelada</option>
@@ -387,18 +456,18 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Estado de Pago</label>
-                    <select id="appointment-payment-status" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium">
+                    <select id="appointment-payment-status" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#4d7c75] bg-white font-medium">
                         <option value="Pendiente">Pendiente</option>
                         <option value="Pagado">Pagado</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Notas / Motivo de Consulta</label>
-                    <textarea id="appointment-notes" rows="3" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium" placeholder="Notas breves de la sesión..."></textarea>
+                    <textarea id="appointment-notes" rows="3" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#4d7c75] bg-white font-medium" placeholder="Notas breves de la sesión..."></textarea>
                 </div>
                 <div class="flex justify-end space-x-3 pt-2">
                     <button type="button" onclick="closeAppointmentModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-semibold">Cancelar</button>
-                    <button type="submit" class="px-5 py-2.5 bg-[#3d7c75] hover:bg-[#326761] text-white font-semibold rounded-xl text-xs shadow-md">Guardar Cita</button>
+                    <button type="submit" class="px-5 py-2.5 bg-[#4d7c75] hover:bg-[#3d635e] text-white font-semibold rounded-xl text-xs shadow-md">Guardar Cita</button>
                 </div>
             </form>
         </div>
@@ -406,7 +475,7 @@
 
     <!-- Modal: Nuevo / Editar Paciente -->
     <div id="patient-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
-        <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 relative border-t-4 border-[#3d7c75] max-h-[90vh] overflow-y-auto">
+        <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 relative border-t-4 border-[#4d7c75] max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between">
                 <h3 id="patient-modal-title" class="font-bold text-slate-800 text-base">Registrar Nuevo Paciente</h3>
                 <button onclick="closePatientModal()" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
@@ -415,35 +484,35 @@
                 <input type="hidden" id="patient-id">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Nombre Completo</label>
-                    <input type="text" id="patient-name" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium" placeholder="Ej. María Pérez">
+                    <input type="text" id="patient-name" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#4d7c75] bg-white font-medium" placeholder="Ej. María Pérez">
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Correo Electrónico</label>
-                        <input type="email" id="patient-email" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium" placeholder="correo@ejemplo.com">
+                        <input type="email" id="patient-email" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#4d7c75] bg-white font-medium" placeholder="correo@ejemplo.com">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Teléfono / WhatsApp</label>
-                        <input type="text" id="patient-phone" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium" placeholder="999999999">
+                        <input type="text" id="patient-phone" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#4d7c75] bg-white font-medium" placeholder="999999999">
                     </div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Edad</label>
-                        <input type="number" id="patient-age" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium" placeholder="Ej. 30">
+                        <input type="number" id="patient-age" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#4d7c75] bg-white font-medium" placeholder="Ej. 30">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Ocupación</label>
-                        <input type="text" id="patient-occupation" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium" placeholder="Ej. Ingeniera">
+                        <input type="text" id="patient-occupation" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#4d7c75] bg-white font-medium" placeholder="Ej. Ingeniera">
                     </div>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Motivo de Consulta Principal</label>
-                    <textarea id="patient-reason" rows="2" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium" placeholder="Descripción breve..."></textarea>
+                    <textarea id="patient-reason" rows="2" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#4d7c75] bg-white font-medium" placeholder="Descripción breve..."></textarea>
                 </div>
                 <div class="flex justify-end space-x-3 pt-2">
                     <button type="button" onclick="closePatientModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-semibold">Cancelar</button>
-                    <button type="submit" class="px-5 py-2.5 bg-[#3d7c75] hover:bg-[#326761] text-white font-semibold rounded-xl text-xs shadow-md">Guardar Paciente</button>
+                    <button type="submit" class="px-5 py-2.5 bg-[#4d7c75] hover:bg-[#3d635e] text-white font-semibold rounded-xl text-xs shadow-md">Guardar Paciente</button>
                 </div>
             </form>
         </div>
@@ -451,7 +520,7 @@
 
     <!-- Modal: Expediente Clínico / Historia del Paciente -->
     <div id="patient-detail-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
-        <div class="bg-white w-full max-w-3xl rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 relative border-t-4 border-[#3d7c75] max-h-[90vh] overflow-y-auto">
+        <div class="bg-white w-full max-w-3xl rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 relative border-t-4 border-[#4d7c75] max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div>
                     <h3 id="detail-patient-name" class="font-bold text-slate-800 text-base">Nombre Paciente</h3>
@@ -485,7 +554,7 @@
                 <div class="space-y-3">
                     <div class="flex items-center justify-between">
                         <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Historial de Sesiones y Notas Clínicas</h4>
-                        <button onclick="openNewNoteForPatient()" class="px-3 py-1.5 bg-[#3d7c75]/10 hover:bg-[#3d7c75]/20 text-[#3d7c75] font-semibold rounded-lg text-xs transition-all flex items-center space-x-1">
+                        <button onclick="openNewNoteForPatient()" class="px-3 py-1.5 bg-[#4d7c75]/10 hover:bg-[#4d7c75]/20 text-[#4d7c75] font-semibold rounded-lg text-xs transition-all flex items-center space-x-1">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                             <span>Agregar Nota</span>
                         </button>
@@ -504,7 +573,7 @@
 
     <!-- Modal: Agregar Nota Clínica Rápida -->
     <div id="clinical-note-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
-        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 relative border-t-4 border-[#3d7c75]">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 relative border-t-4 border-[#4d7c75]">
             <div class="flex items-center justify-between">
                 <h3 class="font-bold text-slate-800 text-base">Nueva Nota de Evolución</h3>
                 <button onclick="closeClinicalNoteModal()" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
@@ -513,17 +582,33 @@
                 <input type="hidden" id="note-patient-id">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Fecha de Sesión</label>
-                    <input type="date" id="note-date" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium">
+                    <input type="date" id="note-date" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#4d7c75] bg-white font-medium">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Notas Clínicas / Avance</label>
-                    <textarea id="note-content" rows="4" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium" placeholder="Escribe aquí las observaciones clínicas..."></textarea>
+                    <textarea id="note-content" rows="4" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#4d7c75] bg-white font-medium" placeholder="Escribe aquí las observaciones clínicas..."></textarea>
                 </div>
                 <div class="flex justify-end space-x-3 pt-2">
                     <button type="button" onclick="closeClinicalNoteModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-semibold">Cancelar</button>
-                    <button type="submit" class="px-5 py-2.5 bg-[#3d7c75] hover:bg-[#326761] text-white font-semibold rounded-xl text-xs shadow-md">Guardar Nota</button>
+                    <button type="submit" class="px-5 py-2.5 bg-[#4d7c75] hover:bg-[#3d635e] text-white font-semibold rounded-xl text-xs shadow-md">Guardar Nota</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- ================= CONTENEDOR PARA IMPRESIÓN (OCULTO EN PANTALLA) ================= -->
+    <div id="print-section" class="print-only p-6 space-y-6">
+        <div class="flex items-center justify-between border-b-2 border-[#4d7c75] pb-4">
+            <div class="flex items-center space-x-3">
+                <img src="Logotipo-_Psicologa_verde_2000_x_800_px.png" alt="Lisbeth Méndez" class="h-12 object-contain">
+            </div>
+            <div class="text-right">
+                <h2 id="print-report-title" class="text-lg font-bold text-slate-800">Reporte del Sistema</h2>
+                <p id="print-report-subtitle" class="text-xs text-slate-500">Fecha de emisión: --</p>
+            </div>
+        </div>
+        <div id="print-report-content" class="space-y-4">
+            <!-- Contenido dinámico para impresión -->
         </div>
     </div>
 
@@ -535,13 +620,23 @@
         let calendarView = 'month'; // 'month', 'week', 'day'
         let currentDate = new Date();
 
+        // Variables de Paginación
+        let currentPatientPage = 1;
+        const patientsPerPage = 5;
+
+        let currentFinancePage = 1;
+        const financesPerPage = 6;
+
         // Carga segura priorizando los datos existentes en el navegador
         let patients = JSON.parse(localStorage.getItem('psico_patients'));
         if (!patients || !Array.isArray(patients) || patients.length === 0) {
             patients = [
                 { id: 'p1', name: 'Lucía Fernández', email: 'lucia@email.com', phone: '987654321', age: 28, occupation: 'Diseñadora', reason: 'Ansiedad generalizada', notes: [{ date: '2026-06-10', content: 'Primera sesión. Muestra apertura y buena disposición al diálogo.' }] },
                 { id: 'p2', name: 'Carlos Mendoza', email: 'carlos@email.com', phone: '912345678', age: 34, occupation: 'Ingeniero de Software', reason: 'Estrés laboral y burnout', notes: [] },
-                { id: 'p3', name: 'Sofía Ramirez', email: 'sofia@email.com', phone: '945612378', age: 26, occupation: 'Estudiante', reason: 'Problemas de autoestima', notes: [] }
+                { id: 'p3', name: 'Sofía Ramirez', email: 'sofia@email.com', phone: '945612378', age: 26, occupation: 'Estudiante', reason: 'Problemas de autoestima', notes: [] },
+                { id: 'p4', name: 'Mateo Silva', email: 'mateo@email.com', phone: '978456123', age: 40, occupation: 'Arquitecto', reason: 'Dificultades de pareja', notes: [] },
+                { id: 'p5', name: 'Valeria Torres', email: 'valeria@email.com', phone: '932145678', age: 22, occupation: 'Comunicadora', reason: 'Control de impulsos', notes: [] },
+                { id: 'p6', name: 'Diego Alonso', email: 'diego@email.com', phone: '965412387', age: 31, occupation: 'Abogado', reason: 'Depresión leve', notes: [] }
             ];
         }
 
@@ -550,7 +645,10 @@
             appointments = [
                 { id: 'a1', patientId: 'p1', date: '2026-07-22', time: '10:00', cost: 80.00, status: 'Programada', paymentStatus: 'Pendiente', notes: 'Seguimiento de técnicas de respiración.' },
                 { id: 'a2', patientId: 'p2', date: '2026-07-22', time: '16:30', cost: 90.00, status: 'Programada', paymentStatus: 'Pagado', notes: 'Revisión de carga laboral.' },
-                { id: 'a3', patientId: 'p3', date: '2026-07-25', time: '11:00', cost: 80.00, status: 'Programada', paymentStatus: 'Pendiente', notes: 'Evaluación inicial.' }
+                { id: 'a3', patientId: 'p3', date: '2026-07-25', time: '11:00', cost: 80.00, status: 'Programada', paymentStatus: 'Pendiente', notes: 'Evaluación inicial.' },
+                { id: 'a4', patientId: 'p4', date: '2026-07-10', time: '15:00', cost: 100.00, status: 'Completada', paymentStatus: 'Pagado', notes: 'Sesión de pareja.' },
+                { id: 'a5', patientId: 'p5', date: '2026-07-12', time: '09:00', cost: 80.00, status: 'Completada', paymentStatus: 'Pagado', notes: 'Avance notable.' },
+                { id: 'a6', patientId: 'p6', date: '2026-07-15', time: '17:00', cost: 90.00, status: 'Completada', paymentStatus: 'Pendiente', notes: 'Seguimiento.' }
             ];
         }
 
@@ -605,12 +703,12 @@
             
             const activeNav = document.getElementById(`nav-${tabId}`);
             if (activeNav) {
-                activeNav.className = "px-3.5 py-2 rounded-xl text-xs font-semibold tab-transition bg-[#3d7c75] text-white shadow-sm";
+                activeNav.className = "px-3.5 py-2 rounded-xl text-xs font-semibold tab-transition bg-[#4d7c75] text-white shadow-sm";
             }
 
             const activeMobileNav = document.getElementById(`nav-mobile-${tabId}`);
             if (activeMobileNav) {
-                activeMobileNav.className = "flex flex-col items-center space-y-0.5 text-[10px] font-semibold text-[#3d7c75]";
+                activeMobileNav.className = "flex flex-col items-center space-y-0.5 text-[10px] font-semibold text-[#4d7c75]";
             }
 
             if (tabId === 'dashboard') renderDashboard();
@@ -665,7 +763,7 @@
                     return `
                         <div class="py-3 flex items-center justify-between">
                             <div class="flex items-center space-x-3">
-                                <div class="w-9 h-9 rounded-xl bg-[#3d7c75]/10 text-[#3d7c75] flex items-center justify-center font-bold text-xs shrink-0">
+                                <div class="w-9 h-9 rounded-xl bg-[#4d7c75]/10 text-[#4d7c75] flex items-center justify-center font-bold text-xs shrink-0">
                                     ${a.time}
                                 </div>
                                 <div class="min-w-0">
@@ -750,16 +848,16 @@
                     const isToday = new Date().toISOString().split('T')[0] === dateStr;
 
                     html += `
-                        <div class="bg-white rounded-xl p-2 min-h-[100px] border ${isToday ? 'border-[#3d7c75] ring-1 ring-[#3d7c75]' : 'border-slate-200'} flex flex-col justify-between">
+                        <div class="bg-white rounded-xl p-2 min-h-[100px] border ${isToday ? 'border-[#4d7c75] ring-1 ring-[#4d7c75]' : 'border-slate-200'} flex flex-col justify-between">
                             <div class="flex items-center justify-between">
-                                <span class="text-xs font-bold ${isToday ? 'bg-[#3d7c75] text-white w-5 h-5 rounded-full flex items-center justify-center' : 'text-slate-700'}">${day}</span>
-                                <button onclick="openNewAppointmentModalWithDate('${dateStr}')" class="text-slate-300 hover:text-[#3d7c75] text-xs font-bold">+</button>
+                                <span class="text-xs font-bold ${isToday ? 'bg-[#4d7c75] text-white w-5 h-5 rounded-full flex items-center justify-center' : 'text-slate-700'}">${day}</span>
+                                <button onclick="openNewAppointmentModalWithDate('${dateStr}')" class="text-slate-300 hover:text-[#4d7c75] text-xs font-bold">+</button>
                             </div>
                             <div class="space-y-1 overflow-y-auto max-h-[70px] mt-1">
                                 ${dayAppts.map(a => {
                                     const p = patients.find(pat => pat.id === a.patientId) || { name: 'Pac.' };
                                     return `
-                                        <div onclick="editAppointment('${a.id}')" class="text-[10px] bg-[#3d7c75]/10 text-[#3d7c75] px-1.5 py-0.5 rounded font-semibold truncate cursor-pointer hover:bg-[#3d7c75]/20" title="${a.time} - ${p.name}">
+                                        <div onclick="editAppointment('${a.id}')" class="text-[10px] bg-[#4d7c75]/10 text-[#4d7c75] px-1.5 py-0.5 rounded font-semibold truncate cursor-pointer hover:bg-[#4d7c75]/20" title="${a.time} - ${p.name}">
                                             ${a.time} ${p.name.split(' ')[0]}
                                         </div>
                                     `;
@@ -796,8 +894,8 @@
                                 ${dayAppts.map(a => {
                                     const p = patients.find(pat => pat.id === a.patientId) || { name: 'Paciente' };
                                     return `
-                                        <div onclick="editAppointment('${a.id}')" class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs cursor-pointer hover:border-[#3d7c75] transition-all">
-                                            <p class="font-bold text-[#3d7c75]">${a.time} hrs</p>
+                                        <div onclick="editAppointment('${a.id}')" class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs cursor-pointer hover:border-[#4d7c75] transition-all">
+                                            <p class="font-bold text-[#4d7c75]">${a.time} hrs</p>
                                             <p class="font-medium text-slate-800">${p.name}</p>
                                         </div>
                                     `;
@@ -819,7 +917,7 @@
                     <div class="space-y-4 max-w-2xl mx-auto">
                         <div class="flex justify-between items-center">
                             <h3 class="font-bold text-slate-800 text-sm">Agenda del Día</h3>
-                            <button onclick="openNewAppointmentModalWithDate('${dateStr}')" class="px-3.5 py-1.5 bg-[#3d7c75] text-white rounded-xl text-xs font-semibold">+ Nueva Cita</button>
+                            <button onclick="openNewAppointmentModalWithDate('${dateStr}')" class="px-3.5 py-1.5 bg-[#4d7c75] text-white rounded-xl text-xs font-semibold">+ Nueva Cita</button>
                         </div>
                         <div class="space-y-3">
                 `;
@@ -831,7 +929,7 @@
                         return `
                             <div class="bg-white p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
                                 <div class="flex items-center space-x-4">
-                                    <div class="w-12 h-12 rounded-xl bg-[#3d7c75]/10 text-[#3d7c75] flex items-center justify-center font-bold text-sm shrink-0">
+                                    <div class="w-12 h-12 rounded-xl bg-[#4d7c75]/10 text-[#4d7c75] flex items-center justify-center font-bold text-sm shrink-0">
                                         ${a.time}
                                     </div>
                                     <div>
@@ -852,26 +950,34 @@
             }
         }
 
-        // --- GESTIÓN DE PACIENTES ---
+        // --- GESTIÓN DE PACIENTES CON PAGINACIÓN ---
         function renderPatientsList() {
             const search = document.getElementById('search-patient-input').value.toLowerCase();
             const tbody = document.getElementById('patients-table-body');
+            const paginationContainer = document.getElementById('patients-pagination');
             
             const filtered = patients.filter(p => p.name.toLowerCase().includes(search) || (p.occupation && p.occupation.toLowerCase().includes(search)));
 
-            if (filtered.length === 0) {
+            const totalPages = Math.ceil(filtered.length / patientsPerPage) || 1;
+            if (currentPatientPage > totalPages) currentPatientPage = totalPages;
+
+            const startIdx = (currentPatientPage - 1) * patientsPerPage;
+            const paginated = filtered.slice(startIdx, startIdx + patientsPerPage);
+
+            if (paginated.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400">No se encontraron pacientes registrados.</td></tr>`;
+                paginationContainer.innerHTML = '';
                 return;
             }
 
-            tbody.innerHTML = filtered.map(p => {
+            tbody.innerHTML = paginated.map(p => {
                 const patientAppts = appointments.filter(a => a.patientId === p.id).sort((a,b) => b.date.localeCompare(a.date));
                 const lastAppt = patientAppts.length > 0 ? patientAppts[0].date : 'Sin registro';
 
                 return `
                     <tr class="hover:bg-slate-50/80 transition-all">
                         <td class="py-3 px-4 font-bold text-slate-800">
-                            <div onclick="openPatientDetail('${p.id}')" class="cursor-pointer hover:text-[#3d7c75]">${p.name}</div>
+                            <div onclick="openPatientDetail('${p.id}')" class="cursor-pointer hover:text-[#4d7c75]">${p.name}</div>
                             <span class="text-[10px] text-slate-400 font-normal">Motivo: ${p.reason || 'No especificado'}</span>
                         </td>
                         <td class="py-3 px-4 text-slate-600">
@@ -885,14 +991,29 @@
                         <td class="py-3 px-4 text-slate-600 font-medium">${lastAppt}</td>
                         <td class="py-3 px-4 text-right space-x-1 sm:space-x-2 whitespace-nowrap">
                             <button onclick="openPatientDetail('${p.id}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs">Expediente</button>
-                            <button onclick="editPatient('${p.id}')" class="px-2.5 py-1 bg-[#3d7c75]/10 hover:bg-[#3d7c75]/20 text-[#3d7c75] font-semibold rounded-lg text-xs">Editar</button>
+                            <button onclick="editPatient('${p.id}')" class="px-2.5 py-1 bg-[#4d7c75]/10 hover:bg-[#4d7c75]/20 text-[#4d7c75] font-semibold rounded-lg text-xs">Editar</button>
                         </td>
                     </tr>
                 `;
             }).join('');
+
+            // Renderizar paginación
+            paginationContainer.innerHTML = `
+                <span class="text-slate-500 font-medium">Mostrando ${startIdx + 1} a ${Math.min(startIdx + patientsPerPage, filtered.length)} de ${filtered.length} pacientes</span>
+                <div class="flex items-center space-x-1">
+                    <button onclick="changePatientPage(-1)" ${currentPatientPage === 1 ? 'disabled class="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed"' : 'class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 font-semibold"'}>Anterior</button>
+                    <span class="px-3 py-1.5 font-bold text-slate-700">Página ${currentPatientPage} de ${totalPages}</span>
+                    <button onclick="changePatientPage(1)" ${currentPatientPage === totalPages ? 'disabled class="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed"' : 'class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 font-semibold"'}>Siguiente</button>
+                </div>
+            `;
         }
 
-        // --- FINANZAS ---
+        function changePatientPage(direction) {
+            currentPatientPage += direction;
+            renderPatientsList();
+        }
+
+        // --- FINANZAS CON PAGINACIÓN ---
         function populateFinanceMonthFilter() {
             const select = document.getElementById('finance-month-filter');
             if (!select) return;
@@ -907,6 +1028,7 @@
         function renderFinanceView() {
             const monthVal = document.getElementById('finance-month-filter').value || '2026-07';
             const tbody = document.getElementById('finance-table-body');
+            const paginationContainer = document.getElementById('finance-pagination');
 
             const monthAppts = appointments.filter(a => a.date.startsWith(monthVal));
 
@@ -928,12 +1050,19 @@
             document.getElementById('finance-total-collected').textContent = `S/. ${totalCollected.toFixed(2)}`;
             document.getElementById('finance-total-pending').textContent = `S/. ${totalPending.toFixed(2)}`;
 
-            if (monthAppts.length === 0) {
+            const totalPages = Math.ceil(monthAppts.length / financesPerPage) || 1;
+            if (currentFinancePage > totalPages) currentFinancePage = totalPages;
+
+            const startIdx = (currentFinancePage - 1) * financesPerPage;
+            const paginated = monthAppts.slice(startIdx, startIdx + financesPerPage);
+
+            if (paginated.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400">No hay registros financieros para este mes.</td></tr>`;
+                paginationContainer.innerHTML = '';
                 return;
             }
 
-            tbody.innerHTML = monthAppts.map(a => {
+            tbody.innerHTML = paginated.map(a => {
                 const p = patients.find(pat => pat.id === a.patientId) || { name: 'Paciente' };
                 const isPaid = a.paymentStatus === 'Pagado';
                 return `
@@ -954,6 +1083,21 @@
                     </tr>
                 `;
             }).join('');
+
+            // Renderizar paginación finanzas
+            paginationContainer.innerHTML = `
+                <span class="text-slate-500 font-medium">Mostrando ${startIdx + 1} a ${Math.min(startIdx + financesPerPage, monthAppts.length)} de ${monthAppts.length} registros</span>
+                <div class="flex items-center space-x-1">
+                    <button onclick="changeFinancePage(-1)" ${currentFinancePage === 1 ? 'disabled class="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed"' : 'class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 font-semibold"'}>Anterior</button>
+                    <span class="px-3 py-1.5 font-bold text-slate-700">Página ${currentFinancePage} de ${totalPages}</span>
+                    <button onclick="changeFinancePage(1)" ${currentFinancePage === totalPages ? 'disabled class="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed"' : 'class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 font-semibold"'}>Siguiente</button>
+                </div>
+            `;
+        }
+
+        function changeFinancePage(direction) {
+            currentFinancePage += direction;
+            renderFinanceView();
         }
 
         function togglePaymentStatus(appId) {
@@ -964,6 +1108,162 @@
                 renderFinanceView();
                 renderDashboard();
             }
+        }
+
+        // --- IMPRESIÓN Y REPORTES POR RANGO ---
+        function openPrintAppointmentModal() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('print-appt-start').value = today;
+            document.getElementById('print-appt-end').value = today;
+            document.getElementById('print-appointment-modal').classList.remove('hidden');
+        }
+
+        function closePrintAppointmentModal() {
+            document.getElementById('print-appointment-modal').classList.add('hidden');
+        }
+
+        function executePrintAppointments() {
+            const start = document.getElementById('print-appt-start').value;
+            const end = document.getElementById('print-appt-end').value;
+            closePrintAppointmentModal();
+
+            const filtered = appointments.filter(a => a.date >= start && a.date <= end).sort((a,b) => (a.date + a.time).localeCompare(b.date + b.time));
+
+            document.getElementById('print-report-title').textContent = 'Reporte de Citas y Agenda';
+            document.getElementById('print-report-subtitle').textContent = `Periodo: ${start} al ${end} | Emitido: ${new Date().toLocaleDateString()}`;
+
+            let html = `
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b-2 border-slate-300 text-xs font-bold text-slate-700 uppercase">
+                            <th class="py-2 px-3">Fecha y Hora</th>
+                            <th class="py-2 px-3">Paciente</th>
+                            <th class="py-2 px-3">Costo</th>
+                            <th class="py-2 px-3">Estado</th>
+                            <th class="py-2 px-3">Pago</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 text-xs">
+            `;
+
+            if (filtered.length === 0) {
+                html += `<tr><td colspan="5" class="py-4 text-center text-slate-500">No se encontraron citas en el rango seleccionado.</td></tr>`;
+            } else {
+                filtered.forEach(a => {
+                    const p = patients.find(pat => pat.id === a.patientId) || { name: 'Paciente Desconocido' };
+                    html += `
+                        <tr>
+                            <td class="py-2 px-3 font-semibold">${a.date} (${a.time})</td>
+                            <td class="py-2 px-3">${p.name}</td>
+                            <td class="py-2 px-3">S/. ${parseFloat(a.cost).toFixed(2)}</td>
+                            <td class="py-2 px-3">${a.status}</td>
+                            <td class="py-2 px-3">${a.paymentStatus}</td>
+                        </tr>
+                    `;
+                });
+            }
+            html += `</tbody></table>`;
+            document.getElementById('print-report-content').innerHTML = html;
+            window.print();
+        }
+
+        function printPatientsList() {
+            document.getElementById('print-report-title').textContent = 'Directorio General de Pacientes';
+            document.getElementById('print-report-subtitle').textContent = `Emitido: ${new Date().toLocaleDateString()}`;
+
+            let html = `
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b-2 border-slate-300 text-xs font-bold text-slate-700 uppercase">
+                            <th class="py-2 px-3">Paciente</th>
+                            <th class="py-2 px-3">Contacto</th>
+                            <th class="py-2 px-3">Edad / Ocupación</th>
+                            <th class="py-2 px-3">Motivo Principal</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 text-xs">
+            `;
+
+            patients.forEach(p => {
+                html += `
+                    <tr>
+                        <td class="py-2 px-3 font-bold">${p.name}</td>
+                        <td class="py-2 px-3">${p.phone || '-'} / ${p.email || '-'}</td>
+                        <td class="py-2 px-3">${p.age ? p.age + ' años' : '-'} (${p.occupation || '-'})</td>
+                        <td class="py-2 px-3">${p.reason || '-'}</td>
+                    </tr>
+                `;
+            });
+            html += `</tbody></table>`;
+            document.getElementById('print-report-content').innerHTML = html;
+            window.print();
+        }
+
+        function openPrintFinanceModal() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('print-fin-start').value = today.slice(0, 8) + '01';
+            document.getElementById('print-fin-end').value = today;
+            document.getElementById('print-finance-modal').classList.remove('hidden');
+        }
+
+        function closePrintFinanceModal() {
+            document.getElementById('print-finance-modal').classList.add('hidden');
+        }
+
+        function executePrintFinances() {
+            const start = document.getElementById('print-fin-start').value;
+            const end = document.getElementById('print-fin-end').value;
+            closePrintFinanceModal();
+
+            const filtered = appointments.filter(a => a.date >= start && a.date <= end).sort((a,b) => a.date.localeCompare(b.date));
+            let total = 0;
+            let collected = 0;
+
+            filtered.forEach(a => {
+                const c = parseFloat(a.cost || 0);
+                total += c;
+                if (a.paymentStatus === 'Pagado') collected += c;
+            });
+
+            document.getElementById('print-report-title').textContent = 'Reporte Financiero de Consultorio';
+            document.getElementById('print-report-subtitle').textContent = `Periodo: ${start} al ${end} | Emitido: ${new Date().toLocaleDateString()}`;
+
+            let html = `
+                <div class="mb-4 p-4 bg-slate-100 rounded-xl flex justify-around text-xs font-bold">
+                    <div>Total Facturado: S/. ${total.toFixed(2)}</div>
+                    <div>Total Cobrado: S/. ${collected.toFixed(2)}</div>
+                    <div>Pendiente: S/. ${(total - collected).toFixed(2)}</div>
+                </div>
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b-2 border-slate-300 text-xs font-bold text-slate-700 uppercase">
+                            <th class="py-2 px-3">Fecha</th>
+                            <th class="py-2 px-3">Paciente</th>
+                            <th class="py-2 px-3">Monto</th>
+                            <th class="py-2 px-3">Estado de Pago</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 text-xs">
+            `;
+
+            if (filtered.length === 0) {
+                html += `<tr><td colspan="4" class="py-4 text-center text-slate-500">No se encontraron registros financieros en el rango seleccionado.</td></tr>`;
+            } else {
+                filtered.forEach(a => {
+                    const p = patients.find(pat => pat.id === a.patientId) || { name: 'Paciente Desconocido' };
+                    html += `
+                        <tr>
+                            <td class="py-2 px-3 font-semibold">${a.date}</td>
+                            <td class="py-2 px-3">${p.name}</td>
+                            <td class="py-2 px-3">S/. ${parseFloat(a.cost).toFixed(2)}</td>
+                            <td class="py-2 px-3">${a.paymentStatus}</td>
+                        </tr>
+                    `;
+                });
+            }
+            html += `</tbody></table>`;
+            document.getElementById('print-report-content').innerHTML = html;
+            window.print();
         }
 
         // --- MODALES Y FORMULARIOS ---
@@ -1111,8 +1411,9 @@
 
             container.innerHTML = notes.map((n, idx) => `
                 <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1">
+                    <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1">
                     <div class="flex items-center justify-between">
-                        <span class="text-[11px] font-bold text-[#3d7c75]">Sesión del ${n.date}</span>
+                        <span class="text-[11px] font-bold text-[#4d7c75]">Sesión del ${n.date}</span>
                         <button onclick="deleteClinicalNote('${patient.id}', ${idx})" class="text-slate-400 hover:text-red-600 text-xs font-semibold">Eliminar</button>
                     </div>
                     <p class="text-xs text-slate-700 whitespace-pre-wrap">${n.content}</p>
@@ -1127,7 +1428,7 @@
             document.getElementById('clinical-note-modal').classList.remove('hidden');
         }
 
-        function closeClinicalnoteModal() {
+        function closeClinicalNoteModal() {
             document.getElementById('clinical-note-modal').classList.add('hidden');
         }
 
