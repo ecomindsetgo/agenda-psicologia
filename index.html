@@ -6,6 +6,11 @@
     <title>Agenda Psicológica - Lisbeth Méndez</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs (Compat / Versión 11 para Web) -->
+    <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore-compat.js"></script>
+
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; font-size: 13px; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -46,7 +51,7 @@
                     </div>
                 </div>
                 <h1 class="text-xl font-bold text-slate-800">Iniciar Sesión</h1>
-                <p class="text-xs text-slate-500">Ingresa tus credenciales para acceder a tu agenda clínica profesional.</p>
+                <p class="text-xs text-slate-500">Conéctate para sincronizar tus datos directamente desde la nube.</p>
             </div>
             
             <form id="login-form" class="space-y-4">
@@ -64,7 +69,7 @@
                 </button>
             </form>
             <div class="text-center">
-                <a href="#" onclick="alert('Contacta al administrador técnico para recuperar acceso.'); return false;" class="text-xs text-[#3d7c75] hover:underline font-medium">¿Olvidaste tu contraseña?</a>
+                <span id="firebase-status" class="text-[11px] text-slate-400">Conectando a Firebase...</span>
             </div>
         </div>
     </div>
@@ -91,7 +96,7 @@
                 <div class="flex items-center space-x-3">
                     <div class="text-right hidden sm:block">
                         <p class="text-xs font-bold text-slate-800">Lisbeth Méndez</p>
-                        <p class="text-[10px] text-[#3d7c75] font-medium">Psicóloga Clínica</p>
+                        <p class="text-[10px] text-[#3d7c75] font-medium">Sincronizado Cloud</p>
                     </div>
                     <button onclick="logout()" class="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all" title="Cerrar Sesión">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
@@ -99,7 +104,7 @@
                 </div>
             </div>
 
-            <!-- Menú inferior flotante/móvil -->
+            <!-- Menú inferior móvil -->
             <div class="md:hidden flex items-center justify-around bg-white border-t border-slate-100 py-2 px-2">
                 <button onclick="switchTab('dashboard')" id="nav-mobile-dashboard" class="flex flex-col items-center space-y-0.5 text-[10px] font-semibold text-[#3d7c75]">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
@@ -527,55 +532,78 @@
         </div>
     </div>
 
-    <!-- ================= SCRIPT JAVASCRIPT INTEGRADO ================= -->
+    <!-- ================= SCRIPT JAVASCRIPT & FIREBASE ================= -->
     <script>
-        // Estado Global de la Aplicación
+        // 1. CONFIGURACIÓN DE FIREBASE (Reemplaza con tus credenciales de tu proyecto de Firebase si es necesario)
+        const firebaseConfig = {
+            apiKey: "TU_API_KEY",
+            authDomain: "TU_DOMINIO.firebaseapp.com",
+            projectId: "TU_PROJECT_ID",
+            storageBucket: "TU_BUCKET.appspot.com",
+            messagingSenderId: "TU_SENDER_ID",
+            appId: "TU_APP_ID"
+        };
+
+        // Inicializar Firebase
+        let db = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            document.getElementById('firebase-status').textContent = "Conectado a Firebase Cloud";
+            document.getElementById('firebase-status').className = "text-[11px] text-emerald-600 font-semibold";
+        } catch (e) {
+            console.error("Error al inicializar Firebase:", e);
+            document.getElementById('firebase-status').textContent = "Error de conexión (Usando Modo Local)";
+            document.getElementById('firebase-status').className = "text-[11px] text-amber-600 font-semibold";
+        }
+
+        // Estado Global
         let currentUser = null;
         let currentTab = 'dashboard';
-        let calendarView = 'month'; // 'month', 'week', 'day'
+        let calendarView = 'month';
         let currentDate = new Date();
 
-        // Carga segura priorizando los datos existentes en el navegador
-        let patients = JSON.parse(localStorage.getItem('psico_patients'));
-        if (!patients || !Array.isArray(patients) || patients.length === 0) {
-            patients = [
-                { id: 'p1', name: 'Lucía Fernández', email: 'lucia@email.com', phone: '987654321', age: 28, occupation: 'Diseñadora', reason: 'Ansiedad generalizada', notes: [{ date: '2026-06-10', content: 'Primera sesión. Muestra apertura y buena disposición al diálogo.' }] },
-                { id: 'p2', name: 'Carlos Mendoza', email: 'carlos@email.com', phone: '912345678', age: 34, occupation: 'Ingeniero de Software', reason: 'Estrés laboral y burnout', notes: [] },
-                { id: 'p3', name: 'Sofía Ramirez', email: 'sofia@email.com', phone: '945612378', age: 26, occupation: 'Estudiante', reason: 'Problemas de autoestima', notes: [] }
-            ];
+        let patients = [];
+        let appointments = [];
+
+        // 2. CARGAR DATOS DESDE FIRESTORE EN TIEMPO REAL
+        function loadDataFromFirebase() {
+            if (!db) {
+                loadFromLocalStorageFallback();
+                return;
+            }
+
+            // Cargar Pacientes
+            db.collection("patients").onSnapshot((snapshot) => {
+                patients = [];
+                snapshot.forEach((doc) => {
+                    patients.push({ id: doc.id, ...doc.data() });
+                });
+                initAppAfterFetch();
+            }, (error) => {
+                console.error("Error leyendo pacientes de Firebase:", error);
+                loadFromLocalStorageFallback();
+            });
+
+            // Cargar Citas
+            db.collection("appointments").onSnapshot((snapshot) => {
+                appointments = [];
+                snapshot.forEach((doc) => {
+                    appointments.push({ id: doc.id, ...doc.data() });
+                });
+                initAppAfterFetch();
+            }, (error) => {
+                console.error("Error leyendo citas de Firebase:", error);
+            });
         }
 
-        let appointments = JSON.parse(localStorage.getItem('psico_appointments'));
-        if (!appointments || !Array.isArray(appointments) || appointments.length === 0) {
-            appointments = [
-                { id: 'a1', patientId: 'p1', date: '2026-07-22', time: '10:00', cost: 80.00, status: 'Programada', paymentStatus: 'Pendiente', notes: 'Seguimiento de técnicas de respiración.' },
-                { id: 'a2', patientId: 'p2', date: '2026-07-22', time: '16:30', cost: 90.00, status: 'Programada', paymentStatus: 'Pagado', notes: 'Revisión de carga laboral.' },
-                { id: 'a3', patientId: 'p3', date: '2026-07-25', time: '11:00', cost: 80.00, status: 'Programada', paymentStatus: 'Pendiente', notes: 'Evaluación inicial.' }
-            ];
+        function loadFromLocalStorageFallback() {
+            patients = JSON.parse(localStorage.getItem('psico_patients')) || [];
+            appointments = JSON.parse(localStorage.getItem('psico_appointments')) || [];
+            initAppAfterFetch();
         }
 
-        // Autenticación simple
-        document.getElementById('login-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            currentUser = { email, name: 'Lisbeth Méndez' };
-            document.getElementById('auth-screen').classList.add('hidden');
-            document.getElementById('app-container').classList.remove('hidden');
-            initApp();
-        });
-
-        function logout() {
-            currentUser = null;
-            document.getElementById('app-container').classList.add('hidden');
-            document.getElementById('auth-screen').classList.remove('hidden');
-        }
-
-        function saveData() {
-            localStorage.setItem('psico_patients', JSON.stringify(patients));
-            localStorage.setItem('psico_appointments', JSON.stringify(appointments));
-        }
-
-        function initApp() {
+        function initAppAfterFetch() {
             populatePatientSelects();
             populateFinanceMonthFilter();
             renderDashboard();
@@ -584,7 +612,56 @@
             renderFinanceView();
         }
 
-        // Navegación de pestañas (móvil y escritorio)
+        // Autenticación simple (Paso de pantalla)
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            currentUser = { email, name: 'Lisbeth Méndez' };
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('app-container').classList.remove('hidden');
+            loadDataFromFirebase();
+        });
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('app-container').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('hidden');
+        }
+
+        // 3. GUARDAR / ACTUALIZAR EN FIREBASE
+        async function saveDataToCloudOrLocal(collectionName, docId, data) {
+            if (db) {
+                try {
+                    await db.collection(collectionName).doc(docId).set(data);
+                } catch (e) {
+                    console.error("Error al guardar en Firebase:", e);
+                    saveToLocalStorageFallback();
+                }
+            } else {
+                saveToLocalStorageFallback();
+            }
+        }
+
+        async function deleteDataFromCloudOrLocal(collectionName, docId) {
+            if (db) {
+                try {
+                    await db.collection(collectionName).doc(docId).delete();
+                } catch (e) {
+                    console.error("Error al eliminar en Firebase:", e);
+                }
+            }
+        }
+
+        function saveToLocalStorageFallback() {
+            localStorage.setItem('psico_patients', JSON.stringify(patients));
+            localStorage.setItem('psico_appointments', JSON.stringify(appointments));
+        }
+
+        function initApp() {
+            loadDataFromFirebase();
+        }
+
+        // Navegación de pestañas
         function switchTab(tabId) {
             currentTab = tabId;
             ['dashboard', 'citas', 'pacientes', 'finanzas'].forEach(t => {
@@ -647,7 +724,7 @@
 
             const currentMonthPrefix = new Date().toISOString().slice(0, 7);
             const monthlyIncome = appointments
-                .filter(a => a.date.startsWith(currentMonthPrefix) && a.paymentStatus === 'Pagado')
+                .filter(a => a.date && a.date.startsWith(currentMonthPrefix) && a.paymentStatus === 'Pagado')
                 .reduce((acc, curr) => acc + parseFloat(curr.cost || 0), 0);
             document.getElementById('stat-monthly-income').textContent = `S/. ${monthlyIncome.toFixed(2)}`;
 
@@ -908,7 +985,7 @@
             const monthVal = document.getElementById('finance-month-filter').value || '2026-07';
             const tbody = document.getElementById('finance-table-body');
 
-            const monthAppts = appointments.filter(a => a.date.startsWith(monthVal));
+            const monthAppts = appointments.filter(a => a.date && a.date.startsWith(monthVal));
 
             let totalBilled = 0;
             let totalCollected = 0;
@@ -960,7 +1037,7 @@
             const app = appointments.find(a => a.id === appId);
             if (app) {
                 app.paymentStatus = app.paymentStatus === 'Pagado' ? 'Pendiente' : 'Pagado';
-                saveData();
+                saveDataToCloudOrLocal("appointments", app.id, app);
                 renderFinanceView();
                 renderDashboard();
             }
@@ -1014,16 +1091,8 @@
                 notes: document.getElementById('appointment-notes').value
             };
 
-            if (id) {
-                const idx = appointments.findIndex(a => a.id === id);
-                if (idx !== -1) appointments[idx] = data;
-            } else {
-                appointments.push(data);
-            }
-
-            saveData();
+            saveDataToCloudOrLocal("appointments", data.id, data);
             closeAppointmentModal();
-            initApp();
         }
 
         function openNewPatientModal() {
@@ -1054,6 +1123,7 @@
         function savePatient(e) {
             e.preventDefault();
             const id = document.getElementById('patient-id').value;
+            const existingPatient = patients.find(p => p.id === id);
             const data = {
                 id: id || 'p_' + Date.now(),
                 name: document.getElementById('patient-name').value,
@@ -1062,19 +1132,11 @@
                 age: document.getElementById('patient-age').value,
                 occupation: document.getElementById('patient-occupation').value,
                 reason: document.getElementById('patient-reason').value,
-                notes: id ? (patients.find(p => p.id === id).notes || []) : []
+                notes: existingPatient ? (existingPatient.notes || []) : []
             };
 
-            if (id) {
-                const idx = patients.findIndex(p => p.id === id);
-                if (idx !== -1) patients[idx] = data;
-            } else {
-                patients.push(data);
-            }
-
-            saveData();
+            saveDataToCloudOrLocal("patients", data.id, data);
             closePatientModal();
-            initApp();
         }
 
         // --- EXPEDIENTE CLÍNICO ---
@@ -1127,7 +1189,7 @@
             document.getElementById('clinical-note-modal').classList.remove('hidden');
         }
 
-        function closeClinicalnoteModal() {
+        function closeClinicalNoteModal() {
             document.getElementById('clinical-note-modal').classList.add('hidden');
         }
 
@@ -1143,7 +1205,7 @@
                 content: document.getElementById('note-content').value
             });
 
-            saveData();
+            saveDataToCloudOrLocal("patients", p.id, p);
             closeClinicalNoteModal();
             openPatientDetail(patientId);
         }
@@ -1152,7 +1214,7 @@
             const p = patients.find(pat => pat.id === patientId);
             if (!p || !p.notes) return;
             p.notes.splice(noteIndex, 1);
-            saveData();
+            saveDataToCloudOrLocal("patients", p.id, p);
             openPatientDetail(patientId);
         }
     </script>
