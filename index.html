@@ -25,7 +25,7 @@
         .tab-transition { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
-<body class="text-slate-800 min-h-screen flex flex-col pb-20 md:pb-6">
+<body class="text-slate-800 min-h-screen flex flex-col">
 
     <!-- ================= PANTALLA DE AUTENTICACIÓN ================= -->
     <div id="auth-screen" class="fixed inset-0 bg-slate-900 flex items-center justify-center z-50 p-4">
@@ -110,21 +110,21 @@
         </div>
     </div>
 
-    <!-- ================= CONTENEDOR PRINCIPAL CON DISEÑO MODERNO TIPO SAAMIR ================= -->
-    <div id="app-container" class="hidden flex-col md:flex-row flex-grow bg-slate-50">
+    <!-- ================= CONTENEDOR PRINCIPAL FIJO / RESPONSIVO (ESTILO SAAMIR) ================= -->
+    <div id="app-container" class="hidden h-screen overflow-hidden flex flex-col md:flex-row bg-slate-50">
         
-        <!-- SIDEBAR DE NAVEGACIÓN MODERNA (ESTILO SAAMIR) -->
-        <aside class="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col justify-between shrink-0 no-print border-r border-slate-800">
+        <!-- SIDEBAR FIJO (NO DESPLAZA LA PÁGINA) -->
+        <aside class="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col justify-between shrink-0 no-print border-r border-slate-800 h-auto md:h-full z-20">
             <div>
                 <!-- Brand / Logo Header -->
-                <div class="p-6 border-b border-slate-800 flex items-center gap-3">
+                <div class="p-5 border-b border-slate-800 flex items-center gap-3">
                     <div class="bg-indigo-600 p-2.5 rounded-xl shadow-inner text-white">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                         </svg>
                     </div>
                     <div>
-                        <h1 class="font-extrabold text-base text-white tracking-tight flex items-center gap-1.5">
+                        <h1 class="font-extrabold text-sm text-white tracking-tight flex items-center gap-1.5">
                             Agenda Pro+
                         </h1>
                         <p class="text-[10px] text-emerald-400 flex items-center gap-1 mt-0.5">
@@ -135,129 +135,135 @@
                 </div>
 
                 <!-- Menú de navegación lateral (Tabs) -->
-                <nav class="p-4 space-y-1.5">
-                    <button id="tab-citas" onclick="switchTab('citas')" class="w-full py-3 px-4 rounded-xl text-xs font-bold flex items-center gap-3 bg-indigo-600 text-white shadow-md shadow-indigo-950/50 tab-transition">
-                        <span class="text-base">🗓️</span> <span>Gestión de Citas</span>
+                <nav class="p-3 space-y-1.5">
+                    <button id="tab-citas" onclick="switchTab('citas')" class="w-full py-2.5 px-3.5 rounded-xl text-xs font-bold flex items-center gap-3 bg-indigo-600 text-white shadow-md shadow-indigo-950/50 tab-transition">
+                        <span class="text-sm">🗓️</span> <span>Gestión de Citas</span>
                     </button>
-                    <button id="tab-pacientes" onclick="switchTab('pacientes')" class="w-full py-3 px-4 rounded-xl text-xs font-semibold flex items-center gap-3 text-slate-400 hover:text-white hover:bg-slate-800/60 tab-transition">
-                        <span class="text-base">👥</span> <span>Directorio Pacientes</span>
+                    <button id="tab-pacientes" onclick="switchTab('pacientes')" class="w-full py-2.5 px-3.5 rounded-xl text-xs font-semibold flex items-center gap-3 text-slate-400 hover:text-white hover:bg-slate-800/60 tab-transition">
+                        <span class="text-sm">👥</span> <span>Directorio Pacientes</span>
                     </button>
-                    <button id="tab-finanzas" onclick="switchTab('finanzas')" class="w-full py-3 px-4 rounded-xl text-xs font-semibold flex items-center gap-3 text-slate-400 hover:text-white hover:bg-slate-800/60 tab-transition">
-                        <span class="text-base">📊</span> <span>Estadísticas & Finanzas</span>
+                    <button id="tab-finanzas" onclick="switchTab('finanzas')" class="w-full py-2.5 px-3.5 rounded-xl text-xs font-semibold flex items-center gap-3 text-slate-400 hover:text-white hover:bg-slate-800/60 tab-transition">
+                        <span class="text-sm">📊</span> <span>Estadísticas & Finanzas</span>
                     </button>
                 </nav>
             </div>
 
             <!-- Panel inferior del Sidebar (Usuario y Acciones rápidas) -->
-            <div class="p-4 border-t border-slate-800 space-y-3 bg-slate-950/30">
-                <div class="flex items-center justify-between gap-2 px-2">
-                    <button onclick="openProfileModal()" class="flex items-center gap-2.5 text-left truncate group" title="Mi Perfil">
-                        <div class="w-8 h-8 rounded-full bg-indigo-900 border border-indigo-700 flex items-center justify-center text-white text-xs font-bold uppercase shrink-0">
+            <div class="p-3 border-t border-slate-800 space-y-2 bg-slate-950/30">
+                <div class="flex items-center justify-between gap-2 px-1">
+                    <button onclick="openProfileModal()" class="flex items-center gap-2 text-left truncate group" title="Mi Perfil">
+                        <div class="w-7 h-7 rounded-full bg-indigo-900 border border-indigo-700 flex items-center justify-center text-white text-xs font-bold uppercase shrink-0">
                             👤
                         </div>
                         <div class="truncate">
                             <p id="header-user-name" class="text-xs font-bold text-white truncate group-hover:text-indigo-400 transition">Especialista</p>
-                            <p class="text-[10px] text-slate-500">Configurar cuenta</p>
+                            <p class="text-[9px] text-slate-500">Configurar cuenta</p>
                         </div>
                     </button>
                 </div>
-                <div class="grid grid-cols-2 gap-2 pt-1">
-                    <button onclick="openPrintModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold py-2 px-3 rounded-lg transition flex items-center justify-center gap-1.5" title="Imprimir Reporte">
+                <div class="grid grid-cols-2 gap-1.5 pt-1">
+                    <button onclick="openPrintModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-semibold py-1.5 px-2 rounded-lg transition flex items-center justify-center gap-1" title="Imprimir Reporte">
                         <span>🖨️</span> Reportes
                     </button>
-                    <button id="logout-btn" class="bg-red-950/40 hover:bg-red-900/60 border border-red-900/40 text-red-300 text-[11px] font-semibold py-2 px-3 rounded-lg transition flex items-center justify-center gap-1.5" title="Cerrar Sesión">
+                    <button id="logout-btn" class="bg-red-950/40 hover:bg-red-900/60 border border-red-900/40 text-red-300 text-[10px] font-semibold py-1.5 px-2 rounded-lg transition flex items-center justify-center gap-1" title="Cerrar Sesión">
                         <span>🚪</span> Salir
                     </button>
                 </div>
             </div>
         </aside>
 
-        <!-- CONTENEDOR DE CONTENIDO PRINCIPAL -->
-        <div class="flex-grow flex flex-col min-h-screen">
+        <!-- CONTENEDOR PRINCIPAL CON SCROLL PROPIO (NO ROMPE EL DISEÑO) -->
+        <div class="flex-grow flex flex-col h-full overflow-y-auto">
             
             <!-- TOPBAR INFORMATIVA -->
-            <header class="bg-white border-b border-slate-200 px-6 py-4 sticky top-0 z-30 no-print flex justify-between items-center shadow-xs">
+            <header class="bg-white border-b border-slate-200 px-6 py-3.5 sticky top-0 z-30 no-print flex justify-between items-center shadow-xs shrink-0">
                 <div>
-                    <h2 id="topbar-title" class="font-black text-slate-800 text-lg">Panel de Citas</h2>
+                    <h2 id="topbar-title" class="font-black text-slate-800 text-base">Panel de Citas</h2>
                     <p id="current-date-lbl" class="text-xs font-medium text-slate-500"></p>
                 </div>
                 <div class="flex items-center gap-3">
-                    <button onclick="openAppointmentModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md shadow-indigo-100 transition flex items-center gap-2">
-                        <span>➕</span> <span>Nueva Cita</span>
+                    <button onclick="openAppointmentModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-md shadow-indigo-100 transition flex items-center gap-2">
+                        <span>➕</span> <span class="hidden sm:inline">Nueva Cita</span>
                     </button>
                 </div>
             </header>
 
             <!-- MAIN VIEW AREA -->
-            <main class="flex-grow p-4 md:p-8 space-y-6 no-print max-w-6xl w-full mx-auto">
+            <main class="flex-grow p-4 md:p-6 space-y-5 no-print max-w-6xl w-full mx-auto">
 
                 <!-- SECCIÓN: CITAS -->
-                <section id="sec-citas" class="space-y-6">
+                <section id="sec-citas" class="space-y-5">
                     <!-- Tarjetas de Estadísticas Rápidas -->
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 flex flex-col justify-between">
-                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Citas Hoy</span>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div class="bg-white p-3.5 rounded-2xl shadow-xs border border-slate-100 flex flex-col justify-between">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Citas Hoy</span>
                             <div class="flex items-baseline justify-between mt-1">
-                                <span id="stat-citas-hoy" class="text-3xl font-extrabold text-indigo-600">0</span>
-                                <span class="text-xs text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded-md font-medium">Hoy</span>
+                                <span id="stat-citas-hoy" class="text-2xl font-extrabold text-indigo-600">0</span>
+                                <span class="text-[10px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">Hoy</span>
                             </div>
                         </div>
-                        <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 flex flex-col justify-between">
-                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Pendientes</span>
+                        <div class="bg-white p-3.5 rounded-2xl shadow-xs border border-slate-100 flex flex-col justify-between">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Pendientes</span>
                             <div class="flex items-baseline justify-between mt-1">
-                                <span id="stat-citas-pendientes" class="text-3xl font-extrabold text-amber-500">0</span>
-                                <span class="text-xs text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-md font-medium">Por Atender</span>
+                                <span id="stat-citas-pendientes" class="text-2xl font-extrabold text-amber-500">0</span>
+                                <span class="text-[10px] text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded font-medium">Por Atender</span>
                             </div>
                         </div>
-                        <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 flex flex-col justify-between">
-                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Completadas</span>
+                        <div class="bg-white p-3.5 rounded-2xl shadow-xs border border-slate-100 flex flex-col justify-between">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Completadas</span>
                             <div class="flex items-baseline justify-between mt-1">
-                                <span id="stat-citas-completas" class="text-3xl font-extrabold text-emerald-500">0</span>
-                                <span class="text-xs text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md font-medium">Asistidas</span>
+                                <span id="stat-citas-completas" class="text-2xl font-extrabold text-emerald-500">0</span>
+                                <span class="text-[10px] text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded font-medium">Asistidas</span>
                             </div>
                         </div>
-                        <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 flex flex-col justify-between">
-                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Recaudación Estimada</span>
+                        <div class="bg-white p-3.5 rounded-2xl shadow-xs border border-slate-100 flex flex-col justify-between">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Recaudación</span>
                             <div class="flex items-baseline justify-between mt-1">
-                                <span id="stat-citas-ingresos" class="text-xl font-extrabold text-slate-800">S/ 0.00</span>
-                                <span class="text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md font-medium">Hoy</span>
+                                <span id="stat-citas-ingresos" class="text-lg font-extrabold text-slate-800">S/ 0.00</span>
+                                <span class="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded font-medium">Hoy</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Panel de Filtros Avanzados y Búsqueda -->
-                    <div class="bg-white p-5 rounded-3xl shadow-xs border border-slate-100 space-y-4">
+                    <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 space-y-3.5">
                         <div class="flex flex-col md:flex-row gap-3 items-center justify-between">
                             <!-- Toggle Vista Día / Vista Mes -->
                             <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl w-full md:w-auto">
-                                <button onclick="setCitasView('dia')" id="btn-view-dia" class="flex-1 md:flex-none px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow-xs transition">📅 Vista Diaria</button>
-                                <button onclick="setCitasView('mes')" id="btn-view-mes" class="flex-1 md:flex-none px-4 py-2 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-lg transition">🗓️ Vista Mensual</button>
+                                <button onclick="setCitasView('dia')" id="btn-view-dia" class="flex-1 md:flex-none px-3.5 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow-xs transition">📅 Vista Diaria</button>
+                                <button onclick="setCitasView('mes')" id="btn-view-mes" class="flex-1 md:flex-none px-3.5 py-1.5 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-lg transition">🗓️ Vista Mensual</button>
                             </div>
 
                             <!-- Selector Rápido de Fecha -->
                             <div class="flex items-center gap-2 w-full md:w-auto justify-end flex-wrap">
                                 <div class="flex items-center bg-slate-50 border border-slate-200 rounded-xl p-1">
-                                    <button onclick="shiftDate(-1)" class="px-2.5 py-1.5 text-slate-600 hover:bg-white rounded-lg transition text-xs font-bold">◀ Anterior</button>
+                                    <button onclick="shiftDate(-1)" class="px-2 py-1 text-slate-600 hover:bg-white rounded-lg transition text-[11px] font-bold">◀ Anterior</button>
                                     <input type="date" id="date-filter" onchange="renderAppointments()" class="bg-transparent border-none text-xs font-bold text-slate-700 focus:outline-none px-2 py-1">
-                                    <button onclick="shiftDate(1)" class="px-2.5 py-1.5 text-slate-600 hover:bg-white rounded-lg transition text-xs font-bold">Siguiente ▶</button>
+                                    <button onclick="shiftDate(1)" class="px-2 py-1 text-slate-600 hover:bg-white rounded-lg transition text-[11px] font-bold">Siguiente ▶</button>
                                 </div>
-                                <button onclick="goToToday()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-3.5 py-2.5 rounded-xl text-xs transition">Hoy</button>
+                                <button onclick="goToToday()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-3 py-2 rounded-xl text-xs transition">Hoy</button>
                             </div>
                         </div>
 
-                        <!-- Barra de Búsqueda de Paciente o Nota y Filtros de Estado -->
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 pt-2 border-t border-slate-100">
-                            <div class="relative md:col-span-6">
-                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none">🔍</span>
-                                <input type="text" id="appointment-search" oninput="renderAppointments()" placeholder="Filtrar por paciente, DNI o notas clínicas..."
-                                    class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        <!-- Barra de Búsqueda Adaptable y Filtros de Estado / Paciente -->
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5 pt-2 border-t border-slate-100">
+                            <div class="relative md:col-span-5">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none">🔍</span>
+                                <input type="text" id="appointment-search" oninput="renderAppointments()" placeholder="Buscar por paciente o notas..."
+                                    class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
                             </div>
-                            <div class="flex items-center gap-1.5 md:col-span-6 overflow-x-auto pb-1 md:pb-0 justify-start md:justify-end">
-                                <span class="text-[11px] font-bold text-slate-400 uppercase mr-1">Estado:</span>
-                                <button onclick="setFilterStatus('todas')" id="btn-f-todas" class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow-xs transition shrink-0">Todas</button>
-                                <button onclick="setFilterStatus('pendiente')" id="btn-f-pendiente" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-lg transition shrink-0">Pendientes</button>
-                                <button onclick="setFilterStatus('completada')" id="btn-f-completada" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-lg transition shrink-0">Completadas</button>
-                                <button onclick="setFilterStatus('cancelada')" id="btn-f-cancelada" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-lg transition shrink-0">Canceladas</button>
+                            <!-- Filtro desplegable específico por Paciente -->
+                            <div class="md:col-span-3">
+                                <select id="filter-patient-select" onchange="renderAppointments()" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <option value="">👤 Todos los pacientes</option>
+                                </select>
+                            </div>
+                            <!-- Filtros de Estado -->
+                            <div class="flex items-center gap-1 md:col-span-4 overflow-x-auto pb-1 md:pb-0 justify-start md:justify-end">
+                                <button onclick="setFilterStatus('todas')" id="btn-f-todas" class="px-2.5 py-1.5 bg-indigo-600 text-white text-[11px] font-bold rounded-lg shadow-xs transition shrink-0">Todas</button>
+                                <button onclick="setFilterStatus('pendiente')" id="btn-f-pendiente" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold rounded-lg transition shrink-0">Pendientes</button>
+                                <button onclick="setFilterStatus('completada')" id="btn-f-completada" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold rounded-lg transition shrink-0">Completadas</button>
+                                <button onclick="setFilterStatus('cancelada')" id="btn-f-cancelada" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold rounded-lg transition shrink-0">Canceladas</button>
                             </div>
                         </div>
                     </div>
@@ -286,75 +292,86 @@
                     </div>
                 </section>
 
-                <!-- SECCIÓN: PACIENTES -->
+                <!-- SECCIÓN: PACIENTES (CON PAGINACIÓN Y TAMAÑO FIJO ESTABLE) -->
                 <section id="sec-pacientes" class="space-y-4 hidden">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-5 rounded-3xl shadow-xs border border-slate-100">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-2xl shadow-xs border border-slate-100">
                         <div>
-                            <h2 class="text-lg font-bold text-slate-800">Directorio Clínico de Pacientes</h2>
-                            <p class="text-xs text-slate-500">Registra pacientes, revisa datos de contacto e historial clínico.</p>
+                            <h2 class="text-base font-bold text-slate-800">Directorio Clínico de Pacientes</h2>
+                            <p class="text-xs text-slate-500">Gestión de fichas e historiales clínicos por páginas.</p>
                         </div>
                         <button onclick="openPatientModal()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md transition flex items-center justify-center gap-2">
                             ➕ Nuevo Paciente
                         </button>
                     </div>
-                    <div class="bg-white p-4 rounded-3xl shadow-xs border border-slate-100">
+
+                    <!-- Buscador general de pacientes -->
+                    <div class="bg-white p-3.5 rounded-2xl shadow-xs border border-slate-100">
                         <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none">🔍</span>
-                            <input type="text" id="patient-search-input" oninput="renderPatients()" placeholder="Buscar paciente por nombre o teléfono..."
-                                class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none">🔍</span>
+                            <input type="text" id="patient-search-input" oninput="currentPatientPage=1; renderPatients()" placeholder="Buscar paciente por nombre, DNI o teléfono..."
+                                class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
                         </div>
                     </div>
-                    <div id="patients-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+
+                    <!-- Cuadrícula de pacientes (mantiene altura uniforme y paginada) -->
+                    <div id="patients-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3.5 min-h-[380px] content-start"></div>
+
+                    <!-- Controles de Paginación del Directorio -->
+                    <div id="patients-pagination" class="flex items-center justify-between bg-white px-4 py-3 rounded-2xl border border-slate-100 shadow-xs">
+                        <button onclick="changePatientPage(-1)" id="btn-prev-page" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed">◀ Anterior</button>
+                        <span id="patients-page-info" class="text-xs font-semibold text-slate-500">Página 1 de 1</span>
+                        <button onclick="changePatientPage(1)" id="btn-next-page" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed">Siguiente ▶</button>
+                    </div>
                 </section>
 
                 <!-- SECCIÓN: FINANZAS -->
-                <section id="sec-finanzas" class="space-y-6 hidden">
+                <section id="sec-finanzas" class="space-y-5 hidden">
                     <!-- Selector de Periodo + Impresión -->
-                    <div class="bg-white p-5 rounded-3xl shadow-xs border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-3">
+                    <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-3">
                         <div class="flex items-center gap-2 flex-wrap">
                             <span class="text-xs font-bold text-slate-400 uppercase mr-1">Periodo:</span>
-                            <button onclick="setFinancePeriod('todo')" id="btn-fp-todo" class="px-3.5 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl shadow-xs transition">Todo el Tiempo</button>
-                            <button onclick="setFinancePeriod('mes')" id="btn-fp-mes" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition">Este Mes</button>
-                            <button onclick="setFinancePeriod('dia')" id="btn-fp-dia" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition">Hoy</button>
+                            <button onclick="setFinancePeriod('todo')" id="btn-fp-todo" class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-xl shadow-xs transition">Todo el Tiempo</button>
+                            <button onclick="setFinancePeriod('mes')" id="btn-fp-mes" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition">Este Mes</button>
+                            <button onclick="setFinancePeriod('dia')" id="btn-fp-dia" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition">Hoy</button>
                         </div>
                         <button onclick="openPrintModal(window._profileState && window._profileState.financePeriod === 'mes' ? 'mes' : 'dia', 'finanzas')" class="w-full sm:w-auto bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-4 py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
                             🖨️ Imprimir Reporte Financiero
                         </button>
                     </div>
 
-                    <div class="bg-white p-6 rounded-3xl shadow-xs border border-slate-100">
+                    <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100">
                         <div class="flex items-center justify-between mb-4 flex-wrap gap-1">
-                            <h2 class="text-base font-bold text-slate-800">Análisis del Consultorio</h2>
+                            <h2 class="text-sm font-bold text-slate-800">Análisis del Consultorio</h2>
                             <p id="finance-period-label" class="text-xs text-slate-400 font-medium">Mostrando datos de: Todo el tiempo</p>
                         </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <div class="bg-indigo-50/60 border border-indigo-100 p-5 rounded-2xl text-center">
-                                <span class="text-xs font-bold text-indigo-500 uppercase block mb-1">Pacientes Únicos</span>
-                                <span id="stats-total-patients" class="text-3xl font-extrabold text-indigo-900">0</span>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="bg-indigo-50/60 border border-indigo-100 p-4 rounded-2xl text-center">
+                                <span class="text-[11px] font-bold text-indigo-500 uppercase block mb-1">Pacientes Únicos</span>
+                                <span id="stats-total-patients" class="text-2xl font-extrabold text-indigo-900">0</span>
                             </div>
-                            <div class="bg-emerald-50/60 border border-emerald-100 p-5 rounded-2xl text-center">
-                                <span class="text-xs font-bold text-emerald-500 uppercase block mb-1">Ingresos (Completadas)</span>
-                                <span id="stats-revenue-total" class="text-3xl font-extrabold text-emerald-900">S/ 0.00</span>
+                            <div class="bg-emerald-50/60 border border-emerald-100 p-4 rounded-2xl text-center">
+                                <span class="text-[11px] font-bold text-emerald-500 uppercase block mb-1">Ingresos (Completadas)</span>
+                                <span id="stats-revenue-total" class="text-2xl font-extrabold text-emerald-900">S/ 0.00</span>
                             </div>
-                            <div class="bg-violet-50/60 border border-violet-100 p-5 rounded-2xl text-center">
-                                <span class="text-xs font-bold text-violet-500 uppercase block mb-1">Citas Registradas</span>
-                                <span id="stats-total-appointments" class="text-3xl font-extrabold text-violet-900">0</span>
+                            <div class="bg-violet-50/60 border border-violet-100 p-4 rounded-2xl text-center">
+                                <span class="text-[11px] font-bold text-violet-500 uppercase block mb-1">Citas Registradas</span>
+                                <span id="stats-total-appointments" class="text-2xl font-extrabold text-violet-900">0</span>
                             </div>
                         </div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-white p-6 rounded-3xl shadow-xs border border-slate-100 space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 space-y-3">
                             <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Control Financiero de Sesiones</h3>
-                            <div class="space-y-3">
-                                <div class="flex justify-between items-center py-2 border-b border-slate-100 text-xs">
+                            <div class="space-y-2.5">
+                                <div class="flex justify-between items-center py-1.5 border-b border-slate-100 text-xs">
                                     <span class="font-medium text-slate-500">Monto Promedio por Sesión:</span>
                                     <span id="finance-average-cost" class="font-bold text-slate-700">S/ 0.00</span>
                                 </div>
-                                <div class="flex justify-between items-center py-2 border-b border-slate-100 text-xs">
+                                <div class="flex justify-between items-center py-1.5 border-b border-slate-100 text-xs">
                                     <span class="font-medium text-slate-500">Monto Pendiente de Cobro:</span>
                                     <span id="finance-pending-cobro" class="font-bold text-amber-600">S/ 0.00</span>
                                 </div>
-                                <div class="flex justify-between items-center py-2 text-xs">
+                                <div class="flex justify-between items-center py-1.5 text-xs">
                                     <span class="font-medium text-slate-500">Estimación de Ingresos Futuros:</span>
                                     <span id="finance-future-cobro" class="font-bold text-indigo-600">S/ 0.00</span>
                                 </div>
@@ -374,66 +391,66 @@
                 <h3 id="app-modal-title" class="font-bold text-sm flex items-center gap-2">🗓️ Programar Nueva Cita</h3>
                 <button onclick="closeAppointmentModal()" class="text-indigo-200 hover:text-white transition text-lg">&times;</button>
             </div>
-            <form id="appointment-form" class="p-6 space-y-4 overflow-y-auto flex-grow">
+            <form id="appointment-form" class="p-6 space-y-3.5 overflow-y-auto flex-grow">
                 <input type="hidden" id="app-id">
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Paciente Clínico *</label>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Paciente Clínico *</label>
                     <div class="flex gap-2">
-                        <select id="app-patient-select" required class="flex-grow p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
-                        <button type="button" onclick="switchToNewPatientFromAppoint()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3.5 rounded-xl text-xs font-bold border border-indigo-200 transition">➕ Nuevo</button>
+                        <select id="app-patient-select" required class="flex-grow p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                        <button type="button" onclick="switchToNewPatientFromAppoint()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 rounded-xl text-xs font-bold border border-indigo-200 transition">➕ Nuevo</button>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-2.5">
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Fecha *</label>
-                        <input type="date" id="app-date" required class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Fecha *</label>
+                        <input type="date" id="app-date" required class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Hora *</label>
-                        <input type="time" id="app-time" required class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Hora *</label>
+                        <input type="time" id="app-time" required class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Modalidad de la Cita *</label>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Modalidad de la Cita *</label>
                     <div class="grid grid-cols-2 gap-2">
-                        <label class="flex items-center justify-center gap-2 p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-semibold cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 has-[:checked]:text-indigo-700 transition">
+                        <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-semibold cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 has-[:checked]:text-indigo-700 transition">
                             <input type="radio" name="app-modality" id="app-modality-presencial" value="presencial" class="accent-indigo-600" checked onchange="updateCostByModality()">
                             🏢 Presencial
                         </label>
-                        <label class="flex items-center justify-center gap-2 p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-semibold cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 has-[:checked]:text-indigo-700 transition">
+                        <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-semibold cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 has-[:checked]:text-indigo-700 transition">
                             <input type="radio" name="app-modality" id="app-modality-virtual" value="virtual" class="accent-indigo-600" onchange="updateCostByModality()">
                             💻 Virtual
                         </label>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-2.5">
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Costo (S/) *</label>
-                        <input type="number" id="app-cost" min="0" step="0.50" value="50.00" required class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Costo (S/) *</label>
+                        <input type="number" id="app-cost" min="0" step="0.50" value="50.00" required class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Estado de Pago *</label>
-                        <select id="app-payment" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Estado de Pago *</label>
+                        <select id="app-payment" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
                             <option value="pendiente">Pendiente de Cobro</option>
                             <option value="pagado">Pagado</option>
                         </select>
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Estado de la Cita</label>
-                    <select id="app-status" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Estado de la Cita</label>
+                    <select id="app-status" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
                         <option value="pendiente">Pendiente de Atención</option>
                         <option value="completada">Completada (Asistió)</option>
                         <option value="cancelada">Cancelada</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Notas / Diagnóstico</label>
-                    <textarea id="app-notes" rows="3" placeholder="Ingresar notas de diagnóstico..." class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none"></textarea>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Notas / Diagnóstico</label>
+                    <textarea id="app-notes" rows="2.5" placeholder="Ingresar notas de diagnóstico..." class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none"></textarea>
                 </div>
-                <div class="flex gap-3 pt-2">
-                    <button type="button" onclick="closeAppointmentModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-3 rounded-xl text-xs font-bold transition">Cancelar</button>
-                    <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-xs font-bold shadow-md transition">Guardar Cita</button>
+                <div class="flex gap-2.5 pt-2">
+                    <button type="button" onclick="closeAppointmentModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-2.5 rounded-xl text-xs font-bold transition">Cancelar</button>
+                    <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-xs font-bold shadow-md transition">Guardar Cita</button>
                 </div>
             </form>
         </div>
@@ -446,33 +463,33 @@
                 <h3 id="patient-modal-title" class="font-bold text-sm">👤 Registrar Paciente Clínico</h3>
                 <button onclick="closePatientModal()" class="text-indigo-200 hover:text-white transition text-lg">&times;</button>
             </div>
-            <form id="patient-form" class="p-6 space-y-4">
+            <form id="patient-form" class="p-6 space-y-3.5">
                 <input type="hidden" id="patient-id">
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Nombre Completo *</label>
-                    <input type="text" id="pat-name" required placeholder="Ej: Alejandra Ruiz Medina" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nombre Completo *</label>
+                    <input type="text" id="pat-name" required placeholder="Ej: Alejandra Ruiz Medina" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
                 </div>
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-2.5">
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">DNI</label>
-                        <input type="text" id="pat-dni" placeholder="12345678" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">DNI</label>
+                        <input type="text" id="pat-dni" placeholder="12345678" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Teléfono *</label>
-                        <input type="tel" id="pat-phone" required placeholder="987654321" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Teléfono *</label>
+                        <input type="tel" id="pat-phone" required placeholder="987654321" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Fecha de Nacimiento</label>
-                    <input type="date" id="pat-birth" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Fecha de Nacimiento</label>
+                    <input type="date" id="pat-birth" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Antecedentes Generales / Historial</label>
-                    <textarea id="pat-history" rows="3" placeholder="Motivos clínicos recurrentes..." class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none"></textarea>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Antecedentes Generales / Historial</label>
+                    <textarea id="pat-history" rows="2.5" placeholder="Motivos clínicos recurrentes..." class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none"></textarea>
                 </div>
-                <div class="flex gap-3 pt-2">
-                    <button type="button" onclick="closePatientModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-3 rounded-xl text-xs font-bold transition">Cancelar</button>
-                    <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-xs font-bold shadow-md transition">Guardar Paciente</button>
+                <div class="flex gap-2.5 pt-2">
+                    <button type="button" onclick="closePatientModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-2.5 rounded-xl text-xs font-bold transition">Cancelar</button>
+                    <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-xs font-bold shadow-md transition">Guardar Paciente</button>
                 </div>
             </form>
         </div>
@@ -502,94 +519,108 @@
             </div>
 
             <!-- TAB: EDITAR PERFIL -->
-            <div id="psec-perfil" class="p-6 space-y-4">
+            <div id="psec-perfil" class="p-6 space-y-3.5">
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Nombre Completo</label>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nombre Completo</label>
                     <input type="text" id="profile-displayname" placeholder="Ej: Dra. Ana García"
-                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Especialidad / Cargo</label>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Especialidad / Cargo</label>
                     <input type="text" id="profile-specialty" placeholder="Ej: Psicóloga Clínica"
-                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Teléfono / Contacto</label>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Teléfono / Contacto</label>
                     <input type="tel" id="profile-phone" placeholder="Ej: 987654321"
-                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
                 </div>
                 <div id="profile-edit-error" class="text-xs text-red-500 hidden font-semibold bg-red-50 p-3 rounded-lg border border-red-200"></div>
                 <div id="profile-edit-success" class="text-xs text-emerald-600 hidden font-semibold bg-emerald-50 p-3 rounded-lg border border-emerald-200"></div>
-                <div class="flex gap-3 pt-1">
-                    <button type="button" onclick="closeProfileModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-3 rounded-xl text-xs font-bold transition">Cancelar</button>
-                    <button type="button" onclick="saveProfileData()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-xs font-bold shadow-md transition">Guardar Cambios</button>
+                <div class="flex gap-2.5 pt-1">
+                    <button type="button" onclick="closeProfileModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-2.5 rounded-xl text-xs font-bold transition">Cancelar</button>
+                    <button type="button" onclick="saveProfileData()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-xs font-bold shadow-md transition">Guardar Cambios</button>
                 </div>
             </div>
 
             <!-- TAB: CAMBIAR CLAVE -->
-            <div id="psec-clave" class="p-6 space-y-4 hidden">
+            <div id="psec-clave" class="p-6 space-y-3.5 hidden">
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Contraseña Actual</label>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Contraseña Actual</label>
                     <input type="password" id="profile-current-pwd" placeholder="••••••••"
-                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Nueva Contraseña</label>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nueva Contraseña</label>
                     <input type="password" id="profile-new-pwd" placeholder="Mínimo 8 caracteres"
-                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Confirmar Nueva Contraseña</label>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Confirmar Nueva Contraseña</label>
                     <input type="password" id="profile-confirm-pwd" placeholder="Repite tu nueva contraseña"
-                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
                 </div>
                 <div id="profile-pwd-error" class="text-xs text-red-500 hidden font-semibold bg-red-50 p-3 rounded-lg border border-red-200"></div>
                 <div id="profile-pwd-success" class="text-xs text-emerald-600 hidden font-semibold bg-emerald-50 p-3 rounded-lg border border-emerald-200"></div>
-                <div class="flex gap-3 pt-1">
-                    <button type="button" onclick="closeProfileModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-3 rounded-xl text-xs font-bold transition">Cancelar</button>
-                    <button type="button" onclick="saveNewPassword()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-xs font-bold shadow-md transition">Actualizar Clave</button>
+                <div class="flex gap-2.5 pt-1">
+                    <button type="button" onclick="closeProfileModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-2.5 rounded-xl text-xs font-bold transition">Cancelar</button>
+                    <button type="button" onclick="saveNewPassword()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-xs font-bold shadow-md transition">Actualizar Clave</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MODAL IMPRESIÓN -->
+    <!-- MODAL IMPRESIÓN (ACTUALIZADO CON RANGO DE FECHAS) -->
     <div id="print-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4 no-print">
         <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col">
             <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center">
                 <h3 class="font-bold text-sm">🖨️ Generar Reporte de Consultas</h3>
                 <button onclick="closePrintModal()" class="text-indigo-200 hover:text-white transition text-lg">&times;</button>
             </div>
-            <div class="p-6 space-y-4">
+            <div class="p-6 space-y-3.5">
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Contenido del Reporte</label>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Contenido del Reporte</label>
                     <div class="flex gap-2">
                         <button type="button" onclick="setPrintCategory('citas')" id="btn-pc-citas" class="flex-1 px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl transition">🗓️ Citas</button>
                         <button type="button" onclick="setPrintCategory('finanzas')" id="btn-pc-finanzas" class="flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition">💰 Finanzas</button>
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Tipo de Reporte</label>
-                    <div class="flex gap-2">
-                        <button type="button" onclick="setPrintType('dia')" id="btn-pt-dia" class="flex-1 px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl transition">📅 Por Día</button>
-                        <button type="button" onclick="setPrintType('mes')" id="btn-pt-mes" class="flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition">🗓️ Por Mes</button>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Tipo de Reporte / Rango</label>
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <button type="button" onclick="setPrintType('dia')" id="btn-pt-dia" class="px-2 py-2 bg-indigo-600 text-white text-[11px] font-bold rounded-xl transition">📅 Día</button>
+                        <button type="button" onclick="setPrintType('mes')" id="btn-pt-mes" class="px-2 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold rounded-xl transition">🗓️ Mes</button>
+                        <button type="button" onclick="setPrintType('rango')" id="btn-pt-rango" class="px-2 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold rounded-xl transition">📆 Rango</button>
                     </div>
                 </div>
+                
                 <div id="print-date-wrap">
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Fecha de Reporte</label>
-                    <input type="date" id="print-date-select" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Fecha Específica</label>
+                    <input type="date" id="print-date-select" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
                 </div>
                 <div id="print-month-wrap" class="hidden">
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Mes de Reporte</label>
-                    <input type="month" id="print-month-select" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Mes de Reporte</label>
+                    <input type="month" id="print-month-select" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
                 </div>
+                <!-- NUEVO: Selector de Rango de Fechas -->
+                <div id="print-range-wrap" class="hidden grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Desde</label>
+                        <input type="date" id="print-start-date" class="w-full p-2 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Hasta</label>
+                        <input type="date" id="print-end-date" class="w-full p-2 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
+                    </div>
+                </div>
+
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Especialista (Firma / Cabecera)</label>
-                    <input type="text" id="print-specialist-name" placeholder="Ej: Dra. Lisbeth Méndez" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Especialista (Firma / Cabecera)</label>
+                    <input type="text" id="print-specialist-name" placeholder="Ej: Dra. Lisbeth Méndez" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-xs font-medium focus:outline-none">
                 </div>
-                <div class="flex gap-3 pt-2">
-                    <button type="button" onclick="closePrintModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-3 rounded-xl text-xs font-bold transition">Cancelar</button>
-                    <button type="button" onclick="executeReportPrint()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-xs font-bold shadow-md transition">Imprimir PDF</button>
+                <div class="flex gap-2.5 pt-2">
+                    <button type="button" onclick="closePrintModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-2.5 rounded-xl text-xs font-bold transition">Cancelar</button>
+                    <button type="button" onclick="executeReportPrint()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-xs font-bold shadow-md transition">Imprimir PDF</button>
                 </div>
             </div>
         </div>
@@ -608,11 +639,11 @@
                     <button onclick="closeClinicalHistory()" class="text-white text-2xl hover:text-red-300">×</button>
                 </div>
             </div>
-            <div class="overflow-y-auto max-h-[80vh] p-6 space-y-5">
+            <div class="overflow-y-auto max-h-[80vh] p-6 space-y-4">
                 <input type="hidden" id="hc-patient-id">
                 <div class="bg-slate-100 rounded-2xl p-4">
                     <h3 class="font-bold text-sm mb-3">Datos del Paciente</h3>
-                    <div class="grid md:grid-cols-2 gap-4">
+                    <div class="grid md:grid-cols-2 gap-3">
                         <div>
                             <label class="text-xs font-bold uppercase text-slate-500">Nombre</label>
                             <input id="hc-patient-name" class="w-full border rounded-xl p-2.5 bg-white text-xs font-medium mt-1" readonly>
@@ -625,29 +656,29 @@
                 </div>
                 <div>
                     <label class="text-xs font-bold uppercase text-slate-500">Motivo de Consulta</label>
-                    <textarea id="hc-motivo" rows="3" class="w-full border rounded-xl p-3 text-xs font-medium mt-1" placeholder="¿Por qué acude el paciente?"></textarea>
+                    <textarea id="hc-motivo" rows="2.5" class="w-full border rounded-xl p-3 text-xs font-medium mt-1" placeholder="¿Por qué acude el paciente?"></textarea>
                 </div>
                 <div>
                     <label class="text-xs font-bold uppercase text-slate-500">Problema Actual</label>
-                    <textarea id="hc-problema" rows="4" class="w-full border rounded-xl p-3 text-xs font-medium mt-1"></textarea>
+                    <textarea id="hc-problema" rows="3.5" class="w-full border rounded-xl p-3 text-xs font-medium mt-1"></textarea>
                 </div>
-                <div class="grid md:grid-cols-2 gap-5">
+                <div class="grid md:grid-cols-2 gap-4">
                     <div>
                         <label class="text-xs font-bold uppercase text-slate-500">Antecedentes Personales</label>
-                        <textarea id="hc-antecedentes" rows="4" class="w-full border rounded-xl p-3 text-xs font-medium mt-1"></textarea>
+                        <textarea id="hc-antecedentes" rows="3.5" class="w-full border rounded-xl p-3 text-xs font-medium mt-1"></textarea>
                     </div>
                     <div>
                         <label class="text-xs font-bold uppercase text-slate-500">Antecedentes Familiares</label>
-                        <textarea id="hc-familiares" rows="4" class="w-full border rounded-xl p-3 text-xs font-medium mt-1"></textarea>
+                        <textarea id="hc-familiares" rows="3.5" class="w-full border rounded-xl p-3 text-xs font-medium mt-1"></textarea>
                     </div>
                 </div>
                 <div>
                     <label class="text-xs font-bold uppercase text-slate-500">Diagnóstico Clínico</label>
-                    <textarea id="hc-diagnostico" rows="3" class="w-full border rounded-xl p-3 text-xs font-medium mt-1"></textarea>
+                    <textarea id="hc-diagnostico" rows="2.5" class="w-full border rounded-xl p-3 text-xs font-medium mt-1"></textarea>
                 </div>
                 <div>
                     <label class="text-xs font-bold uppercase text-slate-500">Objetivos Terapéuticos</label>
-                    <textarea id="hc-objetivos" rows="3" class="w-full border rounded-xl p-3 text-xs font-medium mt-1"></textarea>
+                    <textarea id="hc-objetivos" rows="2.5" class="w-full border rounded-xl p-3 text-xs font-medium mt-1"></textarea>
                 </div>
                 <div>
                     <label class="text-xs font-bold uppercase text-slate-500">Plan de Tratamiento</label>
@@ -658,18 +689,18 @@
                     <textarea id="hc-observaciones" rows="3" class="w-full border rounded-xl p-3 text-xs font-medium mt-1"></textarea>
                 </div>
 
-                <hr class="my-6 border-slate-200">
-                <div class="space-y-4">
+                <hr class="my-5 border-slate-200">
+                <div class="space-y-3">
                     <div class="flex justify-between items-center">
-                        <h2 class="text-base font-bold text-slate-700">📅 Evolución Clínica</h2>
-                        <button type="button" onclick="newClinicalNote()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">➕ Agregar Evolución</button>
+                        <h2 class="text-sm font-bold text-slate-700">📅 Evolución Clínica</h2>
+                        <button type="button" onclick="newClinicalNote()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition">➕ Agregar Evolución</button>
                     </div>
-                    <div id="clinical-notes-container" class="space-y-4"></div>
+                    <div id="clinical-notes-container" class="space-y-3"></div>
                 </div>
 
-                <div class="flex justify-end gap-3 pt-4">
-                    <button onclick="closeClinicalHistory()" class="px-6 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold">Cancelar</button>
-                    <button onclick="saveClinicalHistory()" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md">💾 Guardar Historia Clínica</button>
+                <div class="flex justify-end gap-3 pt-3">
+                    <button onclick="closeClinicalHistory()" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold">Cancelar</button>
+                    <button onclick="saveClinicalHistory()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md">💾 Guardar Historia Clínica</button>
                 </div>
             </div>
         </div>
@@ -683,7 +714,7 @@
                 <p class="text-xs font-semibold uppercase mt-1">Especialista: <span id="print-head-specialist" class="font-bold"></span></p>
             </div>
             <div class="text-right">
-                <span id="print-head-date-label" class="text-sm font-bold block">FECHA</span>
+                <span id="print-head-date-label" class="text-sm font-bold block">PERIODO</span>
                 <span id="print-head-date" class="text-xs font-semibold border px-3 py-1 bg-slate-100 rounded inline-block mt-1"></span>
             </div>
         </div>
@@ -696,7 +727,7 @@
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="border-b bg-slate-100 text-[10px] font-extrabold uppercase">
-                        <th id="print-date-column-header" class="py-2 px-2 hidden">Fecha</th>
+                        <th class="py-2 px-2">Fecha</th>
                         <th class="py-2 px-2">Hora</th>
                         <th class="py-2 px-2">Modalidad</th>
                         <th class="py-2 px-2">Paciente</th>
@@ -724,7 +755,7 @@
                 <p class="text-xs font-semibold uppercase mt-1">Especialista: <span id="pf-head-specialist" class="font-bold"></span></p>
             </div>
             <div class="text-right">
-                <span id="pf-head-date-label" class="text-sm font-bold block">FECHA</span>
+                <span id="pf-head-date-label" class="text-sm font-bold block">PERIODO</span>
                 <span id="pf-head-date" class="text-xs font-semibold border px-3 py-1 bg-slate-100 rounded inline-block mt-1"></span>
             </div>
         </div>
@@ -807,34 +838,8 @@
         </div>
     </div>
 
-    <div id="print-clinical-history" class="print-only hidden p-8 text-slate-950 space-y-5">
-        <div class="flex justify-between items-start border-b-2 border-slate-950 pb-4">
-            <div>
-                <h1 class="text-xl font-extrabold tracking-tight">HISTORIA CLÍNICA PSICOLÓGICA</h1>
-            </div>
-            <div class="text-right text-xs">
-                <span class="font-bold block">Especialista:</span>
-                <span id="pch-specialist" class="font-semibold"></span>
-            </div>
-        </div>
-    </div>
-
     <!-- SCRIPT DE LÓGICA & FIREBASE -->
     <script type="module">
-        function mostrarErrorGlobal(msg) {
-            const errorDiv = document.getElementById('auth-error-msg');
-            if (errorDiv) {
-                errorDiv.innerText = msg;
-                errorDiv.classList.remove('hidden');
-            }
-        }
-        window.addEventListener('error', (e) => {
-            console.error('[Error capturado]', e.error || e.message);
-        });
-        window.addEventListener('unhandledrejection', (e) => {
-            console.error('[Promesa rechazada]', e.reason);
-        });
-
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import {
             getAuth, signInWithEmailAndPassword, signOut,
@@ -882,6 +887,10 @@
             financePeriod: 'todo',
             currentUser: null
         };
+
+        // Estado de Paginación del Directorio de Pacientes
+        let currentPatientPage = 1;
+        const patientsPerPage = 6; // Mantiene el tamaño visual fijo y estructurado
 
         window._profileState = state;
 
@@ -1154,25 +1163,25 @@
         window.newClinicalNote = function(note = {}) {
             const id = note.id || ("note_" + Date.now());
             const div = document.createElement("div");
-            div.className = "border border-slate-200 rounded-2xl p-4 bg-slate-50";
+            div.className = "border border-slate-200 rounded-2xl p-3.5 bg-slate-50";
             div.dataset.id = id;
             div.innerHTML = `
-                <div class="grid md:grid-cols-2 gap-3">
+                <div class="grid md:grid-cols-2 gap-2.5">
                     <div>
-                        <label class="text-xs font-bold uppercase text-slate-500">Fecha</label>
-                        <input type="date" class="note-date w-full border rounded-xl p-2.5 bg-white text-xs font-medium mt-1" value="${note.fecha || new Date().toISOString().split("T")[0]}">
+                        <label class="text-[10px] font-bold uppercase text-slate-500">Fecha</label>
+                        <input type="date" class="note-date w-full border rounded-xl p-2 bg-white text-xs font-medium mt-1" value="${note.fecha || new Date().toISOString().split("T")[0]}">
                     </div>
                     <div>
-                        <label class="text-xs font-bold uppercase text-slate-500">Sesión</label>
-                        <input type="text" class="note-session w-full border rounded-xl p-2.5 bg-white text-xs font-medium mt-1" value="${note.sesion || ""}" placeholder="Sesión 1">
+                        <label class="text-[10px] font-bold uppercase text-slate-500">Sesión</label>
+                        <input type="text" class="note-session w-full border rounded-xl p-2 bg-white text-xs font-medium mt-1" value="${note.sesion || ""}" placeholder="Sesión 1">
                     </div>
                 </div>
-                <div class="mt-3">
-                    <label class="text-xs font-bold uppercase text-slate-500">Evolución Clínica</label>
-                    <textarea class="note-text w-full border rounded-xl p-3 text-xs font-medium mt-1" rows="4">${note.evolucion || ""}</textarea>
+                <div class="mt-2.5">
+                    <label class="text-[10px] font-bold uppercase text-slate-500">Evolución Clínica</label>
+                    <textarea class="note-text w-full border rounded-xl p-2.5 text-xs font-medium mt-1" rows="3">${note.evolucion || ""}</textarea>
                 </div>
-                <div class="text-right mt-3">
-                    <button type="button" onclick="deleteClinicalNoteCard('${id}', this)" class="bg-red-500 hover:bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg">Eliminar</button>
+                <div class="text-right mt-2.5">
+                    <button type="button" onclick="deleteClinicalNoteCard('${id}', this)" class="bg-red-500 hover:bg-red-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg">Eliminar</button>
                 </div>
             `;
             document.getElementById("clinical-notes-container").appendChild(div);
@@ -1280,12 +1289,14 @@
         }
 
         window.renderAppointments = function() {
-            const container  = document.getElementById('appointments-list');
-            const dateFilter = document.getElementById('date-filter').value;
-            const searchVal  = document.getElementById('appointment-search').value.toLowerCase().trim();
+            const container     = document.getElementById('appointments-list');
+            const dateFilter    = document.getElementById('date-filter').value;
+            const searchVal     = document.getElementById('appointment-search').value.toLowerCase().trim();
+            const patientFilter = document.getElementById('filter-patient-select').value;
 
             let filtered = state.appointments.filter(a => a.date === dateFilter);
             if (state.filterStatus !== 'todas') filtered = filtered.filter(a => a.status === state.filterStatus);
+            if (patientFilter) filtered = filtered.filter(a => a.patientId === patientFilter);
             if (searchVal) filtered = filtered.filter(a =>
                 a.patientName.toLowerCase().includes(searchVal) ||
                 (a.notes || '').toLowerCase().includes(searchVal)
@@ -1293,7 +1304,7 @@
             filtered.sort((a, b) => a.time.localeCompare(b.time));
 
             if (!filtered.length) {
-                container.innerHTML = `<div class="text-center p-8 bg-white rounded-3xl border border-slate-100 text-slate-400 text-xs font-semibold">No hay citas programadas para este filtro o fecha.</div>`;
+                container.innerHTML = `<div class="text-center p-8 bg-white rounded-2xl border border-slate-100 text-slate-400 text-xs font-semibold">No hay citas programadas para este filtro o fecha.</div>`;
                 return;
             }
             container.innerHTML = filtered.map(a => {
@@ -1303,23 +1314,23 @@
                     ? 'bg-red-50 text-red-600 border-red-200'
                     : 'bg-amber-50 text-amber-700 border-amber-200';
                 const modalityBadge = a.modality === 'virtual'
-                    ? '<span class="text-[11px] font-bold px-2.5 py-0.5 rounded-xl border bg-sky-50 text-sky-700 border-sky-200">💻 Virtual</span>'
-                    : '<span class="text-[11px] font-bold px-2.5 py-0.5 rounded-xl border bg-slate-50 text-slate-600 border-slate-200">🏢 Presencial</span>';
+                    ? '<span class="text-[11px] font-bold px-2 py-0.5 rounded-xl border bg-sky-50 text-sky-700 border-sky-200">💻 Virtual</span>'
+                    : '<span class="text-[11px] font-bold px-2 py-0.5 rounded-xl border bg-slate-50 text-slate-600 border-slate-200">🏢 Presencial</span>';
                 return `
-                <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-xs flex flex-col sm:flex-row justify-between sm:items-center gap-4 hover:shadow-md transition">
-                    <div class="space-y-1.5">
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col sm:flex-row justify-between sm:items-center gap-3 hover:shadow-md transition">
+                    <div class="space-y-1">
                         <div class="flex items-center gap-2 flex-wrap">
-                            <span class="text-xs font-extrabold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-xl">⏰ ${a.time}</span>
-                            <h4 class="font-bold text-slate-800 text-sm">${a.patientName}</h4>
-                            <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-xl border ${badge}">${a.status.toUpperCase()}</span>
+                            <span class="text-xs font-extrabold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-lg">⏰ ${a.time}</span>
+                            <h4 class="font-bold text-slate-800 text-xs">${a.patientName}</h4>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-xl border ${badge}">${a.status.toUpperCase()}</span>
                             ${modalityBadge}
                         </div>
                         <p class="text-xs text-slate-500 italic pl-1">"${a.notes || 'Sin observaciones para esta sesión'}"</p>
                     </div>
-                    <div class="flex items-center gap-2.5 self-end sm:self-center">
-                        <button onclick="quickToggleStatus('${a.id}','${a.status}')" class="bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs px-3 py-1.5 rounded-xl font-bold transition">🔄 Estado</button>
-                        <button onclick="editAppointment('${a.id}')" class="text-indigo-600 hover:text-indigo-800 text-xs font-bold p-2 bg-indigo-50 rounded-xl">✏️</button>
-                        <button onclick="deleteAppointment('${a.id}')" class="text-red-500 hover:text-red-700 text-xs font-bold p-2 bg-red-50 rounded-xl">🗑️</button>
+                    <div class="flex items-center gap-2 self-end sm:self-center">
+                        <button onclick="quickToggleStatus('${a.id}','${a.status}')" class="bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs px-2.5 py-1 rounded-xl font-bold transition">🔄 Estado</button>
+                        <button onclick="editAppointment('${a.id}')" class="text-indigo-600 hover:text-indigo-800 text-xs font-bold p-1.5 bg-indigo-50 rounded-xl">✏️</button>
+                        <button onclick="deleteAppointment('${a.id}')" class="text-red-500 hover:text-red-700 text-xs font-bold p-1.5 bg-red-50 rounded-xl">🗑️</button>
                     </div>
                 </div>`;
             }).join('');
@@ -1331,8 +1342,8 @@
             const monthView = document.getElementById('citas-month-view');
             const btnDia    = document.getElementById('btn-view-dia');
             const btnMes    = document.getElementById('btn-view-mes');
-            const activeCls   = "flex-1 md:flex-none px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow-xs transition";
-            const inactiveCls = "flex-1 md:flex-none px-4 py-2 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-lg transition";
+            const activeCls   = "flex-1 md:flex-none px-3.5 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow-xs transition";
+            const inactiveCls = "flex-1 md:flex-none px-3.5 py-1.5 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-lg transition";
 
             if (view === 'dia') {
                 dayView.classList.remove('hidden');
@@ -1385,7 +1396,7 @@
 
             const container = document.getElementById('month-view-list');
             if (!dates.length) {
-                container.innerHTML = `<div class="text-center p-8 bg-white rounded-3xl border border-slate-100 text-slate-400 text-xs font-semibold">No hay citas registradas para este mes.</div>`;
+                container.innerHTML = `<div class="text-center p-8 bg-white rounded-2xl border border-slate-100 text-slate-400 text-xs font-semibold">No hay citas registradas para este mes.</div>`;
                 return;
             }
             container.innerHTML = dates.map(dateStr => {
@@ -1399,19 +1410,19 @@
                         ? 'bg-red-50 text-red-600 border-red-200'
                         : 'bg-amber-50 text-amber-700 border-amber-200';
                     const modalityIcon = a.modality === 'virtual' ? '💻' : '🏢';
-                    return `<div class="flex items-center justify-between py-2 border-b border-slate-50 last:border-0 text-xs">
+                    return `<div class="flex items-center justify-between py-1.5 border-b border-slate-50 last:border-0 text-xs">
                         <div class="flex items-center gap-2 flex-wrap">
-                            <span class="font-bold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-lg">⏰ ${a.time}</span>
+                            <span class="font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-lg">⏰ ${a.time}</span>
                             <span class="font-semibold text-slate-700">${modalityIcon} ${a.patientName}</span>
                             <span class="font-bold px-2 py-0.5 rounded-xl border ${badge}">${a.status.toUpperCase()}</span>
                         </div>
                         <span class="font-bold text-slate-500">S/ ${parseFloat(a.cost).toFixed(2)}</span>
                     </div>`;
                 }).join('');
-                return `<div class="bg-white p-4 rounded-3xl border border-slate-100 shadow-xs">
+                return `<div class="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-xs">
                     <div class="flex justify-between items-center mb-2 cursor-pointer" onclick="jumpToDay('${dateStr}')">
                         <h4 class="font-bold text-slate-800 text-xs">📅 ${dayLabel}</h4>
-                        <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-xl">${apps.length} cita${apps.length !== 1 ? 's' : ''} · Ver día ▶</span>
+                        <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-xl">${apps.length} cita${apps.length !== 1 ? 's' : ''} · Ver día ▶</span>
                     </div>
                     <div>${rows}</div>
                 </div>`;
@@ -1419,42 +1430,64 @@
         }
         window.renderMonthView = renderMonthView;
 
+        // ================= DIRECTORIO DE PACIENTES CON PAGINACIÓN Y ALTURA FIJA =================
         window.renderPatients = function() {
             const grid      = document.getElementById('patients-grid');
             const searchVal = document.getElementById('patient-search-input').value.toLowerCase().trim();
             let filtered    = state.patients.filter(p =>
-                !searchVal || p.name.toLowerCase().includes(searchVal) || p.phone.includes(searchVal)
+                !searchVal || p.name.toLowerCase().includes(searchVal) || p.phone.includes(searchVal) || (p.dni && p.dni.includes(searchVal))
             );
             filtered.sort((a, b) => a.name.localeCompare(b.name));
 
-            if (!filtered.length) {
-                grid.innerHTML = `<p class="text-slate-400 text-xs font-semibold col-span-2 text-center py-8">No hay registros de pacientes.</p>`;
+            const totalPages = Math.ceil(filtered.length / patientsPerPage) || 1;
+            if (currentPatientPage > totalPages) currentPatientPage = totalPages;
+            if (currentPatientPage < 1) currentPatientPage = 1;
+
+            const startIdx = (currentPatientPage - 1) * patientsPerPage;
+            const paginated = filtered.slice(startIdx, startIdx + patientsPerPage);
+
+            document.getElementById('patients-page-info').innerText = `Página ${currentPatientPage} de ${totalPages} (Total: ${filtered.length})`;
+            document.getElementById('btn-prev-page').disabled = currentPatientPage === 1;
+            document.getElementById('btn-next-page').disabled = currentPatientPage === totalPages;
+
+            if (!paginated.length) {
+                grid.innerHTML = `<p class="text-slate-400 text-xs font-semibold col-span-2 text-center py-12">No hay registros de pacientes.</p>`;
                 return;
             }
-            grid.innerHTML = filtered.map(p => `
-                <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-xs flex flex-col justify-between space-y-3">
-                    <div class="space-y-2">
-                        <div class="flex justify-between items-start">
-                            <h4 class="font-bold text-slate-800 text-sm">${p.name}</h4>
-                            <span class="text-xs font-bold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-xl">📞 ${p.phone}</span>
+            grid.innerHTML = paginated.map(p => `
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between space-y-2.5 h-[190px]">
+                    <div class="space-y-1.5 overflow-hidden">
+                        <div class="flex justify-between items-start gap-2">
+                            <h4 class="font-bold text-slate-800 text-xs truncate">${p.name}</h4>
+                            <span class="text-[11px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg shrink-0">📞 ${p.phone}</span>
                         </div>
-                        <p class="text-xs text-slate-500"><strong>Nacimiento:</strong> ${p.birth || 'No especificada'}</p>
-                        <p class="text-xs text-slate-600 bg-slate-50 p-3 rounded-2xl border border-slate-100"><strong>Antecedentes:</strong> ${p.history || 'Sin observaciones históricas.'}</p>
+                        <p class="text-[11px] text-slate-500"><strong>DNI:</strong> ${p.dni || '—'} | <strong>Nacimiento:</strong> ${p.birth || '—'}</p>
+                        <p class="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100 line-clamp-2"><strong>Antecedentes:</strong> ${p.history || 'Sin observaciones históricas.'}</p>
                     </div>
-                    <div class="flex justify-end gap-2 border-t pt-3 border-slate-100 flex-wrap">
-                        <button onclick="openPatientHistory('${p.id}')" class="text-slate-600 text-xs font-bold px-3.5 py-2 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 transition">📋 Historial</button>
-                        <button onclick="openClinicalHistory('${p.id}')" class="text-indigo-600 text-xs font-bold px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-200 transition">🩺 Historia Clínica</button>
-                        <button onclick="editPatient('${p.id}')" class="text-indigo-600 text-xs font-bold px-3 py-2 hover:underline">✏️</button>
-                        <button onclick="deletePatient('${p.id}')" class="text-red-500 text-xs font-bold px-3 py-2 hover:underline">🗑️</button>
+                    <div class="flex justify-end gap-1.5 border-t pt-2 border-slate-100 flex-wrap">
+                        <button onclick="openPatientHistory('${p.id}')" class="text-slate-600 text-[11px] font-bold px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 transition">📋 Historial</button>
+                        <button onclick="openClinicalHistory('${p.id}')" class="text-indigo-600 text-[11px] font-bold px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition">🩺 Historia Clínica</button>
+                        <button onclick="editPatient('${p.id}')" class="text-indigo-600 text-[11px] font-bold p-1.5 hover:underline">✏️</button>
+                        <button onclick="deletePatient('${p.id}')" class="text-red-500 text-[11px] font-bold p-1.5 hover:underline">🗑️</button>
                     </div>
                 </div>`).join('');
         };
 
+        window.changePatientPage = function(direction) {
+            currentPatientPage += direction;
+            renderPatients();
+        };
+
         function updatePatientDropdowns() {
             const select = document.getElementById('app-patient-select');
-            select.innerHTML = state.patients.length
+            const filterSelect = document.getElementById('filter-patient-select');
+            
+            const optionsHtml = state.patients.length
                 ? state.patients.map(p => `<option value="${p.id}">${p.name}</option>`).join('')
                 : '<option value="">-- No hay pacientes registrados --</option>';
+            
+            select.innerHTML = optionsHtml;
+            filterSelect.innerHTML = `<option value="">👤 Todos los pacientes</option>` + optionsHtml;
         }
 
         function getFinanceAppointments() {
@@ -1471,8 +1504,8 @@
             state.financePeriod = period;
             ['todo', 'mes', 'dia'].forEach(p => {
                 document.getElementById('btn-fp-' + p).className = p === period
-                    ? "px-3.5 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl shadow-xs transition"
-                    : "px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition";
+                    ? "px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-xl shadow-xs transition"
+                    : "px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition";
             });
             const labels = { todo: 'Todo el tiempo', mes: 'Este mes', dia: 'Hoy' };
             const lbl = document.getElementById('finance-period-label');
@@ -1509,6 +1542,7 @@
             document.getElementById('finance-future-cobro').innerText  = `S/ ${futureCobro.toFixed(2)}`;
         }
 
+        // ================= REPORTE CON SOPORTE DE RANGO DE FECHAS =================
         window.executeReportPrint = function() {
             const printType = window._printType || 'dia';
             const printCategory = window._printCategory || 'citas';
@@ -1523,22 +1557,29 @@
             const specialistName = document.getElementById('print-specialist-name').value.trim() || 'Especialista General';
             let reportApps = [];
             let periodLabel = '';
-            const isMonth = printType === 'mes';
 
-            if (isMonth) {
+            if (printType === 'mes') {
                 const monthVal = document.getElementById('print-month-select').value;
                 reportApps = state.appointments.filter(a => a.date.startsWith(monthVal)).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
                 const [y, m] = monthVal.split('-').map(Number);
                 let lbl = new Date(y, m - 1, 1).toLocaleDateString('es-PE', { month: 'long', year: 'numeric' });
                 periodLabel = lbl.charAt(0).toUpperCase() + lbl.slice(1);
                 document.getElementById('print-title-main').innerText = 'REPORTE MENSUAL DE AGENDA';
-                document.getElementById('print-head-date-label').innerText = 'PERIODO';
+            } else if (printType === 'rango') {
+                const startDate = document.getElementById('print-start-date').value;
+                const endDate = document.getElementById('print-end-date').value;
+                if (!startDate || !endDate) {
+                    alert("Por favor selecciona ambas fechas del rango.");
+                    return;
+                }
+                reportApps = state.appointments.filter(a => a.date >= startDate && a.date <= endDate).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+                periodLabel = `Del ${startDate} al ${endDate}`;
+                document.getElementById('print-title-main').innerText = 'REPORTE POR RANGO DE FECHAS';
             } else {
                 const targetDate = document.getElementById('print-date-select').value;
                 reportApps = state.appointments.filter(a => a.date === targetDate).sort((a, b) => a.time.localeCompare(b.time));
                 periodLabel = new Date(targetDate + 'T00:00:00').toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
                 document.getElementById('print-title-main').innerText = 'REPORTE DIARIO DE AGENDA';
-                document.getElementById('print-head-date-label').innerText = 'FECHA';
             }
 
             document.getElementById('print-head-specialist').innerText = specialistName;
@@ -1551,38 +1592,21 @@
             document.getElementById('print-stat-completed').innerText = completas;
             document.getElementById('print-stat-revenue').innerText   = `S/ ${recaudado.toFixed(2)}`;
 
-            const dateHeader = document.getElementById('print-date-column-header');
             const tbody = document.getElementById('print-table-rows');
             const modalityLabel = (a) => a.modality === 'virtual' ? '💻 Virtual' : '🏢 Presencial';
 
-            if (isMonth) {
-                dateHeader.classList.remove('hidden');
-                tbody.innerHTML = reportApps.length
-                    ? reportApps.map(a => `
-                        <tr class="border-b">
-                            <td class="py-2 px-2 font-bold whitespace-nowrap">${a.date}</td>
-                            <td class="py-2 px-2 font-bold">${a.time}</td>
-                            <td class="py-2 px-2">${modalityLabel(a)}</td>
-                            <td class="py-2 px-2 font-semibold">${a.patientName}</td>
-                            <td class="py-2 px-2">S/ ${a.cost.toFixed(2)} (${a.paymentStatus.toUpperCase()})</td>
-                            <td class="py-2 px-2 font-medium">${a.status.toUpperCase()}</td>
-                            <td class="py-2 px-2 text-slate-600">${a.notes || '—'}</td>
-                        </tr>`).join('')
-                    : `<tr><td colspan="7" class="py-4 text-center text-slate-400">No hay consultas agendadas.</td></tr>`;
-            } else {
-                dateHeader.classList.add('hidden');
-                tbody.innerHTML = reportApps.length
-                    ? reportApps.map(a => `
-                        <tr class="border-b">
-                            <td class="py-2 px-2 font-bold">${a.time}</td>
-                            <td class="py-2 px-2">${modalityLabel(a)}</td>
-                            <td class="py-2 px-2 font-semibold">${a.patientName}</td>
-                            <td class="py-2 px-2">S/ ${a.cost.toFixed(2)} (${a.paymentStatus.toUpperCase()})</td>
-                            <td class="py-2 px-2 font-medium">${a.status.toUpperCase()}</td>
-                            <td class="py-2 px-2 text-slate-600">${a.notes || '—'}</td>
-                        </tr>`).join('')
-                    : `<tr><td colspan="6" class="py-4 text-center text-slate-400">No hay consultas agendadas.</td></tr>`;
-            }
+            tbody.innerHTML = reportApps.length
+                ? reportApps.map(a => `
+                    <tr class="border-b">
+                        <td class="py-2 px-2 font-bold whitespace-nowrap">${a.date}</td>
+                        <td class="py-2 px-2 font-bold">${a.time}</td>
+                        <td class="py-2 px-2">${modalityLabel(a)}</td>
+                        <td class="py-2 px-2 font-semibold">${a.patientName}</td>
+                        <td class="py-2 px-2">S/ ${a.cost.toFixed(2)} (${a.paymentStatus.toUpperCase()})</td>
+                        <td class="py-2 px-2 font-medium">${a.status.toUpperCase()}</td>
+                        <td class="py-2 px-2 text-slate-600">${a.notes || '—'}</td>
+                    </tr>`).join('')
+                : `<tr><td colspan="7" class="py-4 text-center text-slate-400">No hay consultas agendadas en este periodo.</td></tr>`;
 
             document.getElementById('print-section').classList.remove('hidden');
             document.getElementById('print-section-finance').classList.add('hidden');
@@ -1594,22 +1618,29 @@
             const specialistName = document.getElementById('print-specialist-name').value.trim() || 'Especialista General';
             let reportApps = [];
             let periodLabel = '';
-            const isMonth = printType === 'mes';
 
-            if (isMonth) {
+            if (printType === 'mes') {
                 const monthVal = document.getElementById('print-month-select').value;
                 reportApps = state.appointments.filter(a => a.date.startsWith(monthVal));
                 const [y, m] = monthVal.split('-').map(Number);
                 let lbl = new Date(y, m - 1, 1).toLocaleDateString('es-PE', { month: 'long', year: 'numeric' });
                 periodLabel = lbl.charAt(0).toUpperCase() + lbl.slice(1);
                 document.getElementById('pf-title-main').innerText = 'REPORTE FINANCIERO MENSUAL';
-                document.getElementById('pf-head-date-label').innerText = 'PERIODO';
+            } else if (printType === 'rango') {
+                const startDate = document.getElementById('print-start-date').value;
+                const endDate = document.getElementById('print-end-date').value;
+                if (!startDate || !endDate) {
+                    alert("Por favor selecciona ambas fechas del rango.");
+                    return;
+                }
+                reportApps = state.appointments.filter(a => a.date >= startDate && a.date <= endDate);
+                periodLabel = `Del ${startDate} al ${endDate}`;
+                document.getElementById('pf-title-main').innerText = 'REPORTE FINANCIERO POR RANGO';
             } else {
                 const targetDate = document.getElementById('print-date-select').value;
                 reportApps = state.appointments.filter(a => a.date === targetDate);
                 periodLabel = new Date(targetDate + 'T00:00:00').toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
                 document.getElementById('pf-title-main').innerText = 'REPORTE FINANCIERO DIARIO';
-                document.getElementById('pf-head-date-label').innerText = 'FECHA';
             }
 
             document.getElementById('pf-head-specialist').innerText = specialistName;
@@ -1767,11 +1798,11 @@
             ['citas','pacientes','finanzas'].forEach(t => {
                 document.getElementById('sec-' + t).classList.add('hidden');
                 document.getElementById('tab-' + t).className =
-                    "w-full py-3 px-4 rounded-xl text-xs font-semibold flex items-center gap-3 text-slate-400 hover:text-white hover:bg-slate-800/60 tab-transition";
+                    "w-full py-2.5 px-3.5 rounded-xl text-xs font-semibold flex items-center gap-3 text-slate-400 hover:text-white hover:bg-slate-800/60 tab-transition";
             });
             document.getElementById('sec-' + target).classList.remove('hidden');
             document.getElementById('tab-' + target).className =
-                "w-full py-3 px-4 rounded-xl text-xs font-bold flex items-center gap-3 bg-indigo-600 text-white shadow-md shadow-indigo-950/50 tab-transition";
+                "w-full py-2.5 px-3.5 rounded-xl text-xs font-bold flex items-center gap-3 bg-indigo-600 text-white shadow-md shadow-indigo-950/50 tab-transition";
 
             const titles = { citas: 'Gestión de Citas', pacientes: 'Directorio Pacientes', finanzas: 'Estadísticas & Finanzas' };
             document.getElementById('topbar-title').innerText = titles[target];
@@ -1780,8 +1811,8 @@
         function setFilterStatus(status) {
             ['todas','pendiente','completada','cancelada'].forEach(st => {
                 document.getElementById('btn-f-' + st).className = st === status
-                    ? "px-3.5 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow-xs transition shrink-0"
-                    : "px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-lg transition shrink-0";
+                    ? "px-2.5 py-1.5 bg-indigo-600 text-white text-[11px] font-bold rounded-lg shadow-xs transition shrink-0"
+                    : "px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold rounded-lg transition shrink-0";
             });
             document.body.dispatchEvent(new CustomEvent('filter-status-changed', { detail: status }));
         }
@@ -1851,18 +1882,26 @@
 
         function setPrintType(type) {
             window._printType = type;
-            const activeCls   = "flex-1 px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl transition";
-            const inactiveCls = "flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition";
+            const activeCls = "px-2 py-2 bg-indigo-600 text-white text-[11px] font-bold rounded-xl transition";
+            const inactiveCls = "px-2 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold rounded-xl transition";
+            
             document.getElementById('btn-pt-dia').className = type === 'dia' ? activeCls : inactiveCls;
             document.getElementById('btn-pt-mes').className = type === 'mes' ? activeCls : inactiveCls;
+            document.getElementById('btn-pt-rango').className = type === 'rango' ? activeCls : inactiveCls;
+
             document.getElementById('print-date-wrap').classList.toggle('hidden', type !== 'dia');
             document.getElementById('print-month-wrap').classList.toggle('hidden', type !== 'mes');
+            document.getElementById('print-range-wrap').classList.toggle('hidden', type !== 'rango');
         }
 
         function openPrintModal(presetType, presetCategory) {
             document.getElementById('print-date-select').value = document.getElementById('date-filter').value;
             const now = new Date();
-            document.getElementById('print-month-select').value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+            const currentMonthStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+            document.getElementById('print-month-select').value = currentMonthStr;
+            document.getElementById('print-start-date').value = now.toISOString().split('T')[0];
+            document.getElementById('print-end-date').value = now.toISOString().split('T')[0];
+
             const user = window._profileState && window._profileState.currentUser;
             if (user) {
                 const saved = JSON.parse(localStorage.getItem('userProfile_' + user.uid) || '{}');
@@ -1948,7 +1987,7 @@
             okDiv.classList.add('hidden');
 
             const currentPwd = document.getElementById('profile-current-pwd').value;
-            const newPwd     = document.getElementById('profile-new-pwd').value;
+            const newPwd     = document.getElementById('profile-new-pkg').value || document.getElementById('profile-new-pwd').value;
             const confirmPwd = document.getElementById('profile-confirm-pwd').value;
 
             if (!currentPwd) { errDiv.innerText = 'Ingresa tu contraseña actual.'; errDiv.classList.remove('hidden'); return; }
@@ -1971,7 +2010,7 @@
                 setTimeout(() => okDiv.classList.add('hidden'), 4000);
             } catch (error) {
                 errDiv.innerText = 'Error al actualizar la contraseña.';
-                errDiv.classList.remove('hidden');
+                errDiv.classList.add('hidden');
             }
         }
     </script>
