@@ -3,572 +3,1158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda de Psicología Pro+</title>
+    <title>Agenda Psicológica - Lisbeth Méndez</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background: #f8fafc; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; font-size: 13px; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        :root {
+            --brand-primary: #3d7c75;
+            --brand-secondary: #c4a482;
+            --brand-dark: #233b38;
+        }
+        
+        .bg-brand { background-color: #3d7c75; }
+        .text-brand { color: #3d7c75; }
+        .border-brand { border-color: #3d7c75; }
+        
         .print-only { display: none; }
         @media print {
             .no-print { display: none !important; }
             .print-only { display: block !important; width: 100% !important; max-width: 100% !important; }
             body { background: white !important; color: black !important; padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; display: block !important; }
-            #print-patient-card.hidden { display: none !important; }
-            #print-section.hidden { display: none !important; }
-            #print-clinical-history.hidden { display: none !important; }
-            #print-section-finance.hidden { display: none !important; }
         }
         .tab-transition { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
-<body class="text-slate-800 min-h-screen flex flex-col pb-20 md:pb-6">
+<body class="text-slate-800 min-h-screen flex flex-col">
 
     <!-- ================= PANTALLA DE AUTENTICACIÓN ================= -->
-    <div id="auth-screen" class="fixed inset-0 bg-slate-900 flex items-center justify-center z-50 p-4">
-        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 space-y-6 relative overflow-hidden">
-            <div class="absolute -top-10 -right-10 w-32 h-32 bg-indigo-50 rounded-full -z-10"></div>
-            <div class="text-center space-y-2">
-                <div class="inline-flex bg-indigo-100 p-3.5 rounded-2xl text-indigo-600 mb-2">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                    </svg>
+    <div id="auth-screen" class="fixed inset-0 bg-[#233b38] flex items-center justify-center z-50 p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 sm:p-8 space-y-6 relative overflow-hidden border-t-4 border-[#3d7c75]">
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#3d7c75]/10 rounded-full -z-10"></div>
+            <div class="text-center space-y-3">
+                <div class="flex justify-center mb-1">
+                    <div class="flex items-center space-x-2 bg-[#3d7c75]/5 px-4 py-2 rounded-2xl border border-[#3d7c75]/20">
+                        <svg class="w-6 h-6 text-[#3d7c75]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                        <span class="font-bold text-[#233b38] text-base tracking-wide">Lisbeth Méndez <span class="text-[#3d7c75] font-light">Psicóloga</span></span>
+                    </div>
                 </div>
-                <h2 class="text-2xl font-black text-slate-800">Iniciar Sesión</h2>
-                <p class="text-sm text-slate-500">Ingresa tus credenciales para acceder de forma segura a tu agenda médica.</p>
+                <h1 class="text-xl font-bold text-slate-800">Iniciar Sesión</h1>
+                <p class="text-xs text-slate-500">Ingresa tus credenciales para acceder a tu agenda clínica profesional.</p>
             </div>
-
-            <!-- FORMULARIO LOGIN -->
-            <div class="space-y-4">
+            
+            <form id="login-form" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Correo Electrónico</label>
-                    <input type="email" id="auth-email" placeholder="ejemplo@consultorio.com"
-                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Correo Electrónico</label>
+                    <input type="email" id="login-email" required value="lisbethpa1628@gmail.com" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-slate-50 text-sm font-medium">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Contraseña</label>
-                    <input type="password" id="auth-password" placeholder="••••••••"
-                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Contraseña</label>
+                    <input type="password" id="login-password" required value="123456" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-slate-50 text-sm font-medium">
                 </div>
-                <div id="auth-error-msg" class="text-xs text-red-500 hidden font-semibold bg-red-50 p-3 rounded-lg border border-red-200"></div>
-                <button id="auth-submit-btn" onclick="handleLogin()"
-                    class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-md shadow-indigo-100 transition flex items-center justify-center gap-2">
-                    <span>Entrar al Consultorio</span><span>➔</span>
+                <button type="submit" class="w-full py-3.5 bg-[#3d7c75] hover:bg-[#326761] text-white font-bold rounded-xl shadow-lg shadow-[#3d7c75]/20 transition-all flex items-center justify-center space-x-2 text-sm">
+                    <span>Entrar al Consultorio</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                 </button>
-            </div>
-
-            <div class="text-center space-y-3 pt-4 border-t border-slate-100">
-                <button type="button" onclick="recuperarContrasena()"
-                    class="text-xs text-slate-500 hover:text-indigo-600 transition underline">
-                    ¿Olvidaste tu contraseña?
-                </button>
-            </div>
-            <div class="text-center pt-2 border-t border-slate-100">
-                <p class="text-xs text-slate-400">¿No tienes una licencia activa o perdiste tu acceso?</p>
-                <a href="https://wa.me/51912352126" target="_blank"
-                    class="inline-block text-xs font-medium text-indigo-600 hover:underline mt-1">Contactar a Soporte</a>
+            </form>
+            <div class="text-center">
+                <a href="#" onclick="alert('Contacta al administrador técnico para recuperar acceso.'); return false;" class="text-xs text-[#3d7c75] hover:underline font-medium">¿Olvidaste tu contraseña?</a>
             </div>
         </div>
     </div>
 
-    <!-- ================= MODAL: CAMBIAR CONTRASEÑA TEMPORAL ================= -->
-    <div id="change-password-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center z-[60] p-4">
-        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 space-y-5 relative overflow-hidden">
-            <div class="absolute -top-10 -left-10 w-32 h-32 bg-amber-50 rounded-full -z-10"></div>
-            <div class="text-center space-y-2">
-                <div class="inline-flex bg-amber-100 p-3.5 rounded-2xl text-amber-600 mb-2">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
-                    </svg>
-                </div>
-                <h2 class="text-xl font-black text-slate-800">Configura tu Contraseña</h2>
-                <p class="text-sm text-slate-500">
-                    Es tu primer ingreso. Por seguridad debes establecer una contraseña personal antes de continuar.
-                </p>
-            </div>
-
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Nueva Contraseña</label>
-                    <input type="password" id="new-password-input" placeholder="Mínimo 8 caracteres"
-                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Confirmar Nueva Contraseña</label>
-                    <input type="password" id="confirm-password-input" placeholder="Repite tu nueva contraseña"
-                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
-                </div>
-                <div id="change-pwd-error" class="text-xs text-red-500 hidden font-semibold bg-red-50 p-3 rounded-lg border border-red-200"></div>
-                <div id="change-pwd-success" class="text-xs text-emerald-600 hidden font-semibold bg-emerald-50 p-3 rounded-lg border border-emerald-200"></div>
-                <button onclick="handleChangePassword()"
-                    class="w-full bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-white font-bold py-3.5 rounded-xl shadow-md transition flex items-center justify-center gap-2">
-                    <span>Guardar y Continuar</span><span>🔐</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ================= CONTENEDOR PRINCIPAL ================= -->
-    <div id="app-container" class="hidden flex-col flex-grow">
+    <!-- ================= CONTENEDOR PRINCIPAL DE LA APLICACIÓN ================= -->
+    <div id="app-container" class="min-h-screen flex flex-col hidden">
         <!-- HEADER -->
-        <header class="bg-indigo-900 text-white shadow-md sticky top-0 z-40 no-print">
-            <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-3">
-                <div class="flex items-center gap-3">
-                    <div class="bg-indigo-600 p-2 rounded-xl shadow-inner flex items-center justify-center">
-                        <!-- LOGO OFICIAL INCORPORADO EN CABECERA -->
-                        <img src="LOGO PJ-AD.png" alt="Logo Archivo" class="w-8 h-8 object-contain">
-                    </div>
-                    <div>
-                        <h1 class="font-extrabold text-xl tracking-tight">Agenda Psicológica <span class="text-indigo-400 text-xs font-semibold px-2 py-0.5 bg-indigo-950/50 rounded-full border border-indigo-800 ml-1">Pro+</span></h1>
-                        <p class="text-xs text-indigo-200 flex items-center gap-1.5 mt-0.5">
-                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block animate-pulse" id="sync-indicator-dot"></span>
-                            <span id="sync-indicator-text" class="truncate max-w-[180px]">Conectado a la Nube</span>
-                        </p>
+        <header class="bg-white border-b border-slate-200 sticky top-0 z-40 no-print">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="flex items-center space-x-2 bg-[#3d7c75]/10 px-3 py-1.5 rounded-xl border border-[#3d7c75]/20">
+                        <svg class="w-5 h-5 text-[#3d7c75]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                        <span class="font-bold text-[#233b38] text-sm tracking-wide">Lisbeth Méndez <span class="text-[#3d7c75] font-light text-xs">Psicóloga</span></span>
                     </div>
                 </div>
-                <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
-                    <span id="current-date-lbl" class="text-sm bg-indigo-950/40 px-3.5 py-1.5 rounded-lg border border-indigo-800 font-medium"></span>
-                    <button onclick="openPrintModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-3.5 py-1.5 rounded-lg shadow-sm transition flex items-center gap-2 text-sm" title="Imprimir Reporte">
-                        <span>🖨️</span><span class="hidden md:inline">Imprimir</span>
+
+                <nav class="hidden md:flex items-center space-x-1">
+                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-3.5 py-2 rounded-xl text-xs font-semibold tab-transition bg-[#3d7c75] text-white shadow-sm">Dashboard</button>
+                    <button onclick="switchTab('citas')" id="nav-citas" class="px-3.5 py-2 rounded-xl text-xs font-semibold tab-transition text-slate-600 hover:bg-slate-100">Citas / Agenda</button>
+                    <button onclick="switchTab('pacientes')" id="nav-pacientes" class="px-3.5 py-2 rounded-xl text-xs font-semibold tab-transition text-slate-600 hover:bg-slate-100">Pacientes</button>
+                    <button onclick="switchTab('finanzas')" id="nav-finanzas" class="px-3.5 py-2 rounded-xl text-xs font-semibold tab-transition text-slate-600 hover:bg-slate-100">Finanzas</button>
+                </nav>
+
+                <div class="flex items-center space-x-3">
+                    <div class="text-right hidden sm:block">
+                        <p class="text-xs font-bold text-slate-800">Lisbeth Méndez</p>
+                        <p class="text-[10px] text-[#3d7c75] font-medium">Psicóloga Clínica</p>
+                    </div>
+                    <button onclick="logout()" class="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all" title="Cerrar Sesión">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                     </button>
-                    <button onclick="openProfileModal()" class="bg-indigo-700 hover:bg-indigo-600 border border-indigo-500/50 p-2 rounded-lg transition flex items-center gap-2 text-sm font-medium" title="Mi Perfil">
-                        <span>👤</span><span id="header-user-name" class="hidden md:inline max-w-[120px] truncate text-xs"></span>
-                    </button>
-                    <button id="logout-btn" class="bg-red-950/50 hover:bg-red-900 border border-red-800/60 p-2 rounded-lg transition" title="Cerrar Sesión">🚪</button>
                 </div>
+            </div>
+
+            <!-- Menú inferior flotante/móvil -->
+            <div class="md:hidden flex items-center justify-around bg-white border-t border-slate-100 py-2 px-2">
+                <button onclick="switchTab('dashboard')" id="nav-mobile-dashboard" class="flex flex-col items-center space-y-0.5 text-[10px] font-semibold text-[#3d7c75]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    <span>Dash</span>
+                </button>
+                <button onclick="switchTab('citas')" id="nav-mobile-citas" class="flex flex-col items-center space-y-0.5 text-[10px] font-semibold text-slate-500">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <span>Citas</span>
+                </button>
+                <button onclick="switchTab('pacientes')" id="nav-mobile-pacientes" class="flex flex-col items-center space-y-0.5 text-[10px] font-semibold text-slate-500">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    <span>Pacientes</span>
+                </button>
+                <button onclick="switchTab('finanzas')" id="nav-mobile-finanzas" class="flex flex-col items-center space-y-0.5 text-[10px] font-semibold text-slate-500">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>Finanzas</span>
+                </button>
             </div>
         </header>
 
-        <!-- NAVIGATION TABS (Adaptado para móviles: scroll horizontal para que nunca se corten opciones como Auditoría o Cerrar Sesión) -->
-        <nav class="bg-white border-b border-slate-200 sticky top-[72px] sm:top-[76px] z-30 no-print shadow-sm overflow-x-auto">
-            <div class="max-w-5xl mx-auto px-4 flex justify-start sm:justify-start sm:gap-6 whitespace-nowrap">
-                <button id="tab-citas" onclick="switchTab('citas')" class="py-3.5 px-3 border-b-2 border-indigo-600 text-indigo-600 font-semibold text-sm flex items-center gap-2 tab-transition">
-                    🗓️ <span>Citas de Hoy</span>
-                </button>
-                <button id="tab-pacientes" onclick="switchTab('pacientes')" class="py-3.5 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-sm flex items-center gap-2 tab-transition">
-                    👥 <span>Directorio de Pacientes</span>
-                </button>
-                <button id="tab-finanzas" onclick="switchTab('finanzas')" class="py-3.5 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-sm flex items-center gap-2 tab-transition">
-                    📊 <span>Estadísticas y Finanzas</span>
-                </button>
-                <button id="tab-tarjetas" onclick="switchTab('tarjetas')" class="py-3.5 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-sm flex items-center gap-2 tab-transition">
-                    🏷️ <span>Tarjetas / Archivo</span>
-                </button>
-                <button id="tab-microformas" onclick="switchTab('microformas')" class="py-3.5 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-sm flex items-center gap-2 tab-transition">
-                    📂 <span>Microformas</span>
-                </button>
-                <button id="tab-auditoria" onclick="switchTab('auditoria')" class="py-3.5 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-sm flex items-center gap-2 tab-transition">
-                    📋 <span>Log Auditoría</span>
-                </button>
-            </div>
-        </nav>
-
         <!-- CONTENIDO PRINCIPAL -->
-        <main class="flex-grow max-w-5xl w-full mx-auto p-4 md:p-6 space-y-6 no-print">
-
-            <!-- SECCIÓN: CITAS -->
-            <section id="sec-citas" class="space-y-4">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
-                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Citas Hoy</span>
-                        <div class="flex items-baseline justify-between mt-1">
-                            <span id="stat-citas-hoy" class="text-3xl font-extrabold text-indigo-600">0</span>
-                            <span class="text-xs text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded-md font-medium">Hoy</span>
+        <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+            
+            <!-- SECCIÓN: DASHBOARD -->
+            <section id="tab-dashboard" class="space-y-6">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-3 sm:space-x-4">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
+                            <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[10px] sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wider truncate">Total Pacientes</p>
+                            <h3 id="stat-total-patients" class="text-lg sm:text-xl font-bold text-slate-800">0</h3>
                         </div>
                     </div>
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
-                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pendientes</span>
-                        <div class="flex items-baseline justify-between mt-1">
-                            <span id="stat-citas-pendientes" class="text-3xl font-extrabold text-amber-500">0</span>
-                            <span class="text-xs text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-md font-medium">Por Atender</span>
+                    <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-3 sm:space-x-4">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
+                            <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[10px] sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wider truncate">Citas Hoy</p>
+                            <h3 id="stat-today-appointments" class="text-lg sm:text-xl font-bold text-slate-800">0</h3>
                         </div>
                     </div>
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
-                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Completadas</span>
-                        <div class="flex items-baseline justify-between mt-1">
-                            <span id="stat-citas-completas" class="text-3xl font-extrabold text-emerald-500">0</span>
-                            <span class="text-xs text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md font-medium">Asistidas</span>
+                    <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-3 sm:space-x-4">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold shrink-0">
+                            <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[10px] sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wider truncate">Pendientes Pago</p>
+                            <h3 id="stat-pending-payments" class="text-lg sm:text-xl font-bold text-slate-800">0</h3>
                         </div>
                     </div>
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
-                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Recaudación Estimada</span>
-                        <div class="flex items-baseline justify-between mt-1">
-                            <span id="stat-citas-ingresos" class="text-2xl font-extrabold text-slate-800">S/ 0.00</span>
-                            <span class="text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md font-medium">Hoy</span>
+                    <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-3 sm:space-x-4">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#3d7c75]/10 text-[#3d7c75] flex items-center justify-center font-bold shrink-0">
+                            <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[10px] sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wider truncate">Ingresos del Mes</p>
+                            <h3 id="stat-monthly-income" class="text-lg sm:text-xl font-bold text-slate-800">S/. 0.00</h3>
                         </div>
                     </div>
                 </div>
 
-                <!-- Toggle Vista Día / Vista Mes -->
-                <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-2">
-                    <span class="text-xs font-bold text-slate-400 uppercase mr-1">Vista:</span>
-                    <button onclick="setCitasView('dia')" id="btn-view-dia" class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">📅 Día</button>
-                    <button onclick="setCitasView('mes')" id="btn-view-mes" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">🗓️ Mes</button>
-                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-2 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-slate-800 text-sm">Próximas Citas Programadas</h3>
+                            <button onclick="switchTab('citas')" class="text-xs text-[#3d7c75] font-semibold hover:underline">Ver agenda completa</button>
+                        </div>
+                        <div id="dashboard-upcoming-appointments" class="divide-y divide-slate-100">
+                            <!-- Inyectado dinámicamente -->
+                        </div>
+                    </div>
 
-                <!-- VISTA DIARIA -->
-                <div id="citas-day-view" class="space-y-4">
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-3">
-                        <div class="flex flex-col md:flex-row gap-3">
-                            <div class="relative flex-grow">
-                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none">🔍</span>
-                                <input type="text" id="appointment-search" oninput="renderAppointments()" placeholder="Buscar paciente por nombre o notas..."
-                                    class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
+                    <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <h3 class="font-bold text-slate-800 text-sm">Acciones Rápidas</h3>
+                        <div class="space-y-2">
+                            <button onclick="openNewAppointmentModal()" class="w-full py-2.5 px-4 bg-[#3d7c75] hover:bg-[#326761] text-white font-semibold rounded-xl text-xs transition-all flex items-center justify-center space-x-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                <span>Nueva Cita</span>
+                            </button>
+                            <button onclick="openNewPatientModal()" class="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-all flex items-center justify-center space-x-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                                <span>Registrar Paciente</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN: CITAS / AGENDA -->
+            <section id="tab-citas" class="space-y-6 hidden">
+                <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800">Gestión de Citas</h2>
+                            <p class="text-xs text-slate-500">Administra las sesiones terapéuticas y visualiza la agenda.</p>
+                        </div>
+                        <div class="flex items-center space-x-2 w-full sm:w-auto justify-between sm:justify-start">
+                            <div class="bg-slate-100 p-1 rounded-xl flex items-center space-x-1 border border-slate-200">
+                                <button onclick="setCalendarView('month')" id="view-btn-month" class="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-800 shadow-sm transition-all">Mensual</button>
+                                <button onclick="setCalendarView('week')" id="view-btn-week" class="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-800 transition-all">Semanal</button>
+                                <button onclick="setCalendarView('day')" id="view-btn-day" class="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-800 transition-all">Diaria</button>
                             </div>
-                            <div class="flex flex-wrap items-center gap-2">
-                                <div class="flex items-center bg-slate-50 border border-slate-200 rounded-xl p-1">
-                                    <button onclick="shiftDate(-1)" class="px-2.5 py-1.5 text-slate-600 hover:bg-white rounded-lg transition-all text-xs font-semibold">◀ Anterior</button>
-                                    <input type="date" id="date-filter" onchange="renderAppointments()" class="bg-transparent border-none text-sm font-semibold text-slate-700 focus:outline-none px-2 py-1">
-                                    <button onclick="shiftDate(1)" class="px-2.5 py-1.5 text-slate-600 hover:bg-white rounded-lg transition-all text-xs font-semibold">Siguiente ▶</button>
-                                </div>
-                                <button onclick="goToToday()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3.5 py-2.5 rounded-xl text-xs transition">Hoy</button>
+                            <button onclick="openNewAppointmentModal()" class="px-3 sm:px-4 py-2 bg-[#3d7c75] hover:bg-[#326761] text-white font-semibold rounded-xl text-xs transition-all flex items-center space-x-1.5 shadow-sm whitespace-nowrap">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                <span class="hidden sm:inline">Nueva Cita</span>
+                                <span class="sm:hidden">Nuevo</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filtros y Controles de Fecha -->
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
+                        <div class="flex items-center justify-between sm:justify-start space-x-2">
+                            <button onclick="changeDateRange(-1)" class="p-2 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 shadow-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                            </button>
+                            <span id="calendar-current-range-label" class="text-xs sm:text-sm font-bold text-slate-800 min-w-[140px] sm:min-w-[180px] text-center">Mes / Año</span>
+                            <button onclick="changeDateRange(1)" class="p-2 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 shadow-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                            </button>
+                            <button onclick="resetDateRangeToday()" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 shadow-sm">Hoy</button>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                            <div>
+                                <select id="filter-status" onchange="renderAppointmentsView()" class="w-full sm:w-auto px-3 py-2 sm:py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3d7c75]">
+                                    <option value="all">Todos los estados</option>
+                                    <option value="Programada">Programada</option>
+                                    <option value="Completada">Completada</option>
+                                    <option value="Cancelada">Cancelada</option>
+                                </select>
+                            </div>
+                            <div>
+                                <select id="filter-patient" onchange="renderAppointmentsView()" class="w-full sm:w-auto px-3 py-2 sm:py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3d7c75] max-w-none sm:max-w-[200px]">
+                                    <option value="all">Todos los pacientes</option>
+                                </select>
                             </div>
                         </div>
-
-                        <div class="flex items-center gap-2 border-t border-slate-100 pt-3 flex-wrap">
-                            <span class="text-xs font-bold text-slate-400 uppercase mr-2">Filtrar Estado:</span>
-                            <button onclick="setFilterStatus('todas')" id="btn-f-todas" class="px-3 py-1 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">Todas</button>
-                            <button onclick="setFilterStatus('pendiente')" id="btn-f-pendiente" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Pendientes</button>
-                            <button onclick="setFilterStatus('completada')" id="btn-f-completada" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Completadas</button>
-                            <button onclick="setFilterStatus('cancelada')" id="btn-f-cancelada" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Canceladas</button>
-                        </div>
                     </div>
 
-                    <div id="appointments-list" class="space-y-3"></div>
-                </div>
-
-                <!-- VISTA MENSUAL -->
-                <div id="citas-month-view" class="space-y-4 hidden">
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-3">
-                        <div class="flex items-center gap-2">
-                            <button onclick="shiftMonth(-1)" class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold transition">◀ Mes Anterior</button>
-                            <span id="month-view-label" class="text-sm font-bold text-slate-700 px-2 min-w-[140px] text-center"></span>
-                            <button onclick="shiftMonth(1)" class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold transition">Mes Siguiente ▶</button>
-                        </div>
-                        <div class="flex items-center gap-3 text-xs font-semibold text-slate-500 flex-wrap justify-center">
-                            <span>Total: <span id="month-view-total" class="text-indigo-600 font-bold">0</span></span>
-                            <span>Completadas: <span id="month-view-completed" class="text-emerald-600 font-bold">0</span></span>
-                            <span>Recaudado: <span id="month-view-revenue" class="text-slate-800 font-bold">S/ 0.00</span></span>
-                        </div>
+                    <!-- Contenedor de la Vista de Calendario -->
+                    <div id="calendar-container" class="min-h-[450px] overflow-x-auto">
+                        <!-- Renderizado por JS según vista -->
                     </div>
-                    <p class="text-xs text-slate-400 px-1">Toca cualquier día para ver el detalle en la vista diaria.</p>
-                    <div id="month-view-list" class="space-y-3"></div>
                 </div>
             </section>
 
             <!-- SECCIÓN: PACIENTES -->
-            <section id="sec-pacientes" class="space-y-4 hidden">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                    <div>
-                        <h2 class="text-lg font-bold text-slate-800">Directorio Clínico de Pacientes</h2>
-                        <p class="text-xs text-slate-500">Registra pacientes, revisa datos de contacto e historial clínico.</p>
+            <section id="tab-pacientes" class="space-y-6 hidden">
+                <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800">Directorio de Pacientes</h2>
+                            <p class="text-xs text-slate-500">Expedientes clínicos, información de contacto y notas de evolución.</p>
+                        </div>
+                        <div class="flex items-center space-x-3 w-full sm:w-auto">
+                            <div class="relative flex-1 sm:w-64">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                </span>
+                                <input type="text" id="search-patient-input" oninput="renderPatientsList()" placeholder="Buscar paciente..." class="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75]">
+                            </div>
+                            <button onclick="openNewPatientModal()" class="px-4 py-2 bg-[#3d7c75] hover:bg-[#326761] text-white font-semibold rounded-xl text-xs transition-all flex items-center space-x-1.5 shadow-sm whitespace-nowrap">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                <span class="hidden sm:inline">Nuevo Paciente</span>
+                                <span class="sm:hidden">Nuevo</span>
+                            </button>
+                        </div>
                     </div>
-                    <button onclick="openPatientModal()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
-                        ➕ Nuevo Paciente
-                    </button>
-                </div>
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none">🔍</span>
-                        <input type="text" id="patient-search-input" oninput="renderPatients()" placeholder="Buscar paciente por nombre o teléfono..."
-                            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse min-w-[600px]">
+                            <thead>
+                                <tr class="border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                                    <th class="py-3 px-4">Paciente</th>
+                                    <th class="py-3 px-4">Contacto</th>
+                                    <th class="py-3 px-4">Edad / Ocupación</th>
+                                    <th class="py-3 px-4">Última Sesión</th>
+                                    <th class="py-3 px-4 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="patients-table-body" class="divide-y divide-slate-100 text-xs">
+                                <!-- Inyectado dinámicamente -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-                <div id="patients-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
             </section>
 
             <!-- SECCIÓN: FINANZAS -->
-            <section id="sec-finanzas" class="space-y-6 hidden">
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-3">
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <span class="text-xs font-bold text-slate-400 uppercase mr-1">Periodo:</span>
-                        <button onclick="setFinancePeriod('todo')" id="btn-fp-todo" class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">Todo el Tiempo</button>
-                        <button onclick="setFinancePeriod('mes')" id="btn-fp-mes" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Este Mes</button>
-                        <button onclick="setFinancePeriod('dia')" id="btn-fp-dia" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Hoy</button>
+            <section id="tab-finanzas" class="space-y-6 hidden">
+                <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800">Control Financiero</h2>
+                            <p class="text-xs text-slate-500">Registro de pagos, honorarios de sesiones y control de deudas pendientes.</p>
+                        </div>
+                        <div class="flex items-center space-x-3 w-full sm:w-auto">
+                            <select id="finance-month-filter" onchange="renderFinanceView()" class="w-full sm:w-auto px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#3d7c75]">
+                                <!-- Generado por JS -->
+                            </select>
+                        </div>
                     </div>
-                    <button onclick="openPrintModal(window._profileState && window._profileState.financePeriod === 'mes' ? 'mes' : 'dia', 'finanzas')" class="w-full sm:w-auto bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-4 py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
-                        🖨️ Imprimir Reporte (Día o Mes)
-                    </button>
-                </div>
 
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <div class="flex items-center justify-between mb-4 flex-wrap gap-1">
-                        <h2 class="text-lg font-bold text-slate-800">Análisis del Consultorio</h2>
-                        <p id="finance-period-label" class="text-xs text-slate-400">Mostrando datos de: Todo el tiempo</p>
-                    </div>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div class="bg-indigo-50 border border-indigo-100 p-5 rounded-2xl text-center">
-                            <span class="text-sm font-semibold text-indigo-500 block mb-1">Total de Pacientes Únicos</span>
-                            <span id="stats-total-patients" class="text-4xl font-extrabold text-indigo-900">0</span>
+                        <div class="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-1">
+                            <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Facturado (Mes)</p>
+                            <h3 id="finance-total-billed" class="text-lg sm:text-xl font-bold text-slate-800">S/. 0.00</h3>
                         </div>
-                        <div class="bg-emerald-50 border border-emerald-100 p-5 rounded-2xl text-center">
-                            <span class="text-sm font-semibold text-emerald-500 block mb-1">Ingresos de Citas Completadas</span>
-                            <span id="stats-revenue-total" class="text-4xl font-extrabold text-emerald-900">S/ 0.00</span>
+                        <div class="bg-emerald-50 p-4 sm:p-5 rounded-2xl border border-emerald-100 space-y-1">
+                            <p class="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">Pagos Cobrados</p>
+                            <h3 id="finance-total-collected" class="text-lg sm:text-xl font-bold text-emerald-700">S/. 0.00</h3>
                         </div>
-                        <div class="bg-violet-50 border border-violet-100 p-5 rounded-2xl text-center">
-                            <span class="text-sm font-semibold text-violet-500 block mb-1">Total Citas Registradas</span>
-                            <span id="stats-total-appointments" class="text-4xl font-extrabold text-violet-900">0</span>
+                        <div class="bg-amber-50 p-4 sm:p-5 rounded-2xl border border-amber-100 space-y-1">
+                            <p class="text-[11px] font-semibold text-amber-600 uppercase tracking-wider">Pendientes de Pago</p>
+                            <h3 id="finance-total-pending" class="text-lg sm:text-xl font-bold text-amber-700">S/. 0.00</h3>
                         </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse min-w-[600px]">
+                            <thead>
+                                <tr class="border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                                    <th class="py-3 px-4">Fecha / Hora</th>
+                                    <th class="py-3 px-4">Paciente</th>
+                                    <th class="py-3 px-4">Monto</th>
+                                    <th class="py-3 px-4">Estado de Pago</th>
+                                    <th class="py-3 px-4 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="finance-table-body" class="divide-y divide-slate-100 text-xs">
+                                <!-- Inyectado dinámicamente -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </section>
 
-            <!-- SECCIÓN: TARJETAS / ARCHIVO (DISEÑO INSTITUCIONAL CON CAMPOS VACÍOS POR DEFECTO Y LOGOTIPO) -->
-            <section id="sec-tarjetas" class="space-y-4 hidden">
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
-                    <div>
-                        <h2 class="text-lg font-bold text-slate-800">Tarjeta de Paquete / Archivo Desconcentrado</h2>
-                        <p class="text-xs text-slate-500">Diseño institucional adaptado con campos vacíos listos para su llenado manual.</p>
-                    </div>
-                    <button onclick="window.print()" class="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow hover:bg-slate-800 transition">🖨️ Imprimir Tarjeta</button>
-                </div>
-
-                <!-- Tarjeta Interactiva Inspirada en la Referencia (VACÍA POR DEFECTO) -->
-                <div class="max-w-xl mx-auto bg-white border-2 border-slate-900 p-6 rounded-xl shadow-md space-y-4 text-slate-900">
-                    <div class="flex justify-between items-center border-b-2 border-slate-900 pb-3">
-                        <div class="flex items-center gap-2">
-                            <img src="LOGO PJ-AD.png" alt="Logo PJ" class="w-12 h-12 object-contain">
-                            <div>
-                                <p class="text-[10px] font-extrabold uppercase">PODER JUDICIAL DEL PERÚ</p>
-                                <p class="text-[9px] font-semibold text-slate-600">CORTE SUPERIOR DE JUSTICIA DEL SANTA</p>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <span class="text-xs font-bold border border-slate-800 px-2.5 py-1 rounded bg-slate-50">REPOSITORIO</span>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3 text-xs">
-                        <div>
-                            <label class="block font-bold uppercase text-[10px] text-slate-500 mb-1">Tipo de Archivo</label>
-                            <input type="text" id="t-tipo" placeholder="" class="w-full border border-slate-400 p-2 rounded bg-slate-50 font-semibold">
-                        </div>
-                        <div>
-                            <label class="block font-bold uppercase text-[10px] text-slate-500 mb-1">Juzgado / Sala</label>
-                            <input type="text" id="t-juzgado" placeholder="" class="w-full border border-slate-400 p-2 rounded bg-slate-50 font-semibold">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3 text-xs">
-                        <div>
-                            <label class="block font-bold uppercase text-[10px] text-slate-500 mb-1">Juez</label>
-                            <input type="text" id="t-juez" placeholder="" class="w-full border border-slate-400 p-2 rounded bg-slate-50">
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 text-center">
-                            <div>
-                                <label class="block font-bold uppercase text-[9px] text-slate-500 mb-1">Año de Ingreso</label>
-                                <input type="text" id="t-anio" placeholder="" class="w-full border border-slate-400 p-2 rounded text-center font-bold bg-slate-50">
-                            </div>
-                            <div>
-                                <label class="block font-bold uppercase text-[9px] text-slate-500 mb-1">N° Paquete</label>
-                                <input type="text" id="t-paquete" placeholder="" class="w-full border border-slate-400 p-2 rounded text-center font-bold bg-slate-50">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3 text-xs">
-                        <div>
-                            <label class="block font-bold uppercase text-[10px] text-slate-500 mb-1">Cantidad de Expedientes</label>
-                            <input type="text" id="t-cant" placeholder="" class="w-full border border-slate-400 p-2 rounded bg-slate-50">
-                        </div>
-                        <div>
-                            <label class="block font-bold uppercase text-[10px] text-slate-500 mb-1">Año de Expedientes</label>
-                            <input type="text" id="t-anio-exp" placeholder="" class="w-full border border-slate-400 p-2 rounded bg-slate-50">
-                        </div>
-                    </div>
-
-                    <div class="text-xs space-y-2">
-                        <div>
-                            <label class="block font-bold uppercase text-[10px] text-slate-500 mb-1">Doc. Ing. al Archivo</label>
-                            <input type="text" id="t-doc" placeholder="" class="w-full border border-slate-400 p-2 rounded bg-slate-50">
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block font-bold uppercase text-[10px] text-slate-500 mb-1">Fecha de Recepción</label>
-                                <input type="date" id="t-fecha" class="w-full border border-slate-400 p-2 rounded bg-slate-50">
-                            </div>
-                            <div>
-                                <label class="block font-bold uppercase text-[10px] text-slate-500 mb-1">Trabajado Por</label>
-                                <input type="text" id="t-trabajador" placeholder="" class="w-full border border-slate-400 p-2 rounded bg-slate-50">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SECCIÓN: MICROFORMAS (CON PAGINACIÓN DE 10 REGISTROS) -->
-            <section id="sec-microformas" class="space-y-4 hidden">
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
-                    <div>
-                        <h2 class="text-lg font-bold text-slate-800">Línea de Producción de Microformas</h2>
-                        <p class="text-xs text-slate-500">Gestión documental y registros de producción.</p>
-                    </div>
-                    <span class="text-xs bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg font-semibold">Paginado: 10 registros</span>
-                </div>
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                    <table class="w-full text-left border-collapse text-xs">
-                        <thead>
-                            <tr class="bg-slate-100 border-b font-extrabold uppercase text-slate-600">
-                                <th class="p-3">ID</th>
-                                <th class="p-3">Lote / Paquete</th>
-                                <th class="p-3">Supervisor</th>
-                                <th class="p-3">Estado</th>
-                                <th class="p-3">Fecha</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-micro-rows" class="divide-y"></tbody>
-                    </table>
-                    <div class="p-3 bg-slate-50 flex justify-between items-center border-t">
-                        <button onclick="changeMicroPage(-1)" class="px-3 py-1 bg-white border rounded text-xs font-semibold shadow-sm">◀ Anterior</button>
-                        <span id="micro-page-info" class="text-xs font-bold text-slate-600">Página 1 de 1</span>
-                        <button onclick="changeMicroPage(1)" class="px-3 py-1 bg-white border rounded text-xs font-semibold shadow-sm">Siguiente ▶</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SECCIÓN: AUDITORÍA (CON PAGINACIÓN DE 10 REGISTROS) -->
-            <section id="sec-auditoria" class="space-y-4 hidden">
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
-                    <div>
-                        <h2 class="text-lg font-bold text-slate-800">Log de Auditoría del Sistema</h2>
-                        <p class="text-xs text-slate-500">Control de acciones y eventos del sistema.</p>
-                    </div>
-                    <span class="text-xs bg-amber-50 text-amber-700 px-3 py-1 rounded-lg font-semibold">Máx. 10 registros por vista</span>
-                </div>
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                    <table class="w-full text-left border-collapse text-xs">
-                        <thead>
-                            <tr class="bg-slate-100 border-b font-extrabold uppercase text-slate-600">
-                                <th class="p-3">Timestamp</th>
-                                <th class="p-3">Usuario</th>
-                                <th class="p-3">Acción Realizada</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-audit-rows" class="divide-y"></tbody>
-                    </table>
-                    <div class="p-3 bg-slate-50 flex justify-between items-center border-t">
-                        <button onclick="changeAuditPage(-1)" class="px-3 py-1 bg-white border rounded text-xs font-semibold shadow-sm">◀ Anterior</button>
-                        <span id="audit-page-info" class="text-xs font-bold text-slate-600">Página 1 de 1</span>
-                        <button onclick="changeAuditPage(1)" class="px-3 py-1 bg-white border rounded text-xs font-semibold shadow-sm">Siguiente ▶</button>
-                    </div>
-                </div>
-            </section>
         </main>
+    </div>
 
-        <!-- FLOATING ACTIONS -->
-        <div class="fixed bottom-6 right-6 flex flex-col items-end gap-3 z-40 no-print">
-            <button onclick="toggleFloatingMenu()" id="btn-fab-main" class="w-14 h-14 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full text-2xl flex items-center justify-center shadow-lg transition-all duration-300 transform">➕</button>
-            <div id="fab-menu" class="hidden flex-col items-end gap-2.5 mb-2 transform scale-95 opacity-0 transition-all duration-200">
-                <button onclick="openPatientModal(); toggleFloatingMenu();" class="flex items-center gap-2 bg-white px-4 py-2 border border-slate-200 text-slate-700 rounded-xl shadow-md text-sm font-semibold hover:bg-slate-50 transition-all">👤 Nuevo Paciente</button>
-                <button onclick="openAppointmentModal(); toggleFloatingMenu();" class="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 text-sm rounded-xl shadow-md font-semibold hover:bg-indigo-500 transition-all">🗓️ Programar Cita</button>
+    <!-- ================= MODALES DE LA APLICACIÓN ================= -->
+
+    <!-- Modal: Nueva / Editar Cita -->
+    <div id="appointment-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 relative border-t-4 border-[#3d7c75] max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <h3 id="appointment-modal-title" class="font-bold text-slate-800 text-base">Programar Nueva Cita</h3>
+                <button onclick="closeAppointmentModal()" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
             </div>
+            <form id="appointment-form" onsubmit="saveAppointment(event)" class="space-y-4">
+                <input type="hidden" id="appointment-id">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Paciente</label>
+                    <select id="appointment-patient-id" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium">
+                        <!-- Generado por JS -->
+                    </select>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Fecha</label>
+                        <input type="date" id="appointment-date" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Hora</label>
+                        <input type="time" id="appointment-time" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Costo (S/.)</label>
+                        <input type="number" step="0.01" id="appointment-cost" required value="80.00" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Estado de Cita</label>
+                        <select id="appointment-status" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium">
+                            <option value="Programada">Programada</option>
+                            <option value="Completada">Completada</option>
+                            <option value="Cancelada">Cancelada</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Estado de Pago</label>
+                    <select id="appointment-payment-status" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium">
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="Pagado">Pagado</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Notas / Motivo de Consulta</label>
+                    <textarea id="appointment-notes" rows="3" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium" placeholder="Notas breves de la sesión..."></textarea>
+                </div>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeAppointmentModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-semibold">Cancelar</button>
+                    <button type="submit" class="px-5 py-2.5 bg-[#3d7c75] hover:bg-[#326761] text-white font-semibold rounded-xl text-xs shadow-md">Guardar Cita</button>
+                </div>
+            </form>
         </div>
     </div>
 
-    <!-- ================= MODALES Y PLANTILLAS DE IMPRESIÓN CON LOGOTIPO ================= -->
-    <div id="print-section" class="print-only p-8 text-slate-950 space-y-6">
-        <div class="flex justify-between items-start border-b-2 border-slate-950 pb-5">
-            <div class="flex items-center gap-3">
-                <img src="LOGO PJ-AD.png" alt="Logo" class="w-14 h-14 object-contain">
+    <!-- Modal: Nuevo / Editar Paciente -->
+    <div id="patient-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 relative border-t-4 border-[#3d7c75] max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <h3 id="patient-modal-title" class="font-bold text-slate-800 text-base">Registrar Nuevo Paciente</h3>
+                <button onclick="closePatientModal()" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            </div>
+            <form id="patient-form" onsubmit="savePatient(event)" class="space-y-4">
+                <input type="hidden" id="patient-id">
                 <div>
-                    <h1 id="print-title-main" class="text-2xl font-extrabold tracking-tight">REPORTE DIARIO DE AGENDA</h1>
-                    <p class="text-xs font-bold uppercase mt-0.5 text-slate-700">Archivo Desconcentrado - CSJSA</p>
-                    <p class="text-xs font-medium uppercase mt-1">Especialista: <span id="print-head-specialist" class="font-bold"></span></p>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Nombre Completo</label>
+                    <input type="text" id="patient-name" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium" placeholder="Ej. María Pérez">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Correo Electrónico</label>
+                        <input type="email" id="patient-email" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium" placeholder="correo@ejemplo.com">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Teléfono / WhatsApp</label>
+                        <input type="text" id="patient-phone" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium" placeholder="999999999">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Edad</label>
+                        <input type="number" id="patient-age" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium" placeholder="Ej. 30">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Ocupación</label>
+                        <input type="text" id="patient-occupation" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium" placeholder="Ej. Ingeniera">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Motivo de Consulta Principal</label>
+                    <textarea id="patient-reason" rows="2" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium" placeholder="Descripción breve..."></textarea>
+                </div>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closePatientModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-semibold">Cancelar</button>
+                    <button type="submit" class="px-5 py-2.5 bg-[#3d7c75] hover:bg-[#326761] text-white font-semibold rounded-xl text-xs shadow-md">Guardar Paciente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Expediente Clínico / Historia del Paciente -->
+    <div id="patient-detail-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white w-full max-w-3xl rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 relative border-t-4 border-[#3d7c75] max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div>
+                    <h3 id="detail-patient-name" class="font-bold text-slate-800 text-base">Nombre Paciente</h3>
+                    <p id="detail-patient-subtitle" class="text-xs text-slate-500">Detalles y evoluciones clínicas</p>
+                </div>
+                <button onclick="closePatientDetailModal()" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            </div>
+            
+            <div class="space-y-6">
+                <!-- Información General -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                    <div>
+                        <span class="text-slate-400 font-semibold block uppercase text-[10px]">Teléfono</span>
+                        <span id="detail-patient-phone" class="font-medium text-slate-800">-</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 font-semibold block uppercase text-[10px]">Correo</span>
+                        <span id="detail-patient-email" class="font-medium text-slate-800">-</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 font-semibold block uppercase text-[10px]">Edad</span>
+                        <span id="detail-patient-age" class="font-medium text-slate-800">-</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 font-semibold block uppercase text-[10px]">Ocupación</span>
+                        <span id="detail-patient-occupation" class="font-medium text-slate-800">-</span>
+                    </div>
+                </div>
+
+                <!-- Historial de Sesiones y Notas Clínicas -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Historial de Sesiones y Notas Clínicas</h4>
+                        <button onclick="openNewNoteForPatient()" class="px-3 py-1.5 bg-[#3d7c75]/10 hover:bg-[#3d7c75]/20 text-[#3d7c75] font-semibold rounded-lg text-xs transition-all flex items-center space-x-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            <span>Agregar Nota</span>
+                        </button>
+                    </div>
+                    <div id="patient-detail-notes-list" class="space-y-3 max-h-60 overflow-y-auto pr-1">
+                        <!-- Inyectado dinámicamente -->
+                    </div>
                 </div>
             </div>
-            <div class="text-right">
-                <span id="print-head-date-label" class="text-lg font-bold block">FECHA</span>
-                <span id="print-head-date" class="text-sm font-semibold border px-3 py-1 bg-slate-100 rounded inline-block mt-1"></span>
-            </div>
-        </div>
-        <div class="grid grid-cols-3 gap-4 border p-4 bg-slate-50 rounded">
-            <div><span class="text-xs uppercase text-slate-500 font-bold block">Total Consultas</span><span id="print-stat-total" class="text-xl font-bold">0</span></div>
-            <div><span class="text-xs uppercase text-slate-500 font-bold block">Completadas</span><span id="print-stat-completed" class="text-xl font-bold">0</span></div>
-            <div><span class="text-xs uppercase text-slate-500 font-bold block">Recaudado (Completo)</span><span id="print-stat-revenue" class="text-xl font-bold">S/ 0.00</span></div>
-        </div>
-        <div class="space-y-3">
-            <h2 class="text-md font-extrabold border-b pb-1.5 uppercase">Sesiones Programadas</h2>
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="border-b bg-slate-100 text-xs font-extrabold uppercase">
-                        <th id="print-date-column-header" class="py-2.5 px-2 w-[12%] hidden">Fecha</th>
-                        <th class="py-2.5 px-2 w-[10%]">Hora</th>
-                        <th class="py-2.5 px-2 w-[10%]">Modalidad</th>
-                        <th class="py-2.5 px-2 w-[28%]">Paciente</th>
-                        <th class="py-2.5 px-2 w-[13%]">Cobro (S/)</th>
-                        <th class="py-2.5 px-2 w-[13%]">Estado</th>
-                        <th class="py-2.5 px-2 w-[26%]">Notas Clínicas</th>
-                    </tr>
-                </thead>
-                <tbody id="print-table-rows" class="divide-y text-xs"></tbody>
-            </table>
-        </div>
-        <div class="pt-28 flex justify-center">
-            <div class="w-[50%] text-center">
-                <div class="border-t border-slate-400 w-full pt-2"></div>
-                <p class="text-xs font-semibold">Firma del Especialista de Turno</p>
-                <p class="text-[10px] text-slate-500" id="print-foot-specialist"></p>
+
+            <div class="flex justify-end pt-4 border-t border-slate-100">
+                <button type="button" onclick="closePatientDetailModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs">Cerrar</button>
             </div>
         </div>
     </div>
 
-    <!-- Modales adicionales originales (Cita, Paciente, Perfil, Impresión, etc.) se mantienen intactos -->
+    <!-- Modal: Agregar Nota Clínica Rápida -->
+    <div id="clinical-note-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-5 sm:p-6 space-y-6 relative border-t-4 border-[#3d7c75]">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-slate-800 text-base">Nueva Nota de Evolución</h3>
+                <button onclick="closeClinicalNoteModal()" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            </div>
+            <form id="clinical-note-form" onsubmit="saveClinicalNote(event)" class="space-y-4">
+                <input type="hidden" id="note-patient-id">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Fecha de Sesión</label>
+                    <input type="date" id="note-date" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Notas Clínicas / Avance</label>
+                    <textarea id="note-content" rows="4" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#3d7c75] bg-white font-medium" placeholder="Escribe aquí las observaciones clínicas..."></textarea>
+                </div>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeClinicalNoteModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-semibold">Cancelar</button>
+                    <button type="submit" class="px-5 py-2.5 bg-[#3d7c75] hover:bg-[#326761] text-white font-semibold rounded-xl text-xs shadow-md">Guardar Nota</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= SCRIPT JAVASCRIPT INTEGRADO ================= -->
     <script>
-        // Funciones de Pestañas ampliadas para incluir las nuevas secciones
-        function switchTab(target) {
-            ['citas','pacientes','finanzas','tarjetas','microformas','auditoria'].forEach(t => {
-                const sec = document.getElementById('sec-' + t);
-                const tab = document.getElementById('tab-' + t);
-                if(sec) sec.classList.add('hidden');
-                if(tab) tab.className = "py-3.5 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-sm flex items-center gap-2 tab-transition";
+        // Estado Global de la Aplicación
+        let currentUser = null;
+        let currentTab = 'dashboard';
+        let calendarView = 'month'; // 'month', 'week', 'day'
+        let currentDate = new Date();
+
+        // Carga segura priorizando los datos existentes en el navegador
+        let patients = JSON.parse(localStorage.getItem('psico_patients'));
+        if (!patients || !Array.isArray(patients) || patients.length === 0) {
+            patients = [
+                { id: 'p1', name: 'Lucía Fernández', email: 'lucia@email.com', phone: '987654321', age: 28, occupation: 'Diseñadora', reason: 'Ansiedad generalizada', notes: [{ date: '2026-06-10', content: 'Primera sesión. Muestra apertura y buena disposición al diálogo.' }] },
+                { id: 'p2', name: 'Carlos Mendoza', email: 'carlos@email.com', phone: '912345678', age: 34, occupation: 'Ingeniero de Software', reason: 'Estrés laboral y burnout', notes: [] },
+                { id: 'p3', name: 'Sofía Ramirez', email: 'sofia@email.com', phone: '945612378', age: 26, occupation: 'Estudiante', reason: 'Problemas de autoestima', notes: [] }
+            ];
+        }
+
+        let appointments = JSON.parse(localStorage.getItem('psico_appointments'));
+        if (!appointments || !Array.isArray(appointments) || appointments.length === 0) {
+            appointments = [
+                { id: 'a1', patientId: 'p1', date: '2026-07-22', time: '10:00', cost: 80.00, status: 'Programada', paymentStatus: 'Pendiente', notes: 'Seguimiento de técnicas de respiración.' },
+                { id: 'a2', patientId: 'p2', date: '2026-07-22', time: '16:30', cost: 90.00, status: 'Programada', paymentStatus: 'Pagado', notes: 'Revisión de carga laboral.' },
+                { id: 'a3', patientId: 'p3', date: '2026-07-25', time: '11:00', cost: 80.00, status: 'Programada', paymentStatus: 'Pendiente', notes: 'Evaluación inicial.' }
+            ];
+        }
+
+        // Autenticación simple
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            currentUser = { email, name: 'Lisbeth Méndez' };
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('app-container').classList.remove('hidden');
+            initApp();
+        });
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('app-container').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('hidden');
+        }
+
+        function saveData() {
+            localStorage.setItem('psico_patients', JSON.stringify(patients));
+            localStorage.setItem('psico_appointments', JSON.stringify(appointments));
+        }
+
+        function initApp() {
+            populatePatientSelects();
+            populateFinanceMonthFilter();
+            renderDashboard();
+            renderAppointmentsView();
+            renderPatientsList();
+            renderFinanceView();
+        }
+
+        // Navegación de pestañas (móvil y escritorio)
+        function switchTab(tabId) {
+            currentTab = tabId;
+            ['dashboard', 'citas', 'pacientes', 'finanzas'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                
+                const navBtn = document.getElementById(`nav-${t}`);
+                if (navBtn) {
+                    navBtn.className = "px-3.5 py-2 rounded-xl text-xs font-semibold tab-transition text-slate-600 hover:bg-slate-100";
+                }
+
+                const mobileNavBtn = document.getElementById(`nav-mobile-${t}`);
+                if (mobileNavBtn) {
+                    mobileNavBtn.className = "flex flex-col items-center space-y-0.5 text-[10px] font-semibold text-slate-500";
+                }
             });
-            const activeSec = document.getElementById('sec-' + target);
-            const activeTab = document.getElementById('tab-' + target);
-            if(activeSec) activeSec.classList.remove('hidden');
-            if(activeTab) activeTab.className = "py-3.5 px-3 border-b-2 border-indigo-600 text-indigo-600 font-semibold text-sm flex items-center gap-2 tab-transition";
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activeNav) {
+                activeNav.className = "px-3.5 py-2 rounded-xl text-xs font-semibold tab-transition bg-[#3d7c75] text-white shadow-sm";
+            }
+
+            const activeMobileNav = document.getElementById(`nav-mobile-${tabId}`);
+            if (activeMobileNav) {
+                activeMobileNav.className = "flex flex-col items-center space-y-0.5 text-[10px] font-semibold text-[#3d7c75]";
+            }
+
+            if (tabId === 'dashboard') renderDashboard();
+            if (tabId === 'citas') renderAppointmentsView();
+            if (tabId === 'pacientes') renderPatientsList();
+            if (tabId === 'finanzas') renderFinanceView();
         }
 
-        // Simulación de Paginación para Microformas y Auditoría (10 por página)
-        const mockMicro = Array.from({length: 25}, (_, i) => ({ id: i+1, lote: `Lote-0${i+1}`, supervisor: 'Alfredo Cruzado', estado: i%2===0?'Completado':'Proceso', fecha: '22/07/2026' }));
-        const mockAudit = Array.from({length: 30}, (_, i) => ({ time: `2026-07-22 10:${String(i).padStart(2,'0')}:00`, user: 'alfredo@csjsa.pe', action: `Modificación de registro #${i+1}` }));
+        function populatePatientSelects() {
+            const selects = ['appointment-patient-id', 'filter-patient'];
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                if (!select) return;
+                const currentVal = select.value;
+                let html = selectId === 'filter-patient' ? '<option value="all">Todos los pacientes</option>' : '';
+                patients.forEach(p => {
+                    html += `<option value="${p.id}">${p.name}</option>`;
+                });
+                select.innerHTML = html;
+                select.value = currentVal;
+            });
+        }
 
-        let mPage = 1, aPage = 1, limit = 10;
+        // --- DASHBOARD ---
+        function renderDashboard() {
+            document.getElementById('stat-total-patients').textContent = patients.length;
+            
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayAppts = appointments.filter(a => a.date === todayStr);
+            document.getElementById('stat-today-appointments').textContent = todayAppts.length;
 
-        function renderMicro() {
-            const tbody = document.getElementById('table-micro-rows');
-            if(!tbody) return;
-            const slice = mockMicro.slice((mPage-1)*limit, mPage*limit);
-            tbody.innerHTML = slice.map(m => `
-                <tr class="hover:bg-slate-50"><td class="p-3 font-bold">${m.id}</td><td class="p-3 font-semibold">${m.lote}</td><td class="p-3">${m.supervisor}</td><td class="p-3">${m.estado}</td><td class="p-3 text-slate-500">${m.fecha}</td></tr>
+            const pendingPayments = appointments.filter(a => a.paymentStatus === 'Pendiente');
+            document.getElementById('stat-pending-payments').textContent = pendingPayments.length;
+
+            const currentMonthPrefix = new Date().toISOString().slice(0, 7);
+            const monthlyIncome = appointments
+                .filter(a => a.date.startsWith(currentMonthPrefix) && a.paymentStatus === 'Pagado')
+                .reduce((acc, curr) => acc + parseFloat(curr.cost || 0), 0);
+            document.getElementById('stat-monthly-income').textContent = `S/. ${monthlyIncome.toFixed(2)}`;
+
+            const upcomingContainer = document.getElementById('dashboard-upcoming-appointments');
+            const upcoming = appointments
+                .filter(a => a.date >= todayStr && a.status === 'Programada')
+                .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
+                .slice(0, 5);
+
+            if (upcoming.length === 0) {
+                upcomingContainer.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center">No hay citas programadas próximamente.</p>`;
+            } else {
+                upcomingContainer.innerHTML = upcoming.map(a => {
+                    const patient = patients.find(p => p.id === a.patientId) || { name: 'Paciente Desconocido' };
+                    return `
+                        <div class="py-3 flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-9 h-9 rounded-xl bg-[#3d7c75]/10 text-[#3d7c75] flex items-center justify-center font-bold text-xs shrink-0">
+                                    ${a.time}
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="font-bold text-slate-800 text-xs truncate">${patient.name}</p>
+                                    <p class="text-[11px] text-slate-400">${a.date} • S/. ${parseFloat(a.cost).toFixed(2)}</p>
+                                </div>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-600 shrink-0">${a.status}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // --- CALENDARIO / CITAS ---
+        function setCalendarView(view) {
+            calendarView = view;
+            ['month', 'week', 'day'].forEach(v => {
+                const btn = document.getElementById(`view-btn-${v}`);
+                if (btn) {
+                    btn.className = v === view 
+                        ? "px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-800 shadow-sm transition-all"
+                        : "px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-800 transition-all";
+                }
+            });
+            renderAppointmentsView();
+        }
+
+        function changeDateRange(direction) {
+            if (calendarView === 'month') {
+                currentDate.setMonth(currentDate.getMonth() + direction);
+            } else if (calendarView === 'week') {
+                currentDate.setDate(currentDate.getDate() + (direction * 7));
+            } else {
+                currentDate.setDate(currentDate.getDate() + direction);
+            }
+            renderAppointmentsView();
+        }
+
+        function resetDateRangeToday() {
+            currentDate = new Date();
+            renderAppointmentsView();
+        }
+
+        function renderAppointmentsView() {
+            const label = document.getElementById('calendar-current-range-label');
+            const container = document.getElementById('calendar-container');
+            const statusFilter = document.getElementById('filter-status').value;
+            const patientFilter = document.getElementById('filter-patient').value;
+
+            let filtered = appointments.filter(a => {
+                if (statusFilter !== 'all' && a.status !== statusFilter) return false;
+                if (patientFilter !== 'all' && a.patientId !== patientFilter) return false;
+                return true;
+            });
+
+            if (calendarView === 'month') {
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth();
+                const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+                label.textContent = `${monthNames[month]} ${year}`;
+
+                const firstDayIndex = new Date(year, month, 1).getDay();
+                const startDay = (firstDayIndex === 0) ? 6 : firstDayIndex - 1;
+                const totalDays = new Date(year, month + 1, 0).getDate();
+
+                let html = `
+                    <div class="min-w-[650px]">
+                        <div class="grid grid-cols-7 gap-1 text-center font-bold text-[11px] text-slate-400 uppercase tracking-wider mb-2">
+                            <div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div>
+                        </div>
+                        <div class="grid grid-cols-7 gap-1.5">
+                `;
+
+                for (let i = 0; i < startDay; i++) {
+                    html += `<div class="bg-slate-50/50 rounded-xl min-h-[90px] border border-slate-100 opacity-40"></div>`;
+                }
+
+                for (let day = 1; day <= totalDays; day++) {
+                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const dayAppts = filtered.filter(a => a.date === dateStr);
+                    const isToday = new Date().toISOString().split('T')[0] === dateStr;
+
+                    html += `
+                        <div class="bg-white rounded-xl p-2 min-h-[100px] border ${isToday ? 'border-[#3d7c75] ring-1 ring-[#3d7c75]' : 'border-slate-200'} flex flex-col justify-between">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold ${isToday ? 'bg-[#3d7c75] text-white w-5 h-5 rounded-full flex items-center justify-center' : 'text-slate-700'}">${day}</span>
+                                <button onclick="openNewAppointmentModalWithDate('${dateStr}')" class="text-slate-300 hover:text-[#3d7c75] text-xs font-bold">+</button>
+                            </div>
+                            <div class="space-y-1 overflow-y-auto max-h-[70px] mt-1">
+                                ${dayAppts.map(a => {
+                                    const p = patients.find(pat => pat.id === a.patientId) || { name: 'Pac.' };
+                                    return `
+                                        <div onclick="editAppointment('${a.id}')" class="text-[10px] bg-[#3d7c75]/10 text-[#3d7c75] px-1.5 py-0.5 rounded font-semibold truncate cursor-pointer hover:bg-[#3d7c75]/20" title="${a.time} - ${p.name}">
+                                            ${a.time} ${p.name.split(' ')[0]}
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                html += `</div></div>`;
+                container.innerHTML = html;
+
+            } else if (calendarView === 'week') {
+                const curr = new Date(currentDate);
+                const firstDayOfWeek = curr.getDate() - curr.getDay() + (curr.getDay() === 0 ? -6 : 1);
+                const weekDays = [];
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date(new Date(curr).setDate(firstDayOfWeek + i));
+                    weekDays.push(d);
+                }
+                label.textContent = `Semana del ${weekDays[0].getDate()} al ${weekDays[6].getDate()}`;
+
+                let html = `<div class="space-y-3">`;
+                weekDays.forEach(d => {
+                    const dateStr = d.toISOString().split('T')[0];
+                    const dayAppts = filtered.filter(a => a.date === dateStr);
+                    html += `
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div class="min-w-[140px]">
+                                <p class="text-xs font-bold text-slate-800">${d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' })}</p>
+                                <p class="text-[10px] text-slate-400">${dayAppts.length} citas programadas</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2 flex-1">
+                                ${dayAppts.length === 0 ? '<span class="text-xs text-slate-400 italic">Sin citas</span>' : ''}
+                                ${dayAppts.map(a => {
+                                    const p = patients.find(pat => pat.id === a.patientId) || { name: 'Paciente' };
+                                    return `
+                                        <div onclick="editAppointment('${a.id}')" class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs cursor-pointer hover:border-[#3d7c75] transition-all">
+                                            <p class="font-bold text-[#3d7c75]">${a.time} hrs</p>
+                                            <p class="font-medium text-slate-800">${p.name}</p>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                            <button onclick="openNewAppointmentModalWithDate('${dateStr}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs">+ Cita</button>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+                container.innerHTML = html;
+
+            } else {
+                const dateStr = currentDate.toISOString().split('T')[0];
+                label.textContent = currentDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                const dayAppts = filtered.filter(a => a.date === dateStr).sort((a,b) => a.time.localeCompare(b.time));
+
+                let html = `
+                    <div class="space-y-4 max-w-2xl mx-auto">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-bold text-slate-800 text-sm">Agenda del Día</h3>
+                            <button onclick="openNewAppointmentModalWithDate('${dateStr}')" class="px-3.5 py-1.5 bg-[#3d7c75] text-white rounded-xl text-xs font-semibold">+ Nueva Cita</button>
+                        </div>
+                        <div class="space-y-3">
+                `;
+                if (dayAppts.length === 0) {
+                    html += `<div class="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-400 text-xs">No hay citas registradas para este día.</div>`;
+                } else {
+                    html += dayAppts.map(a => {
+                        const p = patients.find(pat => pat.id === a.patientId) || { name: 'Paciente' };
+                        return `
+                            <div class="bg-white p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-12 h-12 rounded-xl bg-[#3d7c75]/10 text-[#3d7c75] flex items-center justify-center font-bold text-sm shrink-0">
+                                        ${a.time}
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-slate-800 text-sm">${p.name}</h4>
+                                        <p class="text-xs text-slate-400">Costo: S/. ${parseFloat(a.cost).toFixed(2)} • <span class="text-emerald-600 font-semibold">${a.paymentStatus}</span></p>
+                                        ${a.notes ? `<p class="text-xs text-slate-600 mt-1 italic">"${a.notes}"</p>` : ''}
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+                                    <button onclick="editAppointment('${a.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs">Editar</button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+                html += `</div></div>`;
+                container.innerHTML = html;
+            }
+        }
+
+        // --- GESTIÓN DE PACIENTES ---
+        function renderPatientsList() {
+            const search = document.getElementById('search-patient-input').value.toLowerCase();
+            const tbody = document.getElementById('patients-table-body');
+            
+            const filtered = patients.filter(p => p.name.toLowerCase().includes(search) || (p.occupation && p.occupation.toLowerCase().includes(search)));
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400">No se encontraron pacientes registrados.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(p => {
+                const patientAppts = appointments.filter(a => a.patientId === p.id).sort((a,b) => b.date.localeCompare(a.date));
+                const lastAppt = patientAppts.length > 0 ? patientAppts[0].date : 'Sin registro';
+
+                return `
+                    <tr class="hover:bg-slate-50/80 transition-all">
+                        <td class="py-3 px-4 font-bold text-slate-800">
+                            <div onclick="openPatientDetail('${p.id}')" class="cursor-pointer hover:text-[#3d7c75]">${p.name}</div>
+                            <span class="text-[10px] text-slate-400 font-normal">Motivo: ${p.reason || 'No especificado'}</span>
+                        </td>
+                        <td class="py-3 px-4 text-slate-600">
+                            <div>${p.phone || '-'}</div>
+                            <span class="text-[10px] text-slate-400">${p.email || ''}</span>
+                        </td>
+                        <td class="py-3 px-4 text-slate-600">
+                            <div>${p.age ? p.age + ' años' : '-'}</div>
+                            <span class="text-[10px] text-slate-400">${p.occupation || ''}</span>
+                        </td>
+                        <td class="py-3 px-4 text-slate-600 font-medium">${lastAppt}</td>
+                        <td class="py-3 px-4 text-right space-x-1 sm:space-x-2 whitespace-nowrap">
+                            <button onclick="openPatientDetail('${p.id}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs">Expediente</button>
+                            <button onclick="editPatient('${p.id}')" class="px-2.5 py-1 bg-[#3d7c75]/10 hover:bg-[#3d7c75]/20 text-[#3d7c75] font-semibold rounded-lg text-xs">Editar</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // --- FINANZAS ---
+        function populateFinanceMonthFilter() {
+            const select = document.getElementById('finance-month-filter');
+            if (!select) return;
+            const months = [
+                { val: '2026-07', label: 'Julio 2026' },
+                { val: '2026-06', label: 'Junio 2026' },
+                { val: '2026-05', label: 'Mayo 2026' }
+            ];
+            select.innerHTML = months.map(m => `<option value="${m.val}">${m.label}</option>`).join('');
+        }
+
+        function renderFinanceView() {
+            const monthVal = document.getElementById('finance-month-filter').value || '2026-07';
+            const tbody = document.getElementById('finance-table-body');
+
+            const monthAppts = appointments.filter(a => a.date.startsWith(monthVal));
+
+            let totalBilled = 0;
+            let totalCollected = 0;
+            let totalPending = 0;
+
+            monthAppts.forEach(a => {
+                const cost = parseFloat(a.cost || 0);
+                totalBilled += cost;
+                if (a.paymentStatus === 'Pagado') {
+                    totalCollected += cost;
+                } else {
+                    totalPending += cost;
+                }
+            });
+
+            document.getElementById('finance-total-billed').textContent = `S/. ${totalBilled.toFixed(2)}`;
+            document.getElementById('finance-total-collected').textContent = `S/. ${totalCollected.toFixed(2)}`;
+            document.getElementById('finance-total-pending').textContent = `S/. ${totalPending.toFixed(2)}`;
+
+            if (monthAppts.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400">No hay registros financieros para este mes.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = monthAppts.map(a => {
+                const p = patients.find(pat => pat.id === a.patientId) || { name: 'Paciente' };
+                const isPaid = a.paymentStatus === 'Pagado';
+                return `
+                    <tr class="hover:bg-slate-50/80 transition-all">
+                        <td class="py-3 px-4 font-semibold text-slate-800">${a.date} <span class="text-xs text-slate-400 font-normal">(${a.time})</span></td>
+                        <td class="py-3 px-4 font-medium text-slate-800">${p.name}</td>
+                        <td class="py-3 px-4 font-bold text-slate-800">S/. ${parseFloat(a.cost).toFixed(2)}</td>
+                        <td class="py-3 px-4">
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-semibold ${isPaid ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}">
+                                ${a.paymentStatus}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 text-right">
+                            <button onclick="togglePaymentStatus('${a.id}')" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs">
+                                ${isPaid ? 'Marcar Pendiente' : 'Marcar Pagado'}
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function togglePaymentStatus(appId) {
+            const app = appointments.find(a => a.id === appId);
+            if (app) {
+                app.paymentStatus = app.paymentStatus === 'Pagado' ? 'Pendiente' : 'Pagado';
+                saveData();
+                renderFinanceView();
+                renderDashboard();
+            }
+        }
+
+        // --- MODALES Y FORMULARIOS ---
+        function openNewAppointmentModal() {
+            document.getElementById('appointment-modal-title').textContent = 'Programar Nueva Cita';
+            document.getElementById('appointment-form').reset();
+            document.getElementById('appointment-id').value = '';
+            document.getElementById('appointment-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('appointment-time').value = '10:00';
+            document.getElementById('appointment-modal').classList.remove('hidden');
+        }
+
+        function openNewAppointmentModalWithDate(dateStr) {
+            openNewAppointmentModal();
+            document.getElementById('appointment-date').value = dateStr;
+        }
+
+        function closeAppointmentModal() {
+            document.getElementById('appointment-modal').classList.add('hidden');
+        }
+
+        function editAppointment(appId) {
+            const app = appointments.find(a => a.id === appId);
+            if (!app) return;
+            document.getElementById('appointment-modal-title').textContent = 'Editar Cita';
+            document.getElementById('appointment-id').value = app.id;
+            document.getElementById('appointment-patient-id').value = app.patientId;
+            document.getElementById('appointment-date').value = app.date;
+            document.getElementById('appointment-time').value = app.time;
+            document.getElementById('appointment-cost').value = app.cost;
+            document.getElementById('appointment-status').value = app.status;
+            document.getElementById('appointment-payment-status').value = app.paymentStatus;
+            document.getElementById('appointment-notes').value = app.notes || '';
+            document.getElementById('appointment-modal').classList.remove('hidden');
+        }
+
+        function saveAppointment(e) {
+            e.preventDefault();
+            const id = document.getElementById('appointment-id').value;
+            const data = {
+                id: id || 'a_' + Date.now(),
+                patientId: document.getElementById('appointment-patient-id').value,
+                date: document.getElementById('appointment-date').value,
+                time: document.getElementById('appointment-time').value,
+                cost: parseFloat(document.getElementById('appointment-cost').value),
+                status: document.getElementById('appointment-status').value,
+                paymentStatus: document.getElementById('appointment-payment-status').value,
+                notes: document.getElementById('appointment-notes').value
+            };
+
+            if (id) {
+                const idx = appointments.findIndex(a => a.id === id);
+                if (idx !== -1) appointments[idx] = data;
+            } else {
+                appointments.push(data);
+            }
+
+            saveData();
+            closeAppointmentModal();
+            initApp();
+        }
+
+        function openNewPatientModal() {
+            document.getElementById('patient-modal-title').textContent = 'Registrar Nuevo Paciente';
+            document.getElementById('patient-form').reset();
+            document.getElementById('patient-id').value = '';
+            document.getElementById('patient-modal').classList.remove('hidden');
+        }
+
+        function closePatientModal() {
+            document.getElementById('patient-modal').classList.add('hidden');
+        }
+
+        function editPatient(patientId) {
+            const p = patients.find(pat => pat.id === patientId);
+            if (!p) return;
+            document.getElementById('patient-modal-title').textContent = 'Editar Paciente';
+            document.getElementById('patient-id').value = p.id;
+            document.getElementById('patient-name').value = p.name;
+            document.getElementById('patient-email').value = p.email || '';
+            document.getElementById('patient-phone').value = p.phone || '';
+            document.getElementById('patient-age').value = p.age || '';
+            document.getElementById('patient-occupation').value = p.occupation || '';
+            document.getElementById('patient-reason').value = p.reason || '';
+            document.getElementById('patient-modal').classList.remove('hidden');
+        }
+
+        function savePatient(e) {
+            e.preventDefault();
+            const id = document.getElementById('patient-id').value;
+            const data = {
+                id: id || 'p_' + Date.now(),
+                name: document.getElementById('patient-name').value,
+                email: document.getElementById('patient-email').value,
+                phone: document.getElementById('patient-phone').value,
+                age: document.getElementById('patient-age').value,
+                occupation: document.getElementById('patient-occupation').value,
+                reason: document.getElementById('patient-reason').value,
+                notes: id ? (patients.find(p => p.id === id).notes || []) : []
+            };
+
+            if (id) {
+                const idx = patients.findIndex(p => p.id === id);
+                if (idx !== -1) patients[idx] = data;
+            } else {
+                patients.push(data);
+            }
+
+            saveData();
+            closePatientModal();
+            initApp();
+        }
+
+        // --- EXPEDIENTE CLÍNICO ---
+        let currentDetailPatientId = null;
+
+        function openPatientDetail(patientId) {
+            currentDetailPatientId = patientId;
+            const p = patients.find(pat => pat.id === patientId);
+            if (!p) return;
+
+            document.getElementById('detail-patient-name').textContent = p.name;
+            document.getElementById('detail-patient-subtitle').textContent = `Expediente clínico e historial de sesiones`;
+            document.getElementById('detail-patient-phone').textContent = p.phone || 'No registrado';
+            document.getElementById('detail-patient-email').textContent = p.email || 'No registrado';
+            document.getElementById('detail-patient-age').textContent = p.age ? p.age + ' años' : 'No especificada';
+            document.getElementById('detail-patient-occupation').textContent = p.occupation || 'No especificada';
+
+            renderPatientNotesList(p);
+            document.getElementById('patient-detail-modal').classList.remove('hidden');
+        }
+
+        function closePatientDetailModal() {
+            document.getElementById('patient-detail-modal').classList.add('hidden');
+        }
+
+        function renderPatientNotesList(patient) {
+            const container = document.getElementById('patient-detail-notes-list');
+            const notes = patient.notes || [];
+
+            if (notes.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 py-3 text-center">No hay notas clínicas registradas para este paciente.</p>`;
+                return;
+            }
+
+            container.innerHTML = notes.map((n, idx) => `
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-bold text-[#3d7c75]">Sesión del ${n.date}</span>
+                        <button onclick="deleteClinicalNote('${patient.id}', ${idx})" class="text-slate-400 hover:text-red-600 text-xs font-semibold">Eliminar</button>
+                    </div>
+                    <p class="text-xs text-slate-700 whitespace-pre-wrap">${n.content}</p>
+                </div>
             `).join('');
-            document.getElementById('micro-page-info').innerText = `Página ${mPage} de ${Math.ceil(mockMicro.length/limit)}`;
         }
 
-        function renderAudit() {
-            const tbody = document.getElementById('table-audit-rows');
-            if(!tbody) return;
-            const slice = mockAudit.slice((aPage-1)*limit, aPage*limit);
-            tbody.innerHTML = slice.map(a => `
-                <tr class="hover:bg-slate-50"><td class="p-3 text-slate-500">${a.time}</td><td class="p-3 font-semibold">${a.user}</td><td class="p-3">${a.action}</td></tr>
-            `).join('');
-            document.getElementById('audit-page-info').innerText = `Página ${aPage} de ${Math.ceil(mockAudit.length/limit)}`;
+        function openNewNoteForPatient() {
+            document.getElementById('note-patient-id').value = currentDetailPatientId;
+            document.getElementById('clinical-note-form').reset();
+            document.getElementById('note-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('clinical-note-modal').classList.remove('hidden');
         }
 
-        function changeMicroPage(d) {
-            mPage = Math.max(1, Math.min(Math.ceil(mockMicro.length/limit), mPage + d));
-            renderMicro();
+        function closeClinicalnoteModal() {
+            document.getElementById('clinical-note-modal').classList.add('hidden');
         }
 
-        function changeAuditPage(d) {
-            aPage = Math.max(1, Math.min(Math.ceil(mockAudit.length/limit), aPage + d));
-            renderAudit();
+        function saveClinicalNote(e) {
+            e.preventDefault();
+            const patientId = document.getElementById('note-patient-id').value;
+            const p = patients.find(pat => pat.id === patientId);
+            if (!p) return;
+
+            if (!p.notes) p.notes = [];
+            p.notes.push({
+                date: document.getElementById('note-date').value,
+                content: document.getElementById('note-content').value
+            });
+
+            saveData();
+            closeClinicalNoteModal();
+            openPatientDetail(patientId);
         }
 
-        renderMicro();
-        renderAudit();
+        function deleteClinicalNote(patientId, noteIndex) {
+            const p = patients.find(pat => pat.id === patientId);
+            if (!p || !p.notes) return;
+            p.notes.splice(noteIndex, 1);
+            saveData();
+            openPatientDetail(patientId);
+        }
     </script>
 </body>
 </html>
