@@ -2585,17 +2585,40 @@ window.printClinicalHistory = function() {
         window.downloadHorarioImage = async function () {
             const btn = document.getElementById('btn-descargar-horario');
             const area = document.getElementById('horario-capture-area');
+            const scrollWrap = document.getElementById('horario-scroll-wrap');
             if (!area || typeof html2canvas === 'undefined') {
                 alert('No se pudo generar la imagen. Revisa tu conexión a internet e inténtalo de nuevo.');
                 return;
             }
             const originalLabel = btn ? btn.innerHTML : '';
             if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Generando...'; }
+
+            // Guardamos los estilos originales para poder revertirlos después
+            const prevAreaWidth = area.style.width;
+            const prevAreaMaxWidth = area.style.maxWidth;
+            const prevWrapOverflow = scrollWrap ? scrollWrap.style.overflow : '';
+            const prevWrapWidth = scrollWrap ? scrollWrap.style.width : '';
+
             try {
+                // Quitamos temporalmente el recorte/scroll horizontal para que
+                // html2canvas capture el ancho COMPLETO de la tabla, no solo
+                // la parte visible en pantalla (importante en celulares).
+                if (scrollWrap) {
+                    scrollWrap.style.overflow = 'visible';
+                    scrollWrap.style.width = 'max-content';
+                }
+                area.style.width = 'max-content';
+                area.style.maxWidth = 'none';
+                // Forzamos un reflow para que los estilos se apliquen antes de capturar
+                void area.offsetWidth;
+
                 const canvas = await html2canvas(area, {
                     backgroundColor: '#ffffff',
                     scale: 2,
-                    useCORS: true
+                    useCORS: true,
+                    windowWidth: area.scrollWidth,
+                    width: area.scrollWidth,
+                    height: area.scrollHeight
                 });
                 const weekStart = state.horarioWeekStart || getMondayOf(new Date());
                 const fileDate = horarioDateStr(weekStart);
@@ -2607,6 +2630,13 @@ window.printClinicalHistory = function() {
                 console.error(err);
                 alert('Ocurrió un error al generar la imagen del horario.');
             } finally {
+                // Restauramos los estilos originales (scroll horizontal en móvil)
+                if (scrollWrap) {
+                    scrollWrap.style.overflow = prevWrapOverflow;
+                    scrollWrap.style.width = prevWrapWidth;
+                }
+                area.style.width = prevAreaWidth;
+                area.style.maxWidth = prevAreaMaxWidth;
                 if (btn) { btn.disabled = false; btn.innerHTML = originalLabel; }
             }
         };
@@ -2913,7 +2943,7 @@ window.printClinicalHistory = function() {
                 <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-md bg-rose-300 border border-rose-400 inline-block"></span> Ocupado</span>
             </div>
 
-            <div class="overflow-x-auto pb-2">
+            <div id="horario-scroll-wrap" class="overflow-x-auto pb-2">
                 <div id="schedule-occupancy-grid" class="min-w-[760px]">
                     <!-- Se llena dinámicamente vía actualizarGridHorarios() -->
                 </div>
