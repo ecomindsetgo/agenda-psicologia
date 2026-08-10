@@ -199,10 +199,13 @@
                 </div>
 
                 <!-- Toggle Vista Día / Vista Mes -->
-                <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-2">
+                <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-2 flex-wrap">
                     <span class="text-xs font-bold text-slate-400 uppercase mr-1">Vista:</span>
                     <button onclick="setCitasView('dia')" id="btn-view-dia" class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">📅 Día</button>
                     <button onclick="setCitasView('mes')" id="btn-view-mes" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">🗓️ Mes</button>
+                    <button onclick="openHorarioModal()" id="btn-revisar-horario" class="ml-auto px-3 py-1.5 bg-orange-100 hover:bg-orange-200 text-orange-700 text-xs font-bold rounded-lg transition flex items-center gap-1.5">
+                        🔍 Revisar Horario
+                    </button>
                 </div>
 
                 <!-- VISTA DIARIA -->
@@ -290,12 +293,6 @@
                         🖨️ Imprimir Reporte (Día o Mes)
                     </button>
                 </div>
-
-                <!-- Botón para abrir el reporte -->
-<button onclick="document.getElementById('modal-horario').classList.remove('hidden')" 
-        class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold shadow-md hover:bg-indigo-700 transition">
-    🔍 Revisar Horario
-</button>
 
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                     <div class="flex items-center justify-between mb-4 flex-wrap gap-1">
@@ -2495,6 +2492,94 @@ window.printClinicalHistory = function() {
                 reportSection.classList.remove('hidden');
             }, 300);
         };
+
+        // ─── HORARIO SEMANAL (Modal "Revisar Horario") ─────────────────────────────
+        const HORARIO_SLOTS = ['08:00','09:00','10:00','11:00','12:00','14:00','15:00','16:00','17:00','18:00','19:00'];
+        const HORARIO_DAYS  = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+        function getMondayOf(d) {
+            const date = new Date(d);
+            const day = date.getDay(); // 0 = domingo
+            const diff = day === 0 ? -6 : 1 - day;
+            date.setDate(date.getDate() + diff);
+            date.setHours(0, 0, 0, 0);
+            return date;
+        }
+        function horarioDateStr(d) {
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+
+        window.openHorarioModal = function () {
+            const baseDateStr = document.getElementById('date-filter') ? document.getElementById('date-filter').value : '';
+            const baseDate = baseDateStr ? new Date(baseDateStr + 'T00:00:00') : new Date();
+            state.horarioWeekStart = getMondayOf(baseDate);
+            document.getElementById('modal-horario').classList.remove('hidden');
+            actualizarGridHorarios();
+        };
+
+        window.goToCurrentHorarioWeek = function () {
+            state.horarioWeekStart = getMondayOf(new Date());
+            actualizarGridHorarios();
+        };
+
+        window.shiftHorarioWeek = function (dir) {
+            const d = new Date(state.horarioWeekStart || getMondayOf(new Date()));
+            d.setDate(d.getDate() + dir * 7);
+            state.horarioWeekStart = d;
+            actualizarGridHorarios();
+        };
+
+        window.actualizarGridHorarios = function () {
+            const container = document.getElementById('schedule-occupancy-grid');
+            if (!container) return;
+            if (!state.horarioWeekStart) state.horarioWeekStart = getMondayOf(new Date());
+            const weekStart = state.horarioWeekStart;
+
+            const dayDates = HORARIO_DAYS.map((_, i) => {
+                const d = new Date(weekStart);
+                d.setDate(d.getDate() + i);
+                return d;
+            });
+
+            const first = dayDates[0], last = dayDates[dayDates.length - 1];
+            const mesLbl = last.toLocaleDateString('es-PE', { month: 'long' });
+            const rangeEl = document.getElementById('horario-week-range');
+            if (rangeEl) {
+                rangeEl.innerText = `Del ${first.getDate()} al ${last.getDate()} de ${mesLbl.charAt(0).toUpperCase() + mesLbl.slice(1)}`;
+            }
+
+            const todayStr = horarioDateStr(new Date());
+            const appts = (state.appointments || []).filter(a => a.status !== 'cancelada');
+
+            let html = `<div class="grid gap-1.5" style="grid-template-columns: 110px repeat(${HORARIO_DAYS.length}, minmax(90px,1fr));">`;
+
+            // Fila de cabecera con los días
+            html += `<div></div>`;
+            dayDates.forEach((d, i) => {
+                const isToday = horarioDateStr(d) === todayStr;
+                html += `<div class="text-center py-2.5 rounded-xl font-extrabold text-[11px] uppercase tracking-wide ${isToday ? 'bg-indigo-600 text-white' : 'bg-orange-200 text-slate-700'}">
+                            ${HORARIO_DAYS[i]}<br><span class="font-medium opacity-80 normal-case">${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}</span>
+                         </div>`;
+            });
+
+            // Filas por franja horaria
+            HORARIO_SLOTS.forEach(slot => {
+                const [h, m] = slot.split(':').map(Number);
+                const endLabel = `${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                html += `<div class="flex items-center justify-center text-center px-1.5 py-2.5 rounded-xl bg-orange-100 font-extrabold text-[11px] text-slate-600">${slot} - ${endLabel}</div>`;
+
+                dayDates.forEach(d => {
+                    const dateStr = horarioDateStr(d);
+                    const occupied = appts.some(a => a.date === dateStr && a.time && a.time.slice(0, 5) === slot);
+                    html += occupied
+                        ? `<div class="flex items-center justify-center py-2.5 rounded-xl bg-rose-300 text-rose-800 font-extrabold text-[11px] uppercase tracking-wide">Ocupado</div>`
+                        : `<div class="flex items-center justify-center py-2.5 rounded-xl bg-emerald-100 text-emerald-700 font-extrabold text-[11px] uppercase tracking-wide">Libre</div>`;
+                });
+            });
+
+            html += `</div>`;
+            container.innerHTML = html;
+        };
     </script>
 
     <!-- ─── UI GLOBAL (tabs, modales, fecha) ─────────────────────────── -->
@@ -2703,16 +2788,6 @@ window.printClinicalHistory = function() {
 
 
 
-// Llamar a esta función al abrir el modal o simplemente déjala activa para que el grid siempre esté listo
-function actualizarGridHorarios() {
-    const container = document.getElementById('schedule-occupancy-grid');
-    // ... (usa la misma lógica de "renderScheduleOccupancy" que vimos antes)
-    // Esto llenará el div con las cajitas de colores (verde/rosa)
-}
-
-// Para que se actualice cada vez que abras el modal:
-document.querySelector('[onclick*="modal-horario"]').addEventListener('click', actualizarGridHorarios);
-
         
         async function saveNewPassword() {
             const errDiv = document.getElementById('profile-pwd-error');
@@ -2779,16 +2854,31 @@ document.querySelector('[onclick*="modal-horario"]').addEventListener('click', a
 
 <!-- Modal de Horarios -->
 <div id="modal-horario" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-    <div class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl p-8 max-h-[90vh] overflow-y-auto">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-black text-slate-800">📊 Estado de Horarios del Día</h2>
-            <button onclick="document.getElementById('modal-horario').classList.add('hidden')" 
-                    class="text-slate-400 hover:text-slate-600 font-bold text-xl">✕</button>
+    <div class="bg-white w-full max-w-5xl rounded-3xl shadow-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-start mb-5 gap-3 flex-wrap">
+            <div>
+                <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Consultorio Psicológico</p>
+                <h2 class="text-2xl font-black text-slate-800">Horario Semanal</h2>
+                <p id="horario-week-range" class="text-sm font-bold text-orange-500 mt-1"></p>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+                <button onclick="shiftHorarioWeek(-1)" class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold transition">◀ Semana Anterior</button>
+                <button onclick="goToCurrentHorarioWeek()" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-semibold transition">Esta Semana</button>
+                <button onclick="shiftHorarioWeek(1)" class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold transition">Semana Siguiente ▶</button>
+                <button onclick="document.getElementById('modal-horario').classList.add('hidden')" 
+                        class="text-slate-400 hover:text-slate-600 font-bold text-xl px-2">✕</button>
+            </div>
         </div>
-        
-        <!-- Aquí irá tu cuadrícula de horarios -->
-        <div id="schedule-occupancy-grid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
-            <!-- Se llena dinámicamente -->
+
+        <div class="flex items-center gap-4 mb-4 text-xs font-bold text-slate-500">
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-md bg-emerald-100 border border-emerald-300 inline-block"></span> Libre</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-md bg-rose-300 border border-rose-400 inline-block"></span> Ocupado</span>
+        </div>
+
+        <div class="overflow-x-auto pb-2">
+            <div id="schedule-occupancy-grid" class="min-w-[760px]">
+                <!-- Se llena dinámicamente vía actualizarGridHorarios() -->
+            </div>
         </div>
     </div>
 </div>
