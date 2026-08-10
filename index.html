@@ -291,6 +291,12 @@
                     </button>
                 </div>
 
+                <!-- Botón para abrir el reporte -->
+<button onclick="document.getElementById('modal-horario').classList.remove('hidden')" 
+        class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold shadow-md hover:bg-indigo-700 transition">
+    🔍 Revisar Horario
+</button>
+
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                     <div class="flex items-center justify-between mb-4 flex-wrap gap-1">
                         <h2 class="text-lg font-bold text-slate-800">Análisis del Consultorio</h2>
@@ -2694,6 +2700,20 @@ window.printClinicalHistory = function() {
             setTimeout(() => okDiv.classList.add('hidden'), 3000);
         }
 
+
+
+
+// Llamar a esta función al abrir el modal o simplemente déjala activa para que el grid siempre esté listo
+function actualizarGridHorarios() {
+    const container = document.getElementById('schedule-occupancy-grid');
+    // ... (usa la misma lógica de "renderScheduleOccupancy" que vimos antes)
+    // Esto llenará el div con las cajitas de colores (verde/rosa)
+}
+
+// Para que se actualice cada vez que abras el modal:
+document.querySelector('[onclick*="modal-horario"]').addEventListener('click', actualizarGridHorarios);
+
+        
         async function saveNewPassword() {
             const errDiv = document.getElementById('profile-pwd-error');
             const okDiv  = document.getElementById('profile-pwd-success');
@@ -2749,5 +2769,29 @@ window.printClinicalHistory = function() {
         }
 
     </script>
+
+
+
+
+
+
+
+
+<!-- Modal de Horarios -->
+<div id="modal-horario" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+    <div class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl p-8 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-black text-slate-800">📊 Estado de Horarios del Día</h2>
+            <button onclick="document.getElementById('modal-horario').classList.add('hidden')" 
+                    class="text-slate-400 hover:text-slate-600 font-bold text-xl">✕</button>
+        </div>
+        
+        <!-- Aquí irá tu cuadrícula de horarios -->
+        <div id="schedule-occupancy-grid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+            <!-- Se llena dinámicamente -->
+        </div>
+    </div>
+</div>
+    
 </body>
 </html>
