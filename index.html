@@ -360,7 +360,7 @@
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Paciente Clínico *</label>
                     <div class="flex gap-2">
-                        <select id="app-patient-select" required onchange="updateAppointmentPricing()" class="flex-grow p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                        <select id="app-patient-select" required class="flex-grow p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
                         <button type="button" onclick="switchToNewPatientFromAppoint()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 rounded-xl text-xs font-semibold border border-indigo-200 transition">➕ Nuevo</button>
                     </div>
                 </div>
@@ -375,44 +375,22 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Tipo de Atención *</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 has-[:checked]:text-indigo-700 has-[:checked]:font-semibold transition">
-                            <input type="radio" name="app-attention-type" id="app-attention-individual" value="individual" class="accent-indigo-600" checked onchange="updateAppointmentPricing()">
-                            👤 Individual
-                        </label>
-                        <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 has-[:checked]:text-indigo-700 has-[:checked]:font-semibold transition">
-                            <input type="radio" name="app-attention-type" id="app-attention-pareja" value="pareja" class="accent-indigo-600" onchange="updateAppointmentPricing()">
-                            👥 Pareja
-                        </label>
-                    </div>
-                </div>
-                <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Modalidad de la Cita *</label>
                     <div class="grid grid-cols-2 gap-2">
                         <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 has-[:checked]:text-indigo-700 has-[:checked]:font-semibold transition">
-                            <input type="radio" name="app-modality" id="app-modality-presencial" value="presencial" class="accent-indigo-600" checked onchange="updateAppointmentPricing()">
+                            <input type="radio" name="app-modality" id="app-modality-presencial" value="presencial" class="accent-indigo-600" checked onchange="updateCostByModality()">
                             🏢 Presencial
                         </label>
                         <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 has-[:checked]:text-indigo-700 has-[:checked]:font-semibold transition">
-                            <input type="radio" name="app-modality" id="app-modality-virtual" value="virtual" class="accent-indigo-600" onchange="updateAppointmentPricing()">
+                            <input type="radio" name="app-modality" id="app-modality-virtual" value="virtual" class="accent-indigo-600" onchange="updateCostByModality()">
                             💻 Virtual
                         </label>
                     </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Forma de Pago / Tarifa *</label>
-                    <select id="app-rate-type" onchange="updateAppointmentPricing()" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
-                        <option value="sesion">💵 Sesión individual</option>
-                        <option value="paquete6">📦 Paquete de 6 sesiones</option>
-                        <option value="paquete8">📦 Paquete de 8 sesiones</option>
-                    </select>
-                </div>
-                <div id="app-package-info" class="hidden text-xs rounded-xl p-3 border space-y-1"></div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Precio (S/) *</label>
-                        <input type="number" id="app-cost" min="0" step="0.50" value="50.00" required readonly class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-100 text-sm focus:outline-none font-semibold">
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Costo (S/) *</label>
+                        <input type="number" id="app-cost" min="0" step="0.50" value="50.00" required class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Estado de Pago *</label>
@@ -422,10 +400,6 @@
                         </select>
                     </div>
                 </div>
-                <input type="hidden" id="app-package-id">
-                <input type="hidden" id="app-package-type">
-                <input type="hidden" id="app-session-value">
-                <input type="hidden" id="app-package-consumed">
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Estado de la Cita</label>
                     <select id="app-status" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
@@ -1066,11 +1040,6 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
                 <div>
                     <h4 class="text-xs font-bold uppercase text-slate-400 mb-2">Antecedentes / Historial General</h4>
                     <p id="hist-patient-history" class="text-sm text-slate-600 bg-slate-50 border border-slate-100 rounded-xl p-3"></p>
-                </div>
-                <!-- Paquetes -->
-                <div>
-                    <h4 class="text-xs font-bold uppercase text-slate-400 mb-2">📦 Paquetes de Sesiones</h4>
-                    <div id="hist-patient-packages" class="space-y-2"></div>
                 </div>
                 <!-- Citas -->
                 <div>
@@ -1879,47 +1848,6 @@ window.printClinicalHistory = function() {
         };
 
         // ─── CRUD CITAS ───────────────────────────────────────────────────────────
-        // ─── PAQUETES: helpers de persistencia ──────────────────────────────────
-        // Guarda el arreglo completo de paquetes del paciente en Firestore.
-        async function savePatientPackages(patientId, packages) {
-            const ref = doc(db, 'artifacts', appId, 'users', state.currentUser.uid, 'patients', patientId);
-            await setDoc(ref, { packages: packages }, { merge: true });
-            const p = state.patients.find(p => p.id === patientId);
-            if (p) p.packages = packages;
-        }
-
-        // Suma (o resta) 1 sesión utilizada de un paquete específico del paciente.
-        async function adjustPackageSession(patientId, packageId, delta) {
-            if (!packageId) return;
-            const patientObj = state.patients.find(p => p.id === patientId);
-            if (!patientObj || !Array.isArray(patientObj.packages)) return;
-            const packages = patientObj.packages.map(pk => {
-                if (pk.id !== packageId) return pk;
-                let used = pk.sessionsUsed + delta;
-                used = Math.max(0, Math.min(pk.sessionsTotal, used));
-                return { ...pk, sessionsUsed: used };
-            });
-            await savePatientPackages(patientId, packages);
-        }
-
-        // Marca/desmarca la sesión de paquete de una cita como "consumida" y
-        // ajusta el contador del paquete cuando la cita entra o sale de "completada".
-        async function syncPackageOnStatusChange(appointment, oldStatus, newStatus) {
-            if (!appointment || !appointment.packageId) return;
-            const wasConsumed = appointment.packageConsumed === true;
-            const ref = doc(db, 'artifacts', appId, 'users', state.currentUser.uid, 'appointments', appointment.id);
-
-            if (newStatus === 'completada' && oldStatus !== 'completada' && !wasConsumed) {
-                await adjustPackageSession(appointment.patientId, appointment.packageId, +1);
-                await updateDoc(ref, { packageConsumed: true });
-                appointment.packageConsumed = true;
-            } else if (oldStatus === 'completada' && newStatus !== 'completada' && wasConsumed) {
-                await adjustPackageSession(appointment.patientId, appointment.packageId, -1);
-                await updateDoc(ref, { packageConsumed: false });
-                appointment.packageConsumed = false;
-            }
-        }
-
         document.getElementById('appointment-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!state.currentUser) return;
@@ -1932,10 +1860,6 @@ window.printClinicalHistory = function() {
             const newTime = document.getElementById('app-time').value;
             const modalityInput = document.querySelector('input[name="app-modality"]:checked');
             const modality = modalityInput ? modalityInput.value : 'presencial';
-            const attentionInput = document.querySelector('input[name="app-attention-type"]:checked');
-            const attentionType  = attentionInput ? attentionInput.value : 'individual';
-            const rateType  = document.getElementById('app-rate-type').value;
-            const newStatus = document.getElementById('app-status').value;
 
             // ─── VALIDACIÓN DE DUPLICADOS ────────────────────────────────────────
             // Excluir la cita que se está editando (si aplica)
@@ -1956,84 +1880,33 @@ window.printClinicalHistory = function() {
             }
             // ────────────────────────────────────────────────────────────────────
 
-            const existingAppt = state.appointments.find(a => a.id === aid);
-            const oldStatus = existingAppt ? existingAppt.status : null;
-
-            // ─── RESOLVER PAQUETE (si la tarifa seleccionada es un paquete) ───────
-            const size = packageSizeFromRateType(rateType);
-            let packageId = '';
-            let packageConsumed = existingAppt ? (existingAppt.packageConsumed === true) : false;
-
-            if (size > 0) {
-                const rawPackageId = document.getElementById('app-package-id').value;
-                if (rawPackageId === 'NEW') {
-                    // Crear un nuevo paquete para el paciente
-                    const price = getRate(attentionType, modality, rateType);
-                    const newPkg = {
-                        id: 'pkg_' + Date.now(),
-                        attentionType: attentionType,
-                        size: size,
-                        price: price,
-                        sessionsTotal: size,
-                        sessionsUsed: 0,
-                        paid: document.getElementById('app-payment').value === 'pagado',
-                        purchaseDate: new Date().toISOString().slice(0, 10)
-                    };
-                    const currentPackages = Array.isArray(patientObj.packages) ? patientObj.packages : [];
-                    const updatedPackages = [...currentPackages, newPkg];
-                    await savePatientPackages(patientId, updatedPackages);
-                    packageId = newPkg.id;
-                } else {
-                    packageId = rawPackageId; // paquete existente ya activo
-                }
-            }
-
             const payload = {
-                patientId:      patientId,
-                patientName:    patientObj.name,
-                date:           newDate,
-                time:           newTime,
-                modality:       modality,
-                attentionType:  attentionType,
-                rateType:       rateType,
-                packageType:    size || null,
-                packageId:      packageId || null,
-                sessionValue:   parseFloat(document.getElementById('app-session-value').value || 0),
-                cost:           parseFloat(document.getElementById('app-cost').value || 0),
-                paymentStatus:  document.getElementById('app-payment').value,
-                status:         newStatus,
-                packageConsumed: packageConsumed,
-                notes:          document.getElementById('app-notes').value.trim(),
-                updatedAt:      new Date().toISOString()
+                patientId:     patientId,
+                patientName:   patientObj.name,
+                date:          newDate,
+                time:          newTime,
+                modality:      modality,
+                cost:          parseFloat(document.getElementById('app-cost').value || 0),
+                paymentStatus: document.getElementById('app-payment').value,
+                status:        document.getElementById('app-status').value,
+                notes:         document.getElementById('app-notes').value.trim(),
+                updatedAt:     new Date().toISOString()
             };
             const ref = doc(db, 'artifacts', appId, 'users', state.currentUser.uid, 'appointments', aid);
             await setDoc(ref, payload, { merge: true });
-
-            // Sincronizar consumo de sesión de paquete según el estado guardado
-            if (packageId) {
-                await syncPackageOnStatusChange({ ...payload, id: aid }, oldStatus, newStatus);
-            }
-
             closeAppointmentModal();
         });
 
         window.deleteAppointment = async function(aid) {
             if (confirm("¿Remover esta cita?")) {
-                const a = state.appointments.find(x => x.id === aid);
-                if (a && a.packageId && a.packageConsumed) {
-                    await adjustPackageSession(a.patientId, a.packageId, -1);
-                }
                 await deleteDoc(doc(db, 'artifacts', appId, 'users', state.currentUser.uid, 'appointments', aid));
             }
         };
 
         window.quickToggleStatus = async function(aid, currentStatus) {
             const next = { pendiente: 'completada', completada: 'cancelada', cancelada: 'pendiente' };
-            const newStatus = next[currentStatus] || 'pendiente';
-            const a = state.appointments.find(x => x.id === aid);
             const ref  = doc(db, 'artifacts', appId, 'users', state.currentUser.uid, 'appointments', aid);
-            await updateDoc(ref, { status: newStatus });
-            if (a) await syncPackageOnStatusChange(a, currentStatus, newStatus);
+            await updateDoc(ref, { status: next[currentStatus] || 'pendiente' });
         };
 
         window.editAppointment = function(aid) {
@@ -2046,13 +1919,7 @@ window.printClinicalHistory = function() {
             document.getElementById('app-payment').value              = a.paymentStatus;
             document.getElementById('app-status').value               = a.status;
             document.getElementById('app-notes').value                = a.notes || '';
-            document.getElementById('app-package-id').value           = a.packageId || '';
-            document.getElementById('app-package-type').value         = a.packageType || '';
-            document.getElementById('app-session-value').value        = a.sessionValue || a.cost || '';
-            document.getElementById('app-package-consumed').value     = a.packageConsumed ? '1' : '';
-            document.getElementById('app-rate-type').value            = a.rateType || 'sesion';
             document.getElementById('app-modal-title').innerText      = "✏️ Editar Cita";
-            document.getElementById('app-payment').disabled           = !!(a.packageId && a.rateType && a.rateType !== 'sesion' && parseFloat(a.cost || 0) === 0);
             openAppointmentModal(true);
             // El select necesita setearse DESPUÉS de que el modal esté visible
             setTimeout(() => {
@@ -2060,26 +1927,6 @@ window.printClinicalHistory = function() {
                 const modalityValue = a.modality === 'virtual' ? 'app-modality-virtual' : 'app-modality-presencial';
                 const modalityRadio = document.getElementById(modalityValue);
                 if (modalityRadio) modalityRadio.checked = true;
-                const attentionValue = a.attentionType === 'pareja' ? 'app-attention-pareja' : 'app-attention-individual';
-                const attentionRadio = document.getElementById(attentionValue);
-                if (attentionRadio) attentionRadio.checked = true;
-                // Mostrar el panel informativo del paquete (si aplica) sin recalcular
-                // ni reasignar el paquete, para no alterar lo ya guardado.
-                if (a.packageId && a.rateType && a.rateType !== 'sesion') {
-                    const patientObj = state.patients.find(p => p.id === a.patientId);
-                    const pkg = patientObj && Array.isArray(patientObj.packages)
-                        ? patientObj.packages.find(pk => pk.id === a.packageId) : null;
-                    const infoBox = document.getElementById('app-package-info');
-                    infoBox.classList.remove('hidden');
-                    infoBox.className = 'text-xs rounded-xl p-3 border space-y-1 bg-emerald-50 border-emerald-200 text-emerald-800';
-                    if (pkg) {
-                        infoBox.innerHTML = `
-                            <p class="font-bold">📦 Cita vinculada a un paquete</p>
-                            <p>${pkg.sessionsUsed} / ${pkg.sessionsTotal} sesiones utilizadas del paquete</p>`;
-                    } else {
-                        infoBox.innerHTML = `<p class="font-bold">📦 Cita vinculada a un paquete de ${a.packageType} sesiones</p>`;
-                    }
-                }
             }, 50);
         };
 
@@ -2219,7 +2066,7 @@ window.printClinicalHistory = function() {
                             <span class="text-sm font-semibold text-slate-700">${modalityIcon} ${a.patientName}</span>
                             <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${a.status.toUpperCase()}</span>
                         </div>
-                        <span class="text-xs font-semibold text-slate-500">${formatApptCostLabel(a)}</span>
+                        <span class="text-xs font-semibold text-slate-500">S/ ${parseFloat(a.cost).toFixed(2)}</span>
                     </div>`;
                 }).join('');
                 return `<div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
@@ -2232,52 +2079,6 @@ window.printClinicalHistory = function() {
             }).join('');
         }
         window.renderMonthView = renderMonthView;
-
-        // Texto de costo a mostrar en listados de citas: si la cita es una sesión
-        // de un paquete ya pagado, se aclara en vez de mostrar "S/ 0.00" a secas.
-        function formatApptCostLabel(a) {
-            const cost = parseFloat(a.cost || 0);
-            if (a.packageId && a.rateType && a.rateType !== 'sesion') {
-                if (cost > 0) return `S/ ${cost.toFixed(2)} (compra de paquete)`;
-                return `📦 Sesión de paquete (incluida)`;
-            }
-            return `S/ ${cost.toFixed(2)}`;
-        }
-        window.formatApptCostLabel = formatApptCostLabel;
-
-        // Devuelve el HTML con el resumen de paquetes activos/agotados de un paciente,
-        // usado tanto en la tarjeta de la lista de pacientes como en el historial.
-        function renderPackagesSummary(p) {
-            const packages = Array.isArray(p.packages) ? p.packages : [];
-            if (!packages.length) return '';
-            const attentionLabel = { individual: '👤 Individual', pareja: '👥 Pareja' };
-            const rows = packages
-                .slice()
-                .sort((a, b) => (b.purchaseDate || '').localeCompare(a.purchaseDate || ''))
-                .map(pk => {
-                    const restantes = pk.sessionsTotal - pk.sessionsUsed;
-                    const activo = restantes > 0;
-                    const pct = Math.min(100, Math.round((pk.sessionsUsed / pk.sessionsTotal) * 100));
-                    const badgeClass = activo
-                        ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                        : 'bg-slate-100 text-slate-500 border-slate-200';
-                    return `<div class="border rounded-xl p-2.5 text-xs space-y-1 ${badgeClass}">
-                        <div class="flex justify-between items-center">
-                            <span class="font-bold">${attentionLabel[pk.attentionType] || pk.attentionType} · Paquete ${pk.sessionsTotal}</span>
-                            <span class="font-semibold">${activo ? `${pk.sessionsUsed}/${pk.sessionsTotal} usadas` : 'Completado'}</span>
-                        </div>
-                        <div class="w-full bg-white/60 rounded-full h-1.5 overflow-hidden border border-white">
-                            <div class="h-full bg-indigo-500" style="width:${pct}%"></div>
-                        </div>
-                        <div class="flex justify-between text-[11px]">
-                            <span>${activo ? `Restan ${restantes} sesión(es)` : 'Sin sesiones restantes'}</span>
-                            <span>S/ ${pk.price.toFixed(2)} ${pk.paid ? '✅ pagado' : '⏳ pendiente'}</span>
-                        </div>
-                    </div>`;
-                }).join('');
-            return `<div class="space-y-1.5"><p class="text-[11px] font-bold uppercase text-slate-400">📦 Paquetes</p>${rows}</div>`;
-        }
-        window.renderPackagesSummary = renderPackagesSummary;
 
         window.renderPatients = function() {
             const grid      = document.getElementById('patients-grid');
@@ -2300,7 +2101,6 @@ window.printClinicalHistory = function() {
                         </div>
                         <p class="text-xs text-slate-500"><strong>Nacimiento:</strong> ${p.birth || 'No especificada'}</p>
                         <p class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100"><strong>Antecedentes:</strong> ${p.history || 'Sin observaciones históricas.'}</p>
-                        ${renderPackagesSummary(p)}
                     </div>
                     <div class="flex justify-end gap-2 border-t pt-2 border-slate-100 flex-wrap">
                         <button onclick="openPatientHistory('${p.id}')" class="text-slate-600 text-xs font-semibold px-3 py-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 transition">📋 Historial</button>
@@ -2433,7 +2233,7 @@ window.printClinicalHistory = function() {
                             <td class="py-2.5 px-2 font-bold">${a.time}</td>
                             <td class="py-2.5 px-2">${modalityLabel(a)}</td>
                             <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
-                            <td class="py-2.5 px-2">${formatApptCostLabel(a)} (${a.paymentStatus.toUpperCase()})</td>
+                            <td class="py-2.5 px-2">S/ ${a.cost.toFixed(2)} (${a.paymentStatus.toUpperCase()})</td>
                             <td class="py-2.5 px-2 font-medium">${a.status.toUpperCase()}</td>
                             <td class="py-2.5 px-2 text-slate-600">${a.notes || 'Sin observaciones.'}</td>
                         </tr>`).join('')
@@ -2446,7 +2246,7 @@ window.printClinicalHistory = function() {
                             <td class="py-2.5 px-2 font-bold">${a.time}</td>
                             <td class="py-2.5 px-2">${modalityLabel(a)}</td>
                             <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
-                            <td class="py-2.5 px-2">${formatApptCostLabel(a)} (${a.paymentStatus.toUpperCase()})</td>
+                            <td class="py-2.5 px-2">S/ ${a.cost.toFixed(2)} (${a.paymentStatus.toUpperCase()})</td>
                             <td class="py-2.5 px-2 font-medium">${a.status.toUpperCase()}</td>
                             <td class="py-2.5 px-2 text-slate-600">${a.notes || 'Sin observaciones.'}</td>
                         </tr>`).join('')
@@ -2580,11 +2380,6 @@ window.printClinicalHistory = function() {
             `;
             document.getElementById('hist-patient-history').innerText = p.history || 'Sin antecedentes registrados.';
 
-            const pkgsHtml = renderPackagesSummary(p);
-            document.getElementById('hist-patient-packages').innerHTML = pkgsHtml
-                ? pkgsHtml
-                : '<p class="text-sm text-slate-400 text-center py-3">Este paciente no tiene paquetes registrados.</p>';
-
             // Citas del paciente ordenadas por fecha desc
             const appts = state.appointments
                 .filter(a => a.patientId === pid)
@@ -2614,7 +2409,7 @@ window.printClinicalHistory = function() {
                             <span class="text-xs font-semibold text-slate-600 bg-slate-200 px-2 py-0.5 rounded-lg">⏰ ${a.time}</span>
                             <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${a.status.toUpperCase()}</span>
                             ${modalityBadge}
-                            <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${payBadge}">${a.paymentStatus === 'pagado' ? '💳 Pagado' : '⏳ Pendiente'} — ${formatApptCostLabel(a)}</span>
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${payBadge}">${a.paymentStatus === 'pagado' ? '💳 Pagado' : '⏳ Pendiente'} — S/ ${parseFloat(a.cost).toFixed(2)}</span>
                         </div>
                         ${a.notes ? `<p class="text-xs text-slate-500 italic">"${a.notes}"</p>` : ''}
                     </div>`;
@@ -2678,7 +2473,7 @@ window.printClinicalHistory = function() {
                         <td class="py-1.5 px-2">${a.modality === 'virtual' ? '💻 Virtual' : '🏢 Presencial'}</td>
                         <td class="py-1.5 px-2 font-medium">${a.status.toUpperCase()}</td>
                         <td class="py-1.5 px-2">${a.paymentStatus.toUpperCase()}</td>
-                        <td class="py-1.5 px-2">${formatApptCostLabel(a)}</td>
+                        <td class="py-1.5 px-2">S/ ${parseFloat(a.cost).toFixed(2)}</td>
                         <td class="py-1.5 px-2 text-slate-500">${a.notes || '—'}</td>
                     </tr>`).join('')
                 : `<tr><td colspan="7" class="py-3 text-center text-slate-400">Sin citas registradas.</td></tr>`;
@@ -2897,109 +2692,11 @@ window.printClinicalHistory = function() {
             }
         }
 
-        // ─── TARIFARIO: sesión individual / paquetes ───────────────────────────────
-        // Nota: el precio del paquete NO varía por modalidad (presencial/virtual).
-        const RATE_TABLE = {
-            individual: {
-                presencial: { sesion: 50, paquete6: 240, paquete8: 320 },
-                virtual:    { sesion: 45, paquete6: 240, paquete8: 320 }
-            },
-            pareja: {
-                presencial: { sesion: 60, paquete6: 300, paquete8: 400 },
-                virtual:    { sesion: 55, paquete6: 300, paquete8: 400 }
-            }
-        };
-
-        function getRate(attentionType, modality, rateType) {
-            const at = RATE_TABLE[attentionType] ? attentionType : 'individual';
-            const md = (modality === 'virtual') ? 'virtual' : 'presencial';
-            const table = RATE_TABLE[at][md];
-            return table[rateType] !== undefined ? table[rateType] : table.sesion;
+        function updateCostByModality() {
+            const modalityInput = document.querySelector('input[name="app-modality"]:checked');
+            const modality = modalityInput ? modalityInput.value : 'presencial';
+            document.getElementById('app-cost').value = modality === 'virtual' ? '45.00' : '50.00';
         }
-
-        function packageSizeFromRateType(rateType) {
-            if (rateType === 'paquete6') return 6;
-            if (rateType === 'paquete8') return 8;
-            return 0;
-        }
-
-        // Busca un paquete del paciente que aún tenga sesiones disponibles,
-        // del mismo tipo de atención y del mismo tamaño (6 u 8).
-        function findActivePackage(patientObj, attentionType, size) {
-            if (!patientObj || !Array.isArray(patientObj.packages)) return null;
-            return patientObj.packages.find(pk =>
-                pk.attentionType === attentionType &&
-                pk.size === size &&
-                pk.sessionsUsed < pk.sessionsTotal
-            ) || null;
-        }
-
-        // Recalcula precio/paquete cada vez que cambia paciente, tipo de atención,
-        // modalidad o tarifa seleccionada en el modal de citas.
-        function updateAppointmentPricing() {
-            const attentionInput = document.querySelector('input[name="app-attention-type"]:checked');
-            const attentionType  = attentionInput ? attentionInput.value : 'individual';
-            const modalityInput  = document.querySelector('input[name="app-modality"]:checked');
-            const modality       = modalityInput ? modalityInput.value : 'presencial';
-            const rateType       = document.getElementById('app-rate-type').value;
-            const patientId      = document.getElementById('app-patient-select').value;
-            const patientObj     = state.patients.find(p => p.id === patientId);
-
-            const costInput    = document.getElementById('app-cost');
-            const paymentSel   = document.getElementById('app-payment');
-            const infoBox      = document.getElementById('app-package-info');
-            const packageIdEl  = document.getElementById('app-package-id');
-            const packageTypeEl= document.getElementById('app-package-type');
-            const sessionValEl = document.getElementById('app-session-value');
-
-            const size = packageSizeFromRateType(rateType);
-
-            if (size === 0) {
-                // Sesión suelta: se cobra normalmente
-                const price = getRate(attentionType, modality, 'sesion');
-                costInput.value = price.toFixed(2);
-                sessionValEl.value = price;
-                packageIdEl.value = '';
-                packageTypeEl.value = '';
-                paymentSel.disabled = false;
-                infoBox.classList.add('hidden');
-                infoBox.innerHTML = '';
-                return;
-            }
-
-            // Tarifa de paquete
-            const packagePrice = getRate(attentionType, modality, rateType);
-            const activePkg = patientObj ? findActivePackage(patientObj, attentionType, size) : null;
-
-            if (activePkg) {
-                const restantes = activePkg.sessionsTotal - activePkg.sessionsUsed;
-                costInput.value = '0.00';
-                sessionValEl.value = (activePkg.price / activePkg.sessionsTotal).toFixed(2);
-                packageIdEl.value = activePkg.id;
-                packageTypeEl.value = String(size);
-                paymentSel.value = 'pagado';
-                paymentSel.disabled = true;
-                infoBox.classList.remove('hidden');
-                infoBox.className = 'text-xs rounded-xl p-3 border space-y-1 bg-emerald-50 border-emerald-200 text-emerald-800';
-                infoBox.innerHTML = `
-                    <p class="font-bold">📦 Paquete activo detectado</p>
-                    <p>${activePkg.sessionsUsed} / ${activePkg.sessionsTotal} sesiones utilizadas · quedan <strong>${restantes}</strong></p>
-                    <p>S/ ${activePkg.price.toFixed(2)} pagado — esta cita consumirá 1 sesión del paquete (no se vuelve a cobrar).</p>`;
-            } else {
-                costInput.value = packagePrice.toFixed(2);
-                sessionValEl.value = (packagePrice / size).toFixed(2);
-                packageIdEl.value = 'NEW';
-                packageTypeEl.value = String(size);
-                paymentSel.disabled = false;
-                infoBox.classList.remove('hidden');
-                infoBox.className = 'text-xs rounded-xl p-3 border space-y-1 bg-indigo-50 border-indigo-200 text-indigo-800';
-                infoBox.innerHTML = `
-                    <p class="font-bold">🆕 Se creará un nuevo paquete</p>
-                    <p>${size} sesiones · S/ ${packagePrice.toFixed(2)} en total (S/ ${(packagePrice/size).toFixed(2)} por sesión)</p>
-                    <p>Esta cita será la sesión 1 de ${size} del paquete.</p>`;
-            }
-        }
-        window.updateAppointmentPricing = updateAppointmentPricing;
 
         function openAppointmentModal(editMode) {
             if (!editMode) {
@@ -3008,11 +2705,7 @@ window.printClinicalHistory = function() {
                 document.getElementById('app-modal-title').innerText = "🗓️ Programar Nueva Cita";
                 document.getElementById('app-date').value = document.getElementById('date-filter').value;
                 document.getElementById('app-modality-presencial').checked = true;
-                document.getElementById('app-attention-individual').checked = true;
-                document.getElementById('app-rate-type').value = 'sesion';
-                document.getElementById('app-payment').disabled = false;
-                document.getElementById('app-package-consumed').value = '';
-                updateAppointmentPricing();
+                updateCostByModality();
             }
             const m = document.getElementById('appointment-modal');
             m.classList.remove('hidden'); m.classList.add('flex');
