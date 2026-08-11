@@ -1906,6 +1906,15 @@ window.printClinicalHistory = function() {
             return 0;
         }
 
+        // Número de sesión en la que corresponde cobrar la segunda mitad del paquete.
+        // Paquete de 6 sesiones -> se cobra en la sesión 4.
+        // Paquete de 8 sesiones -> se cobra en la sesión 5.
+        function secondPaymentSessionNumber(size) {
+            if (size === 6) return 4;
+            if (size === 8) return 5;
+            return null;
+        }
+
         // Busca un paquete del paciente que aún tenga sesiones disponibles,
         // del mismo tipo de atención y del mismo tamaño (6 u 8).
         function findActivePackage(patientObj, attentionType, size) {
@@ -1952,24 +1961,47 @@ window.printClinicalHistory = function() {
 
             // Tarifa de paquete
             const packagePrice = getRate(attentionType, modality, rateType);
+            const halfPrice    = packagePrice / 2;
+            const secondPayAt  = secondPaymentSessionNumber(size);
             const activePkg = patientObj ? findActivePackage(patientObj, attentionType, size) : null;
 
             if (activePkg) {
                 const restantes = activePkg.sessionsTotal - activePkg.sessionsUsed;
-                costInput.value = '0.00';
-                sessionValEl.value = (activePkg.price / activePkg.sessionsTotal).toFixed(2);
-                packageIdEl.value = activePkg.id;
-                packageTypeEl.value = String(size);
-                paymentSel.value = 'pagado';
-                paymentSel.disabled = true;
-                infoBox.classList.remove('hidden');
-                infoBox.className = 'text-xs rounded-xl p-3 border space-y-1 bg-emerald-50 border-emerald-200 text-emerald-800';
-                infoBox.innerHTML = `
-                    <p class="font-bold">📦 Paquete activo detectado</p>
-                    <p>${activePkg.sessionsUsed} / ${activePkg.sessionsTotal} sesiones utilizadas · quedan <strong>${restantes}</strong></p>
-                    <p>S/ ${activePkg.price.toFixed(2)} pagado — esta cita consumirá 1 sesión del paquete (no se vuelve a cobrar).</p>`;
+                const nextSessionNumber = activePkg.sessionsUsed + 1;
+                const pendingSecondPayment = secondPayAt && nextSessionNumber === secondPayAt &&
+                    activePkg.secondPaymentStatus !== 'pagado';
+
+                if (pendingSecondPayment) {
+                    // Esta cita corresponde a la sesión donde se cobra la segunda mitad del paquete
+                    costInput.value = halfPrice.toFixed(2);
+                    sessionValEl.value = (activePkg.price / activePkg.sessionsTotal).toFixed(2);
+                    packageIdEl.value = activePkg.id;
+                    packageTypeEl.value = String(size);
+                    paymentSel.value = activePkg.secondPaymentStatus || 'pendiente';
+                    paymentSel.disabled = false;
+                    infoBox.classList.remove('hidden');
+                    infoBox.className = 'text-xs rounded-xl p-3 border space-y-1 bg-amber-50 border-amber-200 text-amber-800';
+                    infoBox.innerHTML = `
+                        <p class="font-bold">💰 Segundo pago del paquete (mitad)</p>
+                        <p>Esta es la sesión ${nextSessionNumber} de ${activePkg.sessionsTotal} · quedan <strong>${restantes}</strong></p>
+                        <p>Corresponde cobrar la segunda mitad: S/ ${halfPrice.toFixed(2)}.</p>`;
+                } else {
+                    costInput.value = '0.00';
+                    sessionValEl.value = (activePkg.price / activePkg.sessionsTotal).toFixed(2);
+                    packageIdEl.value = activePkg.id;
+                    packageTypeEl.value = String(size);
+                    paymentSel.value = 'pagado';
+                    paymentSel.disabled = true;
+                    infoBox.classList.remove('hidden');
+                    infoBox.className = 'text-xs rounded-xl p-3 border space-y-1 bg-emerald-50 border-emerald-200 text-emerald-800';
+                    infoBox.innerHTML = `
+                        <p class="font-bold">📦 Paquete activo detectado</p>
+                        <p>${activePkg.sessionsUsed} / ${activePkg.sessionsTotal} sesiones utilizadas · quedan <strong>${restantes}</strong></p>
+                        <p>Sesión incluida en el paquete — no se vuelve a cobrar${secondPayAt ? ` (el segundo pago se cobra en la sesión ${secondPayAt}).` : '.'}</p>`;
+                }
             } else {
-                costInput.value = packagePrice.toFixed(2);
+                // Nuevo paquete: se cobra la primera mitad al iniciar
+                costInput.value = halfPrice.toFixed(2);
                 sessionValEl.value = (packagePrice / size).toFixed(2);
                 packageIdEl.value = 'NEW';
                 packageTypeEl.value = String(size);
@@ -1979,7 +2011,7 @@ window.printClinicalHistory = function() {
                 infoBox.innerHTML = `
                     <p class="font-bold">🆕 Se creará un nuevo paquete</p>
                     <p>${size} sesiones · S/ ${packagePrice.toFixed(2)} en total (S/ ${(packagePrice/size).toFixed(2)} por sesión)</p>
-                    <p>Esta cita será la sesión 1 de ${size} del paquete.</p>`;
+                    <p>Primer pago (mitad) ahora: S/ ${halfPrice.toFixed(2)}. Segundo pago (mitad) se cobrará en la sesión ${secondPayAt}.</p>`;
             }
         }
         window.updateAppointmentPricing = updateAppointmentPricing;
@@ -2072,8 +2104,9 @@ window.printClinicalHistory = function() {
             if (size > 0) {
                 const rawPackageId = document.getElementById('app-package-id').value;
                 if (rawPackageId === 'NEW') {
-                    // Crear un nuevo paquete para el paciente
+                    // Crear un nuevo paquete para el paciente (pago dividido en 2 mitades)
                     const price = getRate(attentionType, modality, rateType);
+                    const firstPaymentStatus = document.getElementById('app-payment').value;
                     const newPkg = {
                         id: 'pkg_' + Date.now(),
                         attentionType: attentionType,
@@ -2081,7 +2114,11 @@ window.printClinicalHistory = function() {
                         price: price,
                         sessionsTotal: size,
                         sessionsUsed: 0,
-                        paid: document.getElementById('app-payment').value === 'pagado',
+                        halfPrice: price / 2,
+                        secondPaymentSession: secondPaymentSessionNumber(size),
+                        firstPaymentStatus: firstPaymentStatus,
+                        secondPaymentStatus: 'pendiente',
+                        paid: false, // se marca true solo cuando ambas mitades están pagadas
                         purchaseDate: new Date().toISOString().slice(0, 10)
                     };
                     const currentPackages = Array.isArray(patientObj.packages) ? patientObj.packages : [];
@@ -2090,6 +2127,23 @@ window.printClinicalHistory = function() {
                     packageId = newPkg.id;
                 } else {
                     packageId = rawPackageId; // paquete existente ya activo
+
+                    // Si esta cita corresponde a la sesión del segundo pago (mitad), registrar su estado
+                    const existingPkg = (patientObj.packages || []).find(pk => pk.id === packageId);
+                    const chargedCost = parseFloat(document.getElementById('app-cost').value || 0);
+                    if (existingPkg && chargedCost > 0) {
+                        const secondPaymentStatusVal = document.getElementById('app-payment').value;
+                        if (existingPkg.secondPaymentStatus !== secondPaymentStatusVal) {
+                            const updatedPackages = patientObj.packages.map(pk => pk.id === packageId
+                                ? {
+                                    ...pk,
+                                    secondPaymentStatus: secondPaymentStatusVal,
+                                    paid: pk.firstPaymentStatus === 'pagado' && secondPaymentStatusVal === 'pagado'
+                                  }
+                                : pk);
+                            await savePatientPackages(patientId, updatedPackages);
+                        }
+                    }
                 }
             }
 
@@ -2343,7 +2397,7 @@ window.printClinicalHistory = function() {
         function formatApptCostLabel(a) {
             const cost = parseFloat(a.cost || 0);
             if (a.packageId && a.rateType && a.rateType !== 'sesion') {
-                if (cost > 0) return `S/ ${cost.toFixed(2)} (compra de paquete)`;
+                if (cost > 0) return `S/ ${cost.toFixed(2)} (pago de paquete)`;
                 return `📦 Sesión de paquete (incluida)`;
             }
             return `S/ ${cost.toFixed(2)}`;
@@ -2366,6 +2420,15 @@ window.printClinicalHistory = function() {
                     const badgeClass = activo
                         ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
                         : 'bg-slate-100 text-slate-500 border-slate-200';
+                    // Compatibilidad con paquetes antiguos que solo tenían el campo booleano "paid"
+                    const hasSplitPayment = pk.firstPaymentStatus !== undefined;
+                    const firstStatus  = hasSplitPayment ? pk.firstPaymentStatus  : (pk.paid ? 'pagado' : 'pendiente');
+                    const secondStatus = hasSplitPayment ? pk.secondPaymentStatus : (pk.paid ? 'pagado' : 'pendiente');
+                    const secondSession = pk.secondPaymentSession || secondPaymentSessionNumber(pk.sessionsTotal);
+                    const half = pk.halfPrice || (pk.price / 2);
+                    const paymentLine = secondSession
+                        ? `1er pago (S/ ${half.toFixed(2)}) ${firstStatus === 'pagado' ? '✅' : '⏳'} · 2do pago sesión ${secondSession} (S/ ${half.toFixed(2)}) ${secondStatus === 'pagado' ? '✅' : '⏳'}`
+                        : `S/ ${pk.price.toFixed(2)} ${pk.paid ? '✅ pagado' : '⏳ pendiente'}`;
                     return `<div class="border rounded-xl p-2.5 text-xs space-y-1 ${badgeClass}">
                         <div class="flex justify-between items-center">
                             <span class="font-bold">${attentionLabel[pk.attentionType] || pk.attentionType} · Paquete ${pk.sessionsTotal}</span>
@@ -2376,8 +2439,8 @@ window.printClinicalHistory = function() {
                         </div>
                         <div class="flex justify-between text-[11px]">
                             <span>${activo ? `Restan ${restantes} sesión(es)` : 'Sin sesiones restantes'}</span>
-                            <span>S/ ${pk.price.toFixed(2)} ${pk.paid ? '✅ pagado' : '⏳ pendiente'}</span>
                         </div>
+                        <div class="text-[11px]">${paymentLine}</div>
                     </div>`;
                 }).join('');
             return `<div class="space-y-1.5"><p class="text-[11px] font-bold uppercase text-slate-400">📦 Paquetes</p>${rows}</div>`;
