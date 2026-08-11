@@ -2879,9 +2879,12 @@ window.printClinicalHistory = function() {
                 const endLabel = `${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
                 html += `<div class="flex items-center justify-center text-center px-1.5 py-2.5 rounded-xl bg-orange-100 font-extrabold text-[11px] text-slate-600">${slot} - ${endLabel}</div>`;
 
-                dayDates.forEach(d => {
+                dayDates.forEach((d, dayIdx) => {
                     const dateStr = horarioDateStr(d);
-                    const occupied = appts.some(a => a.date === dateStr && a.time && a.time.slice(0, 5) === slot);
+                    const isSabado = HORARIO_DAYS[dayIdx] === 'Sábado';
+                    const isTardeNoche = ['16:00', '17:00', '18:00', '19:00'].includes(slot);
+                    const bloqueadoPorDefecto = isSabado && isTardeNoche;
+                    const occupied = bloqueadoPorDefecto || appts.some(a => a.date === dateStr && a.time && a.time.slice(0, 5) === slot);
                     html += occupied
                         ? `<div class="flex items-center justify-center py-2.5 rounded-xl bg-rose-300 text-rose-800 font-extrabold text-[11px] uppercase tracking-wide">Ocupado</div>`
                         : `<div class="flex items-center justify-center py-2.5 rounded-xl bg-emerald-100 text-emerald-700 font-extrabold text-[11px] uppercase tracking-wide">Libre</div>`;
