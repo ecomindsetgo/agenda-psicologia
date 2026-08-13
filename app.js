@@ -18,16 +18,17 @@
             mostrarErrorGlobal('⚠️ Error: ' + detalle + '. Si persiste, contacta a soporte.');
         });
 
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import {
-            getAuth, signInWithEmailAndPassword, signOut,
-            onAuthStateChanged, sendPasswordResetEmail, updatePassword,
-            EmailAuthProvider, reauthenticateWithCredential
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import {
-            getFirestore, doc, setDoc, deleteDoc,
-            onSnapshot, collection, updateDoc
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app-check.js";
+import {
+    getAuth, signInWithEmailAndPassword, signOut,
+    onAuthStateChanged, sendPasswordResetEmail, updatePassword,
+    EmailAuthProvider, reauthenticateWithCredential
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import {
+    getFirestore, doc, setDoc, deleteDoc,
+    onSnapshot, collection, updateDoc
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const appId = 'psicologia-agenda-default-v2';
 
@@ -40,16 +41,23 @@
             appId: "1:164610159912:web:4b29a3185058938e008c1d"
         };
 
-        // ─── INICIALIZACIÓN DE FIREBASE (protegida) ───────────────────────────────
-        let app, auth, db;
-        try {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-        } catch (initError) {
-            console.error('[Error inicializando Firebase]', initError);
-            mostrarErrorGlobal('⚠️ No se pudo conectar con el servidor de autenticación. Revisa la consola (F12) o contacta a soporte.');
-        }
+// ─── INICIALIZACIÓN DE FIREBASE (protegida) ───────────────────────────────
+let app, auth, db;
+try {
+    app = initializeApp(firebaseConfig);
+
+    // App Check — pega la Site Key del reCAPTCHA v3 de ESTE proyecto
+    initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider("6Ld0s4QtAAAAADBZkz-urUfz_V5dqBGlWvpHYWSC"),
+        isTokenAutoRefreshEnabled: true
+    });
+
+    auth = getAuth(app);
+    db = getFirestore(app);
+} catch (initError) {
+    console.error('[Error inicializando Firebase]', initError);
+    mostrarErrorGlobal('⚠️ No se pudo conectar con el servidor de autenticación. Revisa la consola (F12) o contacta a soporte.');
+}
 
         let activeListeners = [];
         // Exponer referencias globales para funciones del modal de perfil
