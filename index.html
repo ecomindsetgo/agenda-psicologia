@@ -273,10 +273,11 @@
                         <span class="text-xs font-bold text-slate-400 uppercase mr-1">Periodo:</span>
                         <button onclick="setFinancePeriod('todo')" id="btn-fp-todo" class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">Todo el Tiempo</button>
                         <button onclick="setFinancePeriod('mes')" id="btn-fp-mes" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Este Mes</button>
+                        <button onclick="setFinancePeriod('semana')" id="btn-fp-semana" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Esta Semana</button>
                         <button onclick="setFinancePeriod('dia')" id="btn-fp-dia" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Hoy</button>
                     </div>
-                    <button onclick="openPrintModal(window._profileState && window._profileState.financePeriod === 'mes' ? 'mes' : 'dia', 'finanzas')" class="w-full sm:w-auto bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-4 py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
-                        🖨️ Imprimir Reporte (Día o Mes)
+                    <button onclick="openPrintModal(window._profileState && window._profileState.financePeriod === 'mes' ? 'mes' : (window._profileState && window._profileState.financePeriod === 'semana' ? 'semana' : 'dia'), 'finanzas')" class="w-full sm:w-auto bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-4 py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+                        🖨️ Imprimir Reporte (Día, Semana o Mes)
                     </button>
                 </div>
 
@@ -298,6 +299,23 @@
                             <span class="text-sm font-semibold text-violet-500 block mb-1">Total Citas Registradas</span>
                             <span id="stats-total-appointments" class="text-4xl font-extrabold text-violet-900">0</span>
                         </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="md:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-2">
+                        <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">📅 Citas por Día de la Semana</h3>
+                        <p id="weekly-chart-range-label" class="text-xs text-slate-400">Cargando semana actual...</p>
+                        <div id="weekly-chart-svg-wrap" class="pt-2"></div>
+                        <div class="flex items-center gap-4 text-xs text-slate-500 pt-1">
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-indigo-600 inline-block"></span> Completadas</span>
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-slate-300 inline-block"></span> Total programadas</span>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center space-y-1">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Tasa de Asistencia</span>
+                        <span id="finance-attendance-rate" class="text-4xl font-extrabold text-emerald-600">0%</span>
+                        <span id="finance-attendance-sub" class="text-xs text-slate-400">0 asistidas / 0 canceladas</span>
+                        <span class="text-[11px] text-slate-300 pt-1">(según el periodo seleccionado arriba)</span>
                     </div>
                 </div>
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-3">
@@ -633,11 +651,12 @@
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Tipo de Reporte</label>
                     <div class="flex gap-2">
                         <button type="button" onclick="setPrintType('dia')" id="btn-pt-dia" class="flex-1 px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg transition">📅 Por Día</button>
+                        <button type="button" onclick="setPrintType('semana')" id="btn-pt-semana" class="flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">📆 Por Semana</button>
                         <button type="button" onclick="setPrintType('mes')" id="btn-pt-mes" class="flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">🗓️ Por Mes</button>
                     </div>
                 </div>
                 <div id="print-date-wrap">
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Fecha de Reporte</label>
+                    <label id="print-date-wrap-label" class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Fecha de Reporte</label>
                     <input type="date" id="print-date-select" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
                 </div>
                 <div id="print-month-wrap" class="hidden">

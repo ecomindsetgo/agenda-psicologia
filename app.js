@@ -1069,12 +1069,41 @@ window.printClinicalHistory = function() {
                         <p class="text-xs text-slate-500 italic">"${a.notes || 'Sin observaciones para esta sesión'}"</p>
                     </div>
                     <div class="flex items-center gap-3 self-end sm:self-center">
+                        <button onclick="enviarRecordatorioWhatsapp('${a.id}')" title="Enviar recordatorio por WhatsApp" class="bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-700 text-xs px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1">📲 WhatsApp</button>
                         <button onclick="quickToggleStatus('${a.id}','${a.status}')" class="bg-slate-50 border hover:bg-slate-100 text-slate-600 text-xs px-3 py-1.5 rounded-xl font-semibold">🔄 Estado</button>
                         <button onclick="editAppointment('${a.id}')" class="text-indigo-600 hover:text-indigo-800 text-xs font-bold">✏️</button>
                         <button onclick="deleteAppointment('${a.id}')" class="text-red-500 hover:text-red-700 text-xs font-bold">🗑️</button>
                     </div>
                 </div>`;
             }).join('');
+        };
+
+        // ─── RECORDATORIO POR WHATSAPP ──────────────────────────────────────────────
+        // Abre WhatsApp Web/App con un mensaje pre-armado para el paciente de la cita.
+        // Usa el prefijo +51 (Perú) por defecto; si el teléfono ya incluye código de
+        // país (empieza con '+' o tiene más de 9 dígitos) lo respeta tal cual.
+        window.enviarRecordatorioWhatsapp = function(aid) {
+            const a = state.appointments.find(x => x.id === aid);
+            if (!a) return;
+            const patient = state.patients.find(p => p.id === a.patientId);
+            const rawPhone = (patient && patient.phone) ? patient.phone : '';
+            const digits = rawPhone.replace(/\D/g, '');
+            if (!digits) {
+                alert('Este paciente no tiene un número de teléfono registrado. Agrégalo desde su ficha para poder enviarle recordatorios.');
+                return;
+            }
+            const tel = digits.length > 9 ? digits : '51' + digits;
+            const fechaBonita = new Date(a.date + 'T00:00:00').toLocaleDateString('es-PE', {
+                weekday: 'long', day: 'numeric', month: 'long'
+            });
+            const nombrePaciente = (patient && patient.name) ? patient.name.split(' ')[0] : a.patientName.split(' ')[0];
+            const especialista = (window._profileState && window._profileState.currentUser)
+                ? (JSON.parse(localStorage.getItem('userProfile_' + window._profileState.currentUser.uid) || '{}').displayName || '')
+                : '';
+            const firma = especialista ? `\n\n— ${especialista}` : '';
+            const modalidadTxt = a.modality === 'virtual' ? 'sesión virtual' : 'sesión presencial';
+            const mensaje = `Hola ${nombrePaciente} 👋, te recordamos tu ${modalidadTxt} programada para el ${fechaBonita} a las ${a.time}. Por favor confírmanos tu asistencia. ¡Te esperamos!${firma}`;
+            window.open(`https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}`, '_blank');
         };
 
         // ─── VISTA MENSUAL DE CITAS ────────────────────────────────────────────────
@@ -1294,9 +1323,21 @@ window.printClinicalHistory = function() {
         }
 
         // ─── HELPERS DE PERIODO PARA FINANZAS ──────────────────────────────────────
+        function getWeekRangeStr(refDateStr) {
+            // Devuelve [lunesStr, domingoStr] de la semana que contiene refDateStr (o hoy)
+            const base = refDateStr ? new Date(refDateStr + 'T00:00:00') : new Date();
+            const monday = getMondayOf(base);
+            const sunday = new Date(monday);
+            sunday.setDate(sunday.getDate() + 6);
+            return [horarioDateStr(monday), horarioDateStr(sunday)];
+        }
+
         function getFinanceAppointments() {
             if (state.financePeriod === 'dia') {
                 return state.appointments.filter(a => a.date === todayStr);
+            } else if (state.financePeriod === 'semana') {
+                const [lunes, domingo] = getWeekRangeStr(todayStr);
+                return state.appointments.filter(a => a.date >= lunes && a.date <= domingo);
             } else if (state.financePeriod === 'mes') {
                 const monthStr = todayStr.substring(0, 7);
                 return state.appointments.filter(a => a.date.startsWith(monthStr));
@@ -1306,12 +1347,14 @@ window.printClinicalHistory = function() {
 
         window.setFinancePeriod = function(period) {
             state.financePeriod = period;
-            ['todo', 'mes', 'dia'].forEach(p => {
-                document.getElementById('btn-fp-' + p).className = p === period
+            ['todo', 'mes', 'semana', 'dia'].forEach(p => {
+                const btn = document.getElementById('btn-fp-' + p);
+                if (!btn) return;
+                btn.className = p === period
                     ? "px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition"
                     : "px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition";
             });
-            const labels = { todo: 'Todo el tiempo', mes: 'Este mes', dia: 'Hoy' };
+            const labels = { todo: 'Todo el tiempo', mes: 'Este mes', semana: 'Esta semana', dia: 'Hoy' };
             const lbl = document.getElementById('finance-period-label');
             if (lbl) lbl.innerText = 'Mostrando datos de: ' + labels[period];
             updateStatsDashboard();
@@ -1347,8 +1390,87 @@ window.printClinicalHistory = function() {
             document.getElementById('finance-pending-cobro').innerText = `S/ ${pendingCobro.toFixed(2)}`;
             document.getElementById('finance-future-cobro').innerText  = `S/ ${futureCobro.toFixed(2)}`;
 
+            // ── Tasa de asistencia: completadas vs. (completadas + canceladas) ──
+            const consideradas = financeApps.filter(a => a.status === 'completada' || a.status === 'cancelada');
+            const asistenciaRate = consideradas.length
+                ? (financeApps.filter(a => a.status === 'completada').length / consideradas.length) * 100
+                : 0;
+            const attEl = document.getElementById('finance-attendance-rate');
+            if (attEl) attEl.innerText = `${asistenciaRate.toFixed(0)}%`;
+            const attSubEl = document.getElementById('finance-attendance-sub');
+            if (attSubEl) {
+                const comp = financeApps.filter(a => a.status === 'completada').length;
+                const canc = financeApps.filter(a => a.status === 'cancelada').length;
+                attSubEl.innerText = `${comp} asistidas / ${canc} canceladas`;
+            }
+
             renderLeadsBySource(financeApps);
+            renderWeeklyBarChart();
         }
+
+        // ─── GRÁFICO DE CITAS POR DÍA DE LA SEMANA (semana actual, Lun-Dom) ────────
+        function renderWeeklyBarChart() {
+            const container = document.getElementById('weekly-chart-svg-wrap');
+            if (!container) return;
+
+            const [lunes] = getWeekRangeStr(todayStr);
+            const mondayDate = new Date(lunes + 'T00:00:00');
+            const dayLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+            const dayData = dayLabels.map((label, i) => {
+                const d = new Date(mondayDate);
+                d.setDate(d.getDate() + i);
+                const dStr = horarioDateStr(d);
+                const appsOfDay = state.appointments.filter(a => a.date === dStr);
+                return {
+                    label,
+                    dateStr: dStr,
+                    total: appsOfDay.length,
+                    completadas: appsOfDay.filter(a => a.status === 'completada').length,
+                    canceladas: appsOfDay.filter(a => a.status === 'cancelada').length
+                };
+            });
+
+            const maxVal = Math.max(1, ...dayData.map(d => d.total));
+            const chartH = 140, barW = 28, gap = 22, leftPad = 10, topPad = 10;
+            const svgW = leftPad * 2 + dayData.length * (barW + gap);
+            const todayIdx = dayData.findIndex(d => d.dateStr === todayStr);
+
+            const bars = dayData.map((d, i) => {
+                const x = leftPad + i * (barW + gap);
+                const totalH = (d.total / maxVal) * chartH;
+                const compH  = d.total ? (d.completadas / d.total) * totalH : 0;
+                const y = topPad + (chartH - totalH);
+                const isToday = i === todayIdx;
+                return `
+                    <g>
+                        <rect x="${x}" y="${y}" width="${barW}" height="${totalH}" rx="4"
+                              fill="${isToday ? '#c7d2fe' : '#e2e8f0'}" />
+                        <rect x="${x}" y="${topPad + (chartH - compH)}" width="${barW}" height="${compH}" rx="4"
+                              fill="${isToday ? '#4f46e5' : '#6366f1'}" />
+                        <text x="${x + barW / 2}" y="${topPad + chartH + 16}" text-anchor="middle"
+                              font-size="11" font-weight="${isToday ? '800' : '600'}"
+                              fill="${isToday ? '#4338ca' : '#64748b'}">${d.label}</text>
+                        <text x="${x + barW / 2}" y="${y - 4}" text-anchor="middle"
+                              font-size="11" font-weight="700" fill="#334155">${d.total || ''}</text>
+                    </g>`;
+            }).join('');
+
+            container.innerHTML = `
+                <svg viewBox="0 0 ${svgW} ${chartH + topPad + 26}" width="100%" height="${chartH + topPad + 26}" xmlns="http://www.w3.org/2000/svg">
+                    ${bars}
+                </svg>`;
+
+            const totalSemana = dayData.reduce((s, d) => s + d.total, 0);
+            const completadasSemana = dayData.reduce((s, d) => s + d.completadas, 0);
+            const canceladasSemana = dayData.reduce((s, d) => s + d.canceladas, 0);
+            const rangeLbl = document.getElementById('weekly-chart-range-label');
+            if (rangeLbl) {
+                const domingo = new Date(mondayDate); domingo.setDate(domingo.getDate() + 6);
+                const fmt = (d) => d.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
+                rangeLbl.innerText = `Semana del ${fmt(mondayDate)} al ${fmt(domingo)} — ${totalSemana} citas (${completadasSemana} completadas, ${canceladasSemana} canceladas)`;
+            }
+        }
+        window.renderWeeklyBarChart = renderWeeklyBarChart;
 
         // ─── FASE 3: DASHBOARD "LEADS POR ORIGEN" ─────────────────────────────────
         function renderLeadsBySource(financeApps) {
@@ -1416,6 +1538,7 @@ window.printClinicalHistory = function() {
             let reportApps = [];
             let periodLabel = '';
             const isMonth = printType === 'mes';
+            const isWeek  = printType === 'semana';
 
             if (isMonth) {
                 const monthVal = document.getElementById('print-month-select').value; // YYYY-MM
@@ -1426,6 +1549,16 @@ window.printClinicalHistory = function() {
                 let lbl = new Date(y, m - 1, 1).toLocaleDateString('es-PE', { month: 'long', year: 'numeric' });
                 periodLabel = lbl.charAt(0).toUpperCase() + lbl.slice(1);
                 document.getElementById('print-title-main').innerText = 'REPORTE MENSUAL DE AGENDA';
+                document.getElementById('print-head-date-label').innerText = 'PERIODO';
+            } else if (isWeek) {
+                const refDate = document.getElementById('print-date-select').value;
+                const [lunes, domingo] = getWeekRangeStr(refDate);
+                reportApps = state.appointments
+                    .filter(a => a.date >= lunes && a.date <= domingo)
+                    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+                const fmt = (s) => new Date(s + 'T00:00:00').toLocaleDateString('es-PE', { day: 'numeric', month: 'long' });
+                periodLabel = `Semana del ${fmt(lunes)} al ${fmt(domingo)}`;
+                document.getElementById('print-title-main').innerText = 'REPORTE SEMANAL DE AGENDA';
                 document.getElementById('print-head-date-label').innerText = 'PERIODO';
             } else {
                 const targetDate = document.getElementById('print-date-select').value;
@@ -1451,7 +1584,7 @@ window.printClinicalHistory = function() {
 
             const modalityLabel = (a) => a.modality === 'virtual' ? '💻 Virtual' : '🏢 Presencial';
 
-            if (isMonth) {
+            if (isMonth || isWeek) {
                 dateHeader.classList.remove('hidden');
                 tbody.innerHTML = reportApps.length
                     ? reportApps.map(a => `
@@ -1464,7 +1597,7 @@ window.printClinicalHistory = function() {
                             <td class="py-2.5 px-2 font-medium">${a.status.toUpperCase()}</td>
                             <td class="py-2.5 px-2 text-slate-600">${a.notes || 'Sin observaciones.'}</td>
                         </tr>`).join('')
-                    : `<tr><td colspan="7" class="py-4 text-center text-slate-400">No hay consultas agendadas para este mes.</td></tr>`;
+                    : `<tr><td colspan="7" class="py-4 text-center text-slate-400">No hay consultas agendadas para este periodo.</td></tr>`;
             } else {
                 dateHeader.classList.add('hidden');
                 tbody.innerHTML = reportApps.length
@@ -1494,6 +1627,7 @@ window.printClinicalHistory = function() {
             let reportApps = [];
             let periodLabel = '';
             const isMonth = printType === 'mes';
+            const isWeek  = printType === 'semana';
 
             if (isMonth) {
                 const monthVal = document.getElementById('print-month-select').value; // YYYY-MM
@@ -1502,6 +1636,14 @@ window.printClinicalHistory = function() {
                 let lbl = new Date(y, m - 1, 1).toLocaleDateString('es-PE', { month: 'long', year: 'numeric' });
                 periodLabel = lbl.charAt(0).toUpperCase() + lbl.slice(1);
                 document.getElementById('pf-title-main').innerText = 'REPORTE FINANCIERO MENSUAL';
+                document.getElementById('pf-head-date-label').innerText = 'PERIODO';
+            } else if (isWeek) {
+                const refDate = document.getElementById('print-date-select').value;
+                const [lunes, domingo] = getWeekRangeStr(refDate);
+                reportApps = state.appointments.filter(a => a.date >= lunes && a.date <= domingo);
+                const fmt = (s) => new Date(s + 'T00:00:00').toLocaleDateString('es-PE', { day: 'numeric', month: 'long' });
+                periodLabel = `Semana del ${fmt(lunes)} al ${fmt(domingo)}`;
+                document.getElementById('pf-title-main').innerText = 'REPORTE FINANCIERO SEMANAL';
                 document.getElementById('pf-head-date-label').innerText = 'PERIODO';
             } else {
                 const targetDate = document.getElementById('print-date-select').value;

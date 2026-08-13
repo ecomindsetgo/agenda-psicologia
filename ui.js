@@ -98,10 +98,17 @@
             window._printType = type;
             const activeCls   = "flex-1 px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg transition";
             const inactiveCls = "flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition";
-            document.getElementById('btn-pt-dia').className = type === 'dia' ? activeCls : inactiveCls;
-            document.getElementById('btn-pt-mes').className = type === 'mes' ? activeCls : inactiveCls;
-            document.getElementById('print-date-wrap').classList.toggle('hidden', type !== 'dia');
+            document.getElementById('btn-pt-dia').className    = type === 'dia'    ? activeCls : inactiveCls;
+            document.getElementById('btn-pt-semana').className = type === 'semana' ? activeCls : inactiveCls;
+            document.getElementById('btn-pt-mes').className    = type === 'mes'    ? activeCls : inactiveCls;
+            // "Día" y "Semana" comparten el mismo selector de fecha (para semana, se
+            // usa como una fecha de referencia dentro de la semana a reportar).
+            document.getElementById('print-date-wrap').classList.toggle('hidden', type === 'mes');
             document.getElementById('print-month-wrap').classList.toggle('hidden', type !== 'mes');
+            const dateLabel = document.getElementById('print-date-wrap-label');
+            if (dateLabel) {
+                dateLabel.innerText = type === 'semana' ? 'Fecha dentro de la semana a reportar' : 'Fecha de Reporte';
+            }
         }
 
         function openPrintModal(presetType, presetCategory) {
