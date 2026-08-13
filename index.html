@@ -300,6 +300,25 @@
                         </div>
                     </div>
                 </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+                    <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">📊 Leads por Origen</h3>
+                    <p class="text-xs text-slate-400">De dónde vienen tus pacientes y cuánto están generando (según el periodo seleccionado arriba).</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs">
+                            <thead>
+                                <tr class="text-left text-slate-400 uppercase border-b border-slate-100">
+                                    <th class="py-2 pr-2">Origen</th>
+                                    <th class="py-2 pr-2 text-center">Leads</th>
+                                    <th class="py-2 pr-2 text-center">Citas</th>
+                                    <th class="py-2 pr-2 text-center">Atendidos</th>
+                                    <th class="py-2 pr-2 text-center">Conversión</th>
+                                    <th class="py-2 pr-2 text-right">Ingresos</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leads-by-source-body"></tbody>
+                        </table>
+                    </div>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
                         <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">Control Financiero de Sesiones</h3>
@@ -459,6 +478,51 @@
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Fecha de Nacimiento</label>
                     <input type="date" id="pat-birth" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
                 </div>
+
+                <div class="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3.5 space-y-3">
+                    <p class="text-xs font-bold uppercase text-indigo-500 flex items-center gap-1.5">📊 ¿Cómo nos conociste?</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Origen del contacto</label>
+                            <select id="pat-origen" class="w-full p-2.5 border border-slate-200 rounded-xl bg-white text-sm focus:outline-none">
+                                <option value="instagram">Instagram</option>
+                                <option value="facebook">Facebook</option>
+                                <option value="tiktok">TikTok</option>
+                                <option value="marketplace">Facebook Marketplace</option>
+                                <option value="web">Página web</option>
+                                <option value="whatsapp">WhatsApp directo</option>
+                                <option value="calendly">Calendly</option>
+                                <option value="google">Google</option>
+                                <option value="referido">Referido</option>
+                                <option value="otro" selected>Otro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Canal de contacto</label>
+                            <select id="pat-canal" class="w-full p-2.5 border border-slate-200 rounded-xl bg-white text-sm focus:outline-none">
+                                <option value="whatsapp" selected>WhatsApp</option>
+                                <option value="llamada">Llamada telefónica</option>
+                                <option value="presencial">Presencial</option>
+                                <option value="email">Email</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Estado del lead</label>
+                        <select id="pat-lead-status" class="w-full p-2.5 border border-slate-200 rounded-xl bg-white text-sm focus:outline-none">
+                            <option value="nuevo" selected>Nuevo</option>
+                            <option value="contactado">Contactado</option>
+                            <option value="interesado">Interesado</option>
+                            <option value="cita_agendada">Cita agendada</option>
+                            <option value="atendido">Atendido</option>
+                            <option value="no_asistio">No asistió</option>
+                            <option value="cancelo">Canceló</option>
+                            <option value="recurrente">Recurrente</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Antecedentes Generales / Historial</label>
                     <textarea id="pat-history" rows="3" placeholder="Motivos clínicos recurrentes..." class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none"></textarea>

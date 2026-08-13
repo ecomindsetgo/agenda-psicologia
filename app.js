@@ -300,11 +300,14 @@ id:doc.id,
             if (!state.currentUser) return;
             const pid = document.getElementById('patient-id').value || 'pat_' + Date.now();
             const payload = {
-                name:      document.getElementById('pat-name').value.trim(),
-                dni:       document.getElementById('pat-dni').value.trim(),
-                phone:     document.getElementById('pat-phone').value.trim(),
-                birth:     document.getElementById('pat-birth').value,
-                history:   document.getElementById('pat-history').value.trim(),
+                name:       document.getElementById('pat-name').value.trim(),
+                dni:        document.getElementById('pat-dni').value.trim(),
+                phone:      document.getElementById('pat-phone').value.trim(),
+                birth:      document.getElementById('pat-birth').value,
+                history:    document.getElementById('pat-history').value.trim(),
+                origen:     document.getElementById('pat-origen').value,
+                canal:      document.getElementById('pat-canal').value,
+                leadStatus: document.getElementById('pat-lead-status').value,
                 updatedAt: new Date().toISOString()
             };
             const ref = doc(db, 'artifacts', appId, 'users', state.currentUser.uid, 'patients', pid);
@@ -649,6 +652,9 @@ window.printClinicalHistory = function() {
             document.getElementById('pat-phone').value   = p.phone;
             document.getElementById('pat-birth').value   = p.birth   || '';
             document.getElementById('pat-history').value = p.history || '';
+            document.getElementById('pat-origen').value      = p.origen     || 'otro';
+            document.getElementById('pat-canal').value       = p.canal      || 'whatsapp';
+            document.getElementById('pat-lead-status').value = p.leadStatus || 'nuevo';
             document.getElementById('patient-modal-title').innerText = "✏️ Editar Paciente";
             openPatientModal(true);
         };
@@ -1221,6 +1227,29 @@ window.printClinicalHistory = function() {
         }
         window.renderPackagesSummary = renderPackagesSummary;
 
+        const ORIGEN_LABELS = {
+            instagram:   { label: 'Instagram',           icon: '📸' },
+            facebook:    { label: 'Facebook',             icon: '👍' },
+            tiktok:      { label: 'TikTok',                icon: '🎵' },
+            marketplace: { label: 'FB Marketplace',        icon: '🛒' },
+            web:         { label: 'Página web',            icon: '🌐' },
+            whatsapp:    { label: 'WhatsApp directo',      icon: '💬' },
+            calendly:    { label: 'Calendly',              icon: '📅' },
+            google:      { label: 'Google',                icon: '🔍' },
+            referido:    { label: 'Referido',              icon: '🤝' },
+            otro:        { label: 'Otro',                  icon: '❔' }
+        };
+        const LEAD_STATUS_LABELS = {
+            nuevo:         { label: 'Nuevo',         cls: 'bg-slate-100 text-slate-600' },
+            contactado:    { label: 'Contactado',    cls: 'bg-blue-50 text-blue-600' },
+            interesado:    { label: 'Interesado',    cls: 'bg-amber-50 text-amber-600' },
+            cita_agendada: { label: 'Cita agendada', cls: 'bg-indigo-50 text-indigo-600' },
+            atendido:      { label: 'Atendido',      cls: 'bg-emerald-50 text-emerald-600' },
+            no_asistio:    { label: 'No asistió',    cls: 'bg-red-50 text-red-600' },
+            cancelo:       { label: 'Canceló',       cls: 'bg-red-50 text-red-600' },
+            recurrente:    { label: 'Recurrente',    cls: 'bg-violet-50 text-violet-600' }
+        };
+
         window.renderPatients = function() {
             const grid      = document.getElementById('patients-grid');
             const searchVal = document.getElementById('patient-search-input').value.toLowerCase().trim();
@@ -1241,6 +1270,10 @@ window.printClinicalHistory = function() {
                             <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-xl">📞 ${p.phone}</span>
                         </div>
                         <p class="text-xs text-slate-500"><strong>Nacimiento:</strong> ${p.birth || 'No especificada'}</p>
+                        <div class="flex flex-wrap gap-1.5">
+                            <span class="text-xs bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-lg font-medium">${(ORIGEN_LABELS[p.origen] || ORIGEN_LABELS.otro).icon} ${(ORIGEN_LABELS[p.origen] || ORIGEN_LABELS.otro).label}</span>
+                            <span class="text-xs px-2.5 py-1 rounded-lg font-medium ${(LEAD_STATUS_LABELS[p.leadStatus] || LEAD_STATUS_LABELS.nuevo).cls}">${(LEAD_STATUS_LABELS[p.leadStatus] || LEAD_STATUS_LABELS.nuevo).label}</span>
+                        </div>
                         <p class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100"><strong>Antecedentes:</strong> ${p.history || 'Sin observaciones históricas.'}</p>
                         ${renderPackagesSummary(p)}
                     </div>
@@ -1313,6 +1346,58 @@ window.printClinicalHistory = function() {
             document.getElementById('finance-average-cost').innerText  = `S/ ${avgCost.toFixed(2)}`;
             document.getElementById('finance-pending-cobro').innerText = `S/ ${pendingCobro.toFixed(2)}`;
             document.getElementById('finance-future-cobro').innerText  = `S/ ${futureCobro.toFixed(2)}`;
+
+            renderLeadsBySource(financeApps);
+        }
+
+        // ─── FASE 3: DASHBOARD "LEADS POR ORIGEN" ─────────────────────────────────
+        function renderLeadsBySource(financeApps) {
+            const tbody = document.getElementById('leads-by-source-body');
+            if (!tbody) return;
+
+            // Agrupa citas del periodo por origen del paciente al que pertenecen
+            const byOrigen = {};
+            Object.keys(ORIGEN_LABELS).forEach(key => {
+                byOrigen[key] = { leads: 0, citas: 0, atendidos: 0, ingresos: 0 };
+            });
+
+            state.patients.forEach(p => {
+                const key = ORIGEN_LABELS[p.origen] ? p.origen : 'otro';
+                byOrigen[key].leads += 1;
+            });
+
+            financeApps.forEach(a => {
+                const patient = state.patients.find(p => p.id === a.patientId);
+                const key = patient && ORIGEN_LABELS[patient.origen] ? patient.origen : 'otro';
+                byOrigen[key].citas += 1;
+                if (a.status === 'completada') {
+                    byOrigen[key].atendidos += 1;
+                    byOrigen[key].ingresos += (a.cost || 0);
+                }
+            });
+
+            const rows = Object.entries(byOrigen)
+                .filter(([, v]) => v.leads > 0 || v.citas > 0)
+                .sort((a, b) => b[1].ingresos - a[1].ingresos);
+
+            if (!rows.length) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-slate-400 py-4">Aún no hay datos suficientes. Registra el "Origen del contacto" al crear tus pacientes.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = rows.map(([key, v]) => {
+                const conv = v.leads ? ((v.atendidos / v.leads) * 100).toFixed(1) : '0.0';
+                const meta = ORIGEN_LABELS[key];
+                return `
+                    <tr class="border-b border-slate-50 hover:bg-slate-50">
+                        <td class="py-2 pr-2 font-semibold text-slate-700">${meta.icon} ${meta.label}</td>
+                        <td class="py-2 pr-2 text-center">${v.leads}</td>
+                        <td class="py-2 pr-2 text-center">${v.citas}</td>
+                        <td class="py-2 pr-2 text-center">${v.atendidos}</td>
+                        <td class="py-2 pr-2 text-center">${conv}%</td>
+                        <td class="py-2 pr-2 text-right font-semibold text-emerald-600">S/ ${v.ingresos.toFixed(2)}</td>
+                    </tr>`;
+            }).join('');
         }
 
         // ─── IMPRESIÓN ────────────────────────────────────────────────────────────
