@@ -714,6 +714,41 @@ window.printClinicalHistory = function() {
             ) || null;
         }
 
+        // Busca cualquier paquete activo del paciente (6 u 8 sesiones) para un
+        // tipo de atención dado, sin importar el tamaño.
+        function findActivePackageAnySize(patientObj, attentionType) {
+            if (!patientObj || !Array.isArray(patientObj.packages)) return null;
+            return patientObj.packages.find(pk =>
+                pk.attentionType === attentionType &&
+                pk.sessionsUsed < pk.sessionsTotal
+            ) || null;
+        }
+
+        // Se ejecuta al cambiar de PACIENTE o de TIPO DE ATENCIÓN en el modal de
+        // "Nueva Cita" (nunca al editar una cita ya existente). Si el paciente
+        // seleccionado tiene un paquete activo para ese tipo de atención, selecciona
+        // automáticamente "Paquete 6/8" en la tarifa para que la sesión se contabilice
+        // dentro del paquete. Si el paciente NO tiene paquete activo, se asegura de
+        // limpiar cualquier "Paquete" que haya quedado seleccionado por el paciente
+        // anterior (evita el arrastre de datos de una ficha a otra).
+        function autoSelectPatientPackage() {
+            if (document.getElementById('app-id').value) return; // no tocar citas en edición
+
+            const patientId  = document.getElementById('app-patient-select').value;
+            const patientObj = state.patients.find(p => p.id === patientId);
+            const attentionInput = document.querySelector('input[name="app-attention-type"]:checked');
+            const attentionType  = attentionInput ? attentionInput.value : 'individual';
+            const rateTypeEl = document.getElementById('app-rate-type');
+
+            const activePkg = patientObj ? findActivePackageAnySize(patientObj, attentionType) : null;
+            if (activePkg) {
+                rateTypeEl.value = activePkg.size === 8 ? 'paquete8' : 'paquete6';
+            } else if (rateTypeEl.value !== 'sesion') {
+                rateTypeEl.value = 'sesion';
+            }
+        }
+        window.autoSelectPatientPackage = autoSelectPatientPackage;
+
         // Recalcula precio/paquete cada vez que cambia paciente, tipo de atención,
         // modalidad o tarifa seleccionada en el modal de citas.
         function updateAppointmentPricing() {
@@ -1000,6 +1035,13 @@ window.printClinicalHistory = function() {
             document.getElementById('app-rate-type').value            = a.rateType || 'sesion';
             document.getElementById('app-modal-title').innerText      = "✏️ Editar Cita";
             document.getElementById('app-payment').disabled           = !!(a.packageId && a.rateType && a.rateType !== 'sesion' && parseFloat(a.cost || 0) === 0);
+            // Reiniciar SIEMPRE el recuadro informativo de paquete antes de mostrar
+            // esta cita: si no se limpia aquí, queda visible la info del paciente
+            // que se editó anteriormente (aunque la cita actual no tenga paquete).
+            const infoBoxReset = document.getElementById('app-package-info');
+            infoBoxReset.classList.add('hidden');
+            infoBoxReset.innerHTML = '';
+            infoBoxReset.className = 'text-xs rounded-xl p-3 border space-y-1 hidden';
             openAppointmentModal(true);
             // El select necesita setearse DESPUÉS de que el modal esté visible
             setTimeout(() => {
@@ -1010,13 +1052,14 @@ window.printClinicalHistory = function() {
                 const attentionValue = a.attentionType === 'pareja' ? 'app-attention-pareja' : 'app-attention-individual';
                 const attentionRadio = document.getElementById(attentionValue);
                 if (attentionRadio) attentionRadio.checked = true;
-                // Mostrar el panel informativo del paquete (si aplica) sin recalcular
-                // ni reasignar el paquete, para no alterar lo ya guardado.
+                // Mostrar el panel informativo del paquete SOLO si esta cita en
+                // particular tiene paquete asociado (si no, queda oculto/limpio,
+                // sin recalcular ni reasignar el paquete, para no alterar lo ya guardado).
+                const infoBox = document.getElementById('app-package-info');
                 if (a.packageId && a.rateType && a.rateType !== 'sesion') {
                     const patientObj = state.patients.find(p => p.id === a.patientId);
                     const pkg = patientObj && Array.isArray(patientObj.packages)
                         ? patientObj.packages.find(pk => pk.id === a.packageId) : null;
-                    const infoBox = document.getElementById('app-package-info');
                     infoBox.classList.remove('hidden');
                     infoBox.className = 'text-xs rounded-xl p-3 border space-y-1 bg-emerald-50 border-emerald-200 text-emerald-800';
                     if (pkg) {
@@ -1026,6 +1069,9 @@ window.printClinicalHistory = function() {
                     } else {
                         infoBox.innerHTML = `<p class="font-bold">📦 Cita vinculada a un paquete de ${a.packageType} sesiones</p>`;
                     }
+                } else {
+                    infoBox.classList.add('hidden');
+                    infoBox.innerHTML = '';
                 }
             }, 50);
         };

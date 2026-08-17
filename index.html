@@ -382,7 +382,7 @@
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Paciente Clínico *</label>
                     <div class="flex gap-2">
-                        <select id="app-patient-select" required onchange="updateAppointmentPricing()" class="flex-grow p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                        <select id="app-patient-select" required onchange="autoSelectPatientPackage(); updateAppointmentPricing()" class="flex-grow p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
                         <button type="button" onclick="switchToNewPatientFromAppoint()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 rounded-xl text-xs font-semibold border border-indigo-200 transition">➕ Nuevo</button>
                     </div>
                 </div>
@@ -400,11 +400,11 @@
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Tipo de Atención *</label>
                     <div class="grid grid-cols-2 gap-2">
                         <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 has-[:checked]:text-indigo-700 has-[:checked]:font-semibold transition">
-                            <input type="radio" name="app-attention-type" id="app-attention-individual" value="individual" class="accent-indigo-600" checked onchange="updateAppointmentPricing()">
+                            <input type="radio" name="app-attention-type" id="app-attention-individual" value="individual" class="accent-indigo-600" checked onchange="autoSelectPatientPackage(); updateAppointmentPricing()">
                             👤 Individual
                         </label>
                         <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 has-[:checked]:text-indigo-700 has-[:checked]:font-semibold transition">
-                            <input type="radio" name="app-attention-type" id="app-attention-pareja" value="pareja" class="accent-indigo-600" onchange="updateAppointmentPricing()">
+                            <input type="radio" name="app-attention-type" id="app-attention-pareja" value="pareja" class="accent-indigo-600" onchange="autoSelectPatientPackage(); updateAppointmentPricing()">
                             👥 Pareja
                         </label>
                     </div>
