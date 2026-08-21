@@ -294,6 +294,7 @@
                         <div class="bg-emerald-50 border border-emerald-100 p-5 rounded-2xl text-center">
                             <span class="text-sm font-semibold text-emerald-500 block mb-1">Ingresos de Citas Completadas</span>
                             <span id="stats-revenue-total" class="text-4xl font-extrabold text-emerald-900">S/ 0.00</span>
+                            <span id="stats-revenue-total-usd" class="text-xs font-bold text-emerald-600 block mt-1">$ 0.00 USD</span>
                         </div>
                         <div class="bg-violet-50 border border-violet-100 p-5 rounded-2xl text-center">
                             <span class="text-sm font-semibold text-violet-500 block mb-1">Total Citas Registradas</span>
@@ -433,7 +434,7 @@
                 <div id="app-package-info" class="hidden text-xs rounded-xl p-3 border space-y-1"></div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Precio (S/) *</label>
+                        <label id="app-cost-label" class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Precio (S/) *</label>
                         <input type="number" id="app-cost" min="0" step="0.50" value="50.00" required class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold">
                         <p class="text-[11px] text-slate-400 mt-1">Se autocompleta según la tarifa, pero puedes editarlo manualmente.</p>
                     </div>
@@ -471,12 +472,12 @@
 
     <!-- MODAL PACIENTE -->
     <div id="patient-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4 no-print">
-        <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden flex flex-col">
-            <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center">
+        <div class="bg-white w-full max-w-lg max-h-[90vh] rounded-2xl shadow-xl overflow-hidden flex flex-col">
+            <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center flex-shrink-0">
                 <h3 id="patient-modal-title" class="font-bold text-base">👤 Registrar Paciente Clínico</h3>
                 <button onclick="closePatientModal()" class="text-indigo-200 hover:text-white transition text-lg">&times;</button>
             </div>
-            <form id="patient-form" class="p-6 space-y-4">
+            <form id="patient-form" class="p-6 space-y-4 overflow-y-auto min-h-0">
                 <input type="hidden" id="patient-id">
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Nombre Completo *</label>
@@ -495,6 +496,15 @@
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Fecha de Nacimiento</label>
                     <input type="date" id="pat-birth" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
+                </div>
+
+                <div class="bg-amber-50/60 border border-amber-100 rounded-xl p-3.5 space-y-2">
+                    <label class="block text-xs font-bold uppercase text-amber-600 mb-1">🌎 Moneda del paciente</label>
+                    <select id="pat-currency" class="w-full p-2.5 border border-slate-200 rounded-xl bg-white text-sm focus:outline-none">
+                        <option value="PEN" selected>🇵🇪 Soles (paciente local)</option>
+                        <option value="USD">🌎 Dólares (paciente extranjero)</option>
+                    </select>
+                    <p class="text-[11px] text-slate-400">Define en qué moneda se registran automáticamente el costo de sus citas y sus paquetes.</p>
                 </div>
 
                 <div class="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3.5 space-y-3">
@@ -556,9 +566,9 @@
 
     <!-- ================= MODAL: PERFIL DE USUARIO ================= -->
     <div id="profile-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4 no-print">
-        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+        <div class="bg-white w-full max-w-md max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col">
             <!-- Header del modal con tabs -->
-            <div class="bg-indigo-900 text-white px-6 py-5">
+            <div class="bg-indigo-900 text-white px-6 py-5 flex-shrink-0">
                 <div class="flex justify-between items-start mb-4">
                     <div>
                         <h3 class="font-bold text-base">⚙️ Mi Cuenta</h3>
@@ -580,7 +590,7 @@
             </div>
 
             <!-- TAB: EDITAR PERFIL -->
-            <div id="psec-perfil" class="p-6 space-y-4">
+            <div id="psec-perfil" class="p-6 space-y-4 overflow-y-auto min-h-0">
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Nombre Completo</label>
                     <input type="text" id="profile-displayname" placeholder="Ej: Dra. Ana García"
@@ -605,7 +615,7 @@
             </div>
 
             <!-- TAB: CAMBIAR CLAVE -->
-            <div id="psec-clave" class="p-6 space-y-4 hidden">
+            <div id="psec-clave" class="p-6 space-y-4 hidden overflow-y-auto min-h-0">
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Contraseña Actual</label>
                     <input type="password" id="profile-current-pwd" placeholder="••••••••"
@@ -634,12 +644,12 @@
 
     <!-- MODAL IMPRESIÓN -->
     <div id="print-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4 no-print">
-        <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col">
-            <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center">
+        <div class="bg-white w-full max-w-md max-h-[90vh] rounded-2xl shadow-xl overflow-hidden flex flex-col">
+            <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center flex-shrink-0">
                 <h3 class="font-bold text-base">🖨️ Generar Reporte de Consultas</h3>
                 <button onclick="closePrintModal()" class="text-indigo-200 hover:text-white transition text-lg">&times;</button>
             </div>
-            <div class="p-6 space-y-4">
+            <div class="p-6 space-y-4 overflow-y-auto min-h-0">
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Contenido del Reporte</label>
                     <div class="flex gap-2">

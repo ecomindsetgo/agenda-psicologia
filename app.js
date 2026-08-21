@@ -79,6 +79,16 @@ try {
 
         window._profileState = state;
 
+        // ── Hora actual de Perú (GMT-5). Se usa para deshabilitar horas ya
+        // pasadas al agendar una cita para el día de hoy.
+        function getLimaNow() {
+            const limaStr = new Date().toLocaleString('en-US', { timeZone: 'America/Lima' });
+            return new Date(limaStr);
+        }
+        function getLimaDateStr(d) {
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+
         // Fecha inicial
         const todayStr = new Date().toISOString().split('T')[0];
         document.getElementById('date-filter').value = todayStr;
@@ -316,6 +326,7 @@ id:doc.id,
                 origen:     document.getElementById('pat-origen').value,
                 canal:      document.getElementById('pat-canal').value,
                 leadStatus: document.getElementById('pat-lead-status').value,
+                currency:   document.getElementById('pat-currency') ? document.getElementById('pat-currency').value : 'PEN',
                 updatedAt: new Date().toISOString()
             };
             const ref = doc(db, 'artifacts', appId, 'users', state.currentUser.uid, 'patients', pid);
@@ -663,6 +674,8 @@ window.printClinicalHistory = function() {
             document.getElementById('pat-origen').value      = p.origen     || 'otro';
             document.getElementById('pat-canal').value       = p.canal      || 'whatsapp';
             document.getElementById('pat-lead-status').value = p.leadStatus || 'nuevo';
+            const patCurrencyEl = document.getElementById('pat-currency');
+            if (patCurrencyEl) patCurrencyEl.value = p.currency === 'USD' ? 'USD' : 'PEN';
             document.getElementById('patient-modal-title').innerText = "✏️ Editar Paciente";
             openPatientModal(true);
         };
@@ -681,12 +694,41 @@ window.printClinicalHistory = function() {
             }
         };
 
-        function getRate(attentionType, modality, rateType) {
-            const at = RATE_TABLE[attentionType] ? attentionType : 'individual';
+        // ── Tarifario en DÓLARES para pacientes marcados como "extranjero" (USD)
+        // en su ficha. AJUSTA estos montos a lo que realmente quieras cobrar —
+        // son valores de partida, no un cálculo automático desde soles.
+        const RATE_TABLE_USD = {
+            individual: {
+                presencial: { sesion: 15, paquete6: 80, paquete8: 105 },
+                virtual:    { sesion: 15, paquete6: 80, paquete8: 105 }
+            },
+            pareja: {
+                presencial: { sesion: 20, paquete6: 105, paquete8: 140 },
+                virtual:    { sesion: 20, paquete6: 105, paquete8: 140 }
+            }
+        };
+
+        // currency: 'PEN' (por defecto) o 'USD'. Se determina por la ficha del
+        // paciente (patientObj.currency), nunca por la cita en sí.
+        function getRate(attentionType, modality, rateType, currency) {
+            const table = (currency === 'USD') ? RATE_TABLE_USD : RATE_TABLE;
+            const at = table[attentionType] ? attentionType : 'individual';
             const md = (modality === 'virtual') ? 'virtual' : 'presencial';
-            const table = RATE_TABLE[at][md];
-            return table[rateType] !== undefined ? table[rateType] : table.sesion;
+            const rateGroup = table[at][md];
+            return rateGroup[rateType] !== undefined ? rateGroup[rateType] : rateGroup.sesion;
         }
+
+        // Símbolo/formateo de moneda para mostrar montos consistentemente.
+        function currencySymbol(currency) {
+            return currency === 'USD' ? '$' : 'S/';
+        }
+        function formatMoney(amount, currency) {
+            return `${currencySymbol(currency)} ${Number(amount || 0).toFixed(2)}`;
+        }
+        // Citas sin "currency" guardado (creadas antes de este cambio) se
+        // asumen en soles, igual que siempre.
+        function isPenAppt(a) { return a.currency !== 'USD'; }
+        function isUsdAppt(a) { return a.currency === 'USD'; }
 
         function packageSizeFromRateType(rateType) {
             if (rateType === 'paquete6') return 6;
@@ -705,9 +747,14 @@ window.printClinicalHistory = function() {
 
         // Busca un paquete del paciente que aún tenga sesiones disponibles,
         // del mismo tipo de atención y del mismo tamaño (6 u 8).
+        // Se recorre en orden inverso (del más reciente al más antiguo) para que,
+        // si hay más de un paquete activo del mismo tamaño (p.ej. uno viejo de
+        // prueba que quedó sin usar), siempre se proponga el creado más
+        // recientemente en vez del más antiguo.
         function findActivePackage(patientObj, attentionType, size) {
             if (!patientObj || !Array.isArray(patientObj.packages)) return null;
-            return patientObj.packages.find(pk =>
+            const list = patientObj.packages.slice().reverse();
+            return list.find(pk =>
                 pk.attentionType === attentionType &&
                 pk.size === size &&
                 pk.sessionsUsed < pk.sessionsTotal
@@ -715,10 +762,12 @@ window.printClinicalHistory = function() {
         }
 
         // Busca cualquier paquete activo del paciente (6 u 8 sesiones) para un
-        // tipo de atención dado, sin importar el tamaño.
+        // tipo de atención dado, sin importar el tamaño. Igual que arriba,
+        // prioriza el paquete creado más recientemente.
         function findActivePackageAnySize(patientObj, attentionType) {
             if (!patientObj || !Array.isArray(patientObj.packages)) return null;
-            return patientObj.packages.find(pk =>
+            const list = patientObj.packages.slice().reverse();
+            return list.find(pk =>
                 pk.attentionType === attentionType &&
                 pk.sessionsUsed < pk.sessionsTotal
             ) || null;
@@ -768,10 +817,14 @@ window.printClinicalHistory = function() {
             const sessionValEl = document.getElementById('app-session-value');
 
             const size = packageSizeFromRateType(rateType);
+            const currency = patientObj && patientObj.currency === 'USD' ? 'USD' : 'PEN';
+            const sym = currencySymbol(currency);
+            const costLabelEl = document.getElementById('app-cost-label');
+            if (costLabelEl) costLabelEl.innerText = `Precio (${sym}) *`;
 
             if (size === 0) {
                 // Sesión suelta: se cobra normalmente
-                const price = getRate(attentionType, modality, 'sesion');
+                const price = getRate(attentionType, modality, 'sesion', currency);
                 costInput.value = price.toFixed(2);
                 sessionValEl.value = price;
                 packageIdEl.value = '';
@@ -783,7 +836,7 @@ window.printClinicalHistory = function() {
             }
 
             // Tarifa de paquete
-            const packagePrice = getRate(attentionType, modality, rateType);
+            const packagePrice = getRate(attentionType, modality, rateType, currency);
             const halfPrice    = packagePrice / 2;
             const secondPayAt  = secondPaymentSessionNumber(size);
             const activePkg = patientObj ? findActivePackage(patientObj, attentionType, size) : null;
@@ -807,7 +860,7 @@ window.printClinicalHistory = function() {
                     infoBox.innerHTML = `
                         <p class="font-bold">💰 Segundo pago del paquete (mitad)</p>
                         <p>Esta es la sesión ${nextSessionNumber} de ${activePkg.sessionsTotal} · quedan <strong>${restantes}</strong></p>
-                        <p>Corresponde cobrar la segunda mitad: S/ ${halfPrice.toFixed(2)}.</p>`;
+                        <p>Corresponde cobrar la segunda mitad: ${sym} ${halfPrice.toFixed(2)}.</p>`;
                 } else {
                     costInput.value = '0.00';
                     sessionValEl.value = (activePkg.price / activePkg.sessionsTotal).toFixed(2);
@@ -833,11 +886,80 @@ window.printClinicalHistory = function() {
                 infoBox.className = 'text-xs rounded-xl p-3 border space-y-1 bg-indigo-50 border-indigo-200 text-indigo-800';
                 infoBox.innerHTML = `
                     <p class="font-bold">🆕 Se creará un nuevo paquete</p>
-                    <p>${size} sesiones · S/ ${packagePrice.toFixed(2)} en total (S/ ${(packagePrice/size).toFixed(2)} por sesión)</p>
-                    <p>Primer pago (mitad) ahora: S/ ${halfPrice.toFixed(2)}. Segundo pago (mitad) se cobrará en la sesión ${secondPayAt}.</p>`;
+                    <p>${size} sesiones · ${sym} ${packagePrice.toFixed(2)} en total (${sym} ${(packagePrice/size).toFixed(2)} por sesión)</p>
+                    <p>Primer pago (mitad) ahora: ${sym} ${halfPrice.toFixed(2)}. Segundo pago (mitad) se cobrará en la sesión ${secondPayAt}.</p>`;
             }
         }
         window.updateAppointmentPricing = updateAppointmentPricing;
+
+        // ─── RESTRINGIR HORAS YA PASADAS EN #app-time ──────────────────────────────
+        // #app-time es un <input type="time">, así que en vez de "deshabilitar
+        // opciones" (como en un <select>) usamos el atributo min. Si la fecha
+        // elegida es HOY (hora de Perú), no se puede elegir una hora ya pasada.
+        // Si se está EDITANDO una cita ya existente, no restringimos nada (para
+        // no bloquear ver/editar una cita que ya ocurrió).
+        function applyMinTimeForToday() {
+            const dateInput = document.getElementById('app-date');
+            const timeInput = document.getElementById('app-time');
+            const idInput   = document.getElementById('app-id');
+            if (!dateInput || !timeInput) return;
+
+            if (idInput && idInput.value) {
+                timeInput.removeAttribute('min');
+                return;
+            }
+
+            const dateVal = dateInput.value;
+            if (!dateVal) { timeInput.removeAttribute('min'); return; }
+
+            const limaNow = getLimaNow();
+            const isToday = dateVal === getLimaDateStr(limaNow);
+
+            if (isToday) {
+                const hh = String(limaNow.getHours()).padStart(2, '0');
+                const mm = String(limaNow.getMinutes()).padStart(2, '0');
+                timeInput.min = `${hh}:${mm}`;
+                // Si ya había una hora seleccionada y quedó en el pasado, se limpia
+                if (timeInput.value && timeInput.value < timeInput.min) {
+                    timeInput.value = '';
+                }
+            } else {
+                timeInput.removeAttribute('min');
+            }
+        }
+        window.applyMinTimeForToday = applyMinTimeForToday;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const dateInput = document.getElementById('app-date');
+            if (dateInput) dateInput.addEventListener('change', applyMinTimeForToday);
+
+            // Envolvemos openAppointmentModal (definida en ui.js) para recalcular
+            // la hora mínima cada vez que se abre el modal de "Nueva Cita".
+            if (typeof window.openAppointmentModal === 'function') {
+                const _origOpenAppointmentModal = window.openAppointmentModal;
+                window.openAppointmentModal = function(...args) {
+                    _origOpenAppointmentModal.apply(this, args);
+                    setTimeout(applyMinTimeForToday, 60);
+                };
+            }
+
+            // Envolvemos openPatientModal para que, al registrar un paciente
+            // NUEVO (sin patient-id), el selector de moneda vuelva a "Soles" en
+            // vez de arrastrar el valor del último paciente editado.
+            if (typeof window.openPatientModal === 'function') {
+                const _origOpenPatientModal = window.openPatientModal;
+                window.openPatientModal = function(...args) {
+                    _origOpenPatientModal.apply(this, args);
+                    setTimeout(() => {
+                        const idEl = document.getElementById('patient-id');
+                        const currencyEl = document.getElementById('pat-currency');
+                        if (currencyEl && idEl && !idEl.value) {
+                            currencyEl.value = 'PEN';
+                        }
+                    }, 30);
+                };
+            }
+        });
 
         // ─── PAQUETES: helpers de persistencia ──────────────────────────────────
         // Guarda el arreglo completo de paquetes del paciente en Firestore.
@@ -861,6 +983,40 @@ window.printClinicalHistory = function() {
             });
             await savePatientPackages(patientId, packages);
         }
+
+        // Elimina un paquete del paciente. Por seguridad:
+        //  - Si el paquete ya tiene sesiones usadas, se pide confirmación extra
+        //    (se perdería el registro de esas sesiones/pagos).
+        //  - Si hay citas (de cualquier estado) vinculadas a ese paquete, se
+        //    bloquea el borrado para no dejar citas "huérfanas" apuntando a un
+        //    packageId que ya no existe; primero hay que reasignar/editar esas
+        //    citas (cambiar su tarifa) para que apunten al paquete correcto.
+        window.deletePatientPackage = async function(patientId, packageId) {
+            const patientObj = state.patients.find(p => p.id === patientId);
+            if (!patientObj || !Array.isArray(patientObj.packages)) return;
+            const pkg = patientObj.packages.find(pk => pk.id === packageId);
+            if (!pkg) return;
+
+            const linkedAppts = state.appointments.filter(a => a.packageId === packageId);
+            if (linkedAppts.length > 0) {
+                alert(`⚠️ No se puede eliminar este paquete\n\nTiene ${linkedAppts.length} cita(s) vinculada(s). Primero edita esa(s) cita(s) y cambia su tarifa (por ejemplo, al paquete correcto) para desvincularlas, y luego vuelve a intentar eliminar el paquete.`);
+                return;
+            }
+
+            const usadas = pkg.sessionsUsed || 0;
+            const msg = usadas > 0
+                ? `Este paquete de ${pkg.sessionsTotal} sesiones ya tiene ${usadas} sesión(es) marcada(s) como usada(s).\n\n¿Seguro que deseas eliminarlo? Esta acción no se puede deshacer.`
+                : `¿Eliminar este paquete de ${pkg.sessionsTotal} sesiones (sin sesiones usadas)?\n\nEsta acción no se puede deshacer.`;
+            if (!confirm(msg)) return;
+
+            const updatedPackages = patientObj.packages.filter(pk => pk.id !== packageId);
+            await savePatientPackages(patientId, updatedPackages);
+
+            // Refrescar la vista del historial si está abierta para este paciente
+            if (window._currentHistoryPatientId === patientId) {
+                window.openPatientHistory(patientId);
+            }
+        };
 
         // Marca/desmarca la sesión de paquete de una cita como "consumida" y
         // ajusta el contador del paquete cuando la cita entra o sale de "completada".
@@ -924,17 +1080,20 @@ window.printClinicalHistory = function() {
             let packageId = '';
             let packageConsumed = existingAppt ? (existingAppt.packageConsumed === true) : false;
 
+            const apptCurrency = patientObj.currency === 'USD' ? 'USD' : 'PEN';
+
             if (size > 0) {
                 const rawPackageId = document.getElementById('app-package-id').value;
                 if (rawPackageId === 'NEW') {
                     // Crear un nuevo paquete para el paciente (pago dividido en 2 mitades)
-                    const price = getRate(attentionType, modality, rateType);
+                    const price = getRate(attentionType, modality, rateType, apptCurrency);
                     const firstPaymentStatus = document.getElementById('app-payment').value;
                     const newPkg = {
                         id: 'pkg_' + Date.now(),
                         attentionType: attentionType,
                         size: size,
                         price: price,
+                        currency: apptCurrency,
                         sessionsTotal: size,
                         sessionsUsed: 0,
                         halfPrice: price / 2,
@@ -982,6 +1141,7 @@ window.printClinicalHistory = function() {
                 packageId:      packageId || null,
                 sessionValue:   parseFloat(document.getElementById('app-session-value').value || 0),
                 cost:           parseFloat(document.getElementById('app-cost').value || 0),
+                currency:       apptCurrency,
                 paymentStatus:  document.getElementById('app-payment').value,
                 status:         newStatus,
                 packageConsumed: packageConsumed,
@@ -1005,6 +1165,11 @@ window.printClinicalHistory = function() {
                 if (a && a.packageId && a.packageConsumed) {
                     await adjustPackageSession(a.patientId, a.packageId, -1);
                 }
+                if (a && a.calendlyCancelUrl) {
+                    if (confirm("Esta cita viene de Calendly. ¿Abrir la página de cancelación para cancelarla también allá? (Recomendado, así el paciente es notificado y el evento se borra del Calendar)")) {
+                        window.open(a.calendlyCancelUrl, '_blank');
+                    }
+                }
                 await deleteDoc(doc(db, 'artifacts', appId, 'users', state.currentUser.uid, 'appointments', aid));
             }
         };
@@ -1025,6 +1190,14 @@ window.printClinicalHistory = function() {
             document.getElementById('app-date').value                 = a.date;
             document.getElementById('app-time').value                 = a.time;
             document.getElementById('app-cost').value                 = a.cost;
+            // Actualizar la etiqueta "Precio ($/S/)" según la moneda REAL de
+            // esta cita (a.currency), sin llamar a updateAppointmentPricing()
+            // porque esa función recalcula y sobrescribiría el monto que
+            // acabamos de cargar arriba. Antes de este fix la etiqueta se
+            // quedaba con el valor de la última cita nueva abierta, por eso
+            // una cita en dólares podía mostrarse con el símbolo "S/".
+            const editCostLabelEl = document.getElementById('app-cost-label');
+            if (editCostLabelEl) editCostLabelEl.innerText = `Precio (${currencySymbol(a.currency)}) *`;
             document.getElementById('app-payment').value              = a.paymentStatus;
             document.getElementById('app-status').value               = a.status;
             document.getElementById('app-notes').value                = a.notes || '';
@@ -1209,8 +1382,11 @@ window.printClinicalHistory = function() {
             const monthApps = state.appointments.filter(a => a.date.startsWith(state.monthViewDate));
             document.getElementById('month-view-total').innerText = monthApps.length;
             document.getElementById('month-view-completed').innerText = monthApps.filter(a => a.status === 'completada').length;
-            const rev = monthApps.filter(a => a.status === 'completada').reduce((s, a) => s + a.cost, 0);
-            document.getElementById('month-view-revenue').innerText = `S/ ${rev.toFixed(2)}`;
+            // Solo se suman las citas en soles; las de pacientes extranjeros (USD)
+            // no se mezclan en este total para no dar una cifra sin sentido.
+            const rev = monthApps.filter(a => a.status === 'completada' && isPenAppt(a)).reduce((s, a) => s + a.cost, 0);
+            const revUsd = monthApps.filter(a => a.status === 'completada' && isUsdAppt(a)).reduce((s, a) => s + a.cost, 0);
+            document.getElementById('month-view-revenue').innerText = `S/ ${rev.toFixed(2)}` + (revUsd > 0 ? ` (+ $ ${revUsd.toFixed(2)})` : '');
 
             const byDate = {};
             monthApps.forEach(a => {
@@ -1259,11 +1435,12 @@ window.printClinicalHistory = function() {
         // de un paquete ya pagado, se aclara en vez de mostrar "S/ 0.00" a secas.
         function formatApptCostLabel(a) {
             const cost = parseFloat(a.cost || 0);
+            const sym = currencySymbol(a.currency);
             if (a.packageId && a.rateType && a.rateType !== 'sesion') {
-                if (cost > 0) return `S/ ${cost.toFixed(2)} (pago de paquete)`;
+                if (cost > 0) return `${sym} ${cost.toFixed(2)} (pago de paquete)`;
                 return `📦 Sesión de paquete (incluida)`;
             }
-            return `S/ ${cost.toFixed(2)}`;
+            return `${sym} ${cost.toFixed(2)}`;
         }
         window.formatApptCostLabel = formatApptCostLabel;
 
@@ -1289,14 +1466,19 @@ window.printClinicalHistory = function() {
                     const secondStatus = hasSplitPayment ? pk.secondPaymentStatus : (pk.paid ? 'pagado' : 'pendiente');
                     const secondSession = pk.secondPaymentSession || secondPaymentSessionNumber(pk.sessionsTotal);
                     const half = pk.halfPrice || (pk.price / 2);
+                    const pkgSym = currencySymbol(pk.currency);
                     const paymentLine = secondSession
-                        ? `1er pago (S/ ${half.toFixed(2)}) ${firstStatus === 'pagado' ? '✅' : '⏳'} · 2do pago sesión ${secondSession} (S/ ${half.toFixed(2)}) ${secondStatus === 'pagado' ? '✅' : '⏳'}`
-                        : `S/ ${pk.price.toFixed(2)} ${pk.paid ? '✅ pagado' : '⏳ pendiente'}`;
+                        ? `1er pago (${pkgSym} ${half.toFixed(2)}) ${firstStatus === 'pagado' ? '✅' : '⏳'} · 2do pago sesión ${secondSession} (${pkgSym} ${half.toFixed(2)}) ${secondStatus === 'pagado' ? '✅' : '⏳'}`
+                        : `${pkgSym} ${pk.price.toFixed(2)} ${pk.paid ? '✅ pagado' : '⏳ pendiente'}`;
                     return `<div class="border rounded-xl p-2.5 text-xs space-y-1 ${badgeClass}">
                         <div class="flex justify-between items-center">
                             <span class="font-bold">${attentionLabel[pk.attentionType] || pk.attentionType} · Paquete ${pk.sessionsTotal}</span>
-                            <span class="font-semibold">${activo ? `${pk.sessionsUsed}/${pk.sessionsTotal} usadas` : 'Completado'}</span>
+                            <span class="flex items-center gap-2">
+                                <span class="font-semibold">${activo ? `${pk.sessionsUsed}/${pk.sessionsTotal} usadas` : 'Completado'}</span>
+                                <button type="button" title="Eliminar paquete" onclick="window.deletePatientPackage('${p.id}','${pk.id}')" class="text-slate-400 hover:text-red-600 transition">🗑️</button>
+                            </span>
                         </div>
+                        <div class="text-[10px] text-slate-400">Creado: ${pk.purchaseDate || '—'} · ID: ${pk.id}</div>
                         <div class="w-full bg-white/60 rounded-full h-1.5 overflow-hidden border border-white">
                             <div class="h-full bg-indigo-500" style="width:${pct}%"></div>
                         </div>
@@ -1355,6 +1537,7 @@ window.printClinicalHistory = function() {
                         <p class="text-xs text-slate-500"><strong>Nacimiento:</strong> ${p.birth || 'No especificada'}</p>
                         <div class="flex flex-wrap gap-1.5">
                             <span class="text-xs bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-lg font-medium">${(ORIGEN_LABELS[p.origen] || ORIGEN_LABELS.otro).icon} ${(ORIGEN_LABELS[p.origen] || ORIGEN_LABELS.otro).label}</span>
+                            ${p.currency === 'USD' ? '<span class="text-xs bg-amber-50 text-amber-700 px-2.5 py-1 rounded-lg font-medium border border-amber-200">🌎 Extranjero (USD)</span>' : ''}
                             <span class="text-xs px-2.5 py-1 rounded-lg font-medium ${(LEAD_STATUS_LABELS[p.leadStatus] || LEAD_STATUS_LABELS.nuevo).cls}">${(LEAD_STATUS_LABELS[p.leadStatus] || LEAD_STATUS_LABELS.nuevo).label}</span>
                         </div>
                         <p class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100"><strong>Antecedentes:</strong> ${p.history || 'Sin observaciones históricas.'}</p>
@@ -1371,8 +1554,11 @@ window.printClinicalHistory = function() {
 
         function updatePatientDropdowns() {
             const select = document.getElementById('app-patient-select');
-            select.innerHTML = state.patients.length
-                ? state.patients.map(p => `<option value="${p.id}">${p.name}</option>`).join('')
+            const sortedPatients = state.patients.slice().sort((a, b) =>
+                (a.name || '').localeCompare(b.name || '', 'es', { sensitivity: 'base' })
+            );
+            select.innerHTML = sortedPatients.length
+                ? sortedPatients.map(p => `<option value="${p.id}">${p.name}</option>`).join('')
                 : '<option value="">-- No hay pacientes registrados --</option>';
         }
 
@@ -1421,8 +1607,9 @@ window.printClinicalHistory = function() {
             document.getElementById('stat-citas-hoy').innerText       = todayApps.length;
             document.getElementById('stat-citas-pendientes').innerText = todayApps.filter(a => a.status === 'pendiente').length;
             document.getElementById('stat-citas-completas').innerText  = todayApps.filter(a => a.status === 'completada').length;
-            const ingresosHoy = todayApps.filter(a => a.status === 'completada').reduce((s, a) => s + a.cost, 0);
-            document.getElementById('stat-citas-ingresos').innerText   = `S/ ${ingresosHoy.toFixed(2)}`;
+            const ingresosHoy = todayApps.filter(a => a.status === 'completada' && isPenAppt(a)).reduce((s, a) => s + a.cost, 0);
+            const ingresosHoyUsd = todayApps.filter(a => a.status === 'completada' && isUsdAppt(a)).reduce((s, a) => s + a.cost, 0);
+            document.getElementById('stat-citas-ingresos').innerText   = `S/ ${ingresosHoy.toFixed(2)}` + (ingresosHoyUsd > 0 ? ` (+ $ ${ingresosHoyUsd.toFixed(2)})` : '');
 
             // ── Sección Finanzas: filtrada por periodo seleccionado (todo / mes / día) ──
             const financeApps = getFinanceAppointments();
@@ -1433,17 +1620,26 @@ window.printClinicalHistory = function() {
 
             document.getElementById('stats-total-patients').innerText     = uniquePatientsInPeriod;
             document.getElementById('stats-total-appointments').innerText  = financeApps.length;
-            const totalRev = financeApps.filter(a => a.status === 'completada').reduce((s, a) => s + a.cost, 0);
+            // Ingresos S/ y $ se muestran POR SEPARADO — sumarlos en un solo
+            // número no tendría sentido (son monedas distintas).
+            const totalRev    = financeApps.filter(a => a.status === 'completada' && isPenAppt(a)).reduce((s, a) => s + a.cost, 0);
+            const totalRevUsd = financeApps.filter(a => a.status === 'completada' && isUsdAppt(a)).reduce((s, a) => s + a.cost, 0);
             document.getElementById('stats-revenue-total').innerText       = `S/ ${totalRev.toFixed(2)}`;
+            const revUsdEl = document.getElementById('stats-revenue-total-usd');
+            if (revUsdEl) revUsdEl.innerText = `$ ${totalRevUsd.toFixed(2)} USD`;
 
-            const avgCost      = financeApps.length ? financeApps.reduce((s, a) => s + a.cost, 0) / financeApps.length : 0;
-            const pendingCobro = financeApps.filter(a => a.paymentStatus === 'pendiente').reduce((s, a) => s + a.cost, 0);
-            const futureCobro  = financeApps.filter(a => a.status === 'pendiente').reduce((s, a) => s + a.cost, 0);
+            const penApps = financeApps.filter(isPenAppt);
+            const avgCost      = penApps.length ? penApps.reduce((s, a) => s + Number(a.cost || 0), 0) / penApps.length : 0;
+            const pendingCobro = penApps.filter(a => a.paymentStatus === 'pendiente').reduce((s, a) => s + Number(a.cost || 0), 0);
+            const futureCobro  = penApps.filter(a => a.status === 'pendiente').reduce((s, a) => s + Number(a.cost || 0), 0);
+
+            const usdApps = financeApps.filter(isUsdAppt);
+            const pendingCobroUsd = usdApps.filter(a => a.paymentStatus === 'pendiente').reduce((s, a) => s + Number(a.cost || 0), 0);
+            const futureCobroUsd  = usdApps.filter(a => a.status === 'pendiente').reduce((s, a) => s + Number(a.cost || 0), 0);
 
             document.getElementById('finance-average-cost').innerText  = `S/ ${avgCost.toFixed(2)}`;
-            document.getElementById('finance-pending-cobro').innerText = `S/ ${pendingCobro.toFixed(2)}`;
-            document.getElementById('finance-future-cobro').innerText  = `S/ ${futureCobro.toFixed(2)}`;
-
+            document.getElementById('finance-pending-cobro').innerText = `S/ ${pendingCobro.toFixed(2)}` + (pendingCobroUsd > 0 ? ` (+ $ ${pendingCobroUsd.toFixed(2)})` : '');
+            document.getElementById('finance-future-cobro').innerText  = `S/ ${futureCobro.toFixed(2)}` + (futureCobroUsd > 0 ? ` (+ $ ${futureCobroUsd.toFixed(2)})` : '');
             // ── Tasa de asistencia: completadas vs. (completadas + canceladas) ──
             const consideradas = financeApps.filter(a => a.status === 'completada' || a.status === 'cancelada');
             const asistenciaRate = consideradas.length
@@ -1534,7 +1730,7 @@ window.printClinicalHistory = function() {
             // Agrupa citas del periodo por origen del paciente al que pertenecen
             const byOrigen = {};
             Object.keys(ORIGEN_LABELS).forEach(key => {
-                byOrigen[key] = { leads: 0, citas: 0, atendidos: 0, ingresos: 0 };
+                byOrigen[key] = { leads: 0, citas: 0, atendidos: 0, ingresos: 0, ingresosUsd: 0 };
             });
 
             state.patients.forEach(p => {
@@ -1548,13 +1744,17 @@ window.printClinicalHistory = function() {
                 byOrigen[key].citas += 1;
                 if (a.status === 'completada') {
                     byOrigen[key].atendidos += 1;
-                    byOrigen[key].ingresos += (a.cost || 0);
+                    if (isUsdAppt(a)) {
+                        byOrigen[key].ingresosUsd += (a.cost || 0);
+                    } else {
+                        byOrigen[key].ingresos += (a.cost || 0);
+                    }
                 }
             });
 
             const rows = Object.entries(byOrigen)
                 .filter(([, v]) => v.leads > 0 || v.citas > 0)
-                .sort((a, b) => b[1].ingresos - a[1].ingresos);
+                .sort((a, b) => (b[1].ingresos + b[1].ingresosUsd) - (a[1].ingresos + a[1].ingresosUsd));
 
             if (!rows.length) {
                 tbody.innerHTML = `<tr><td colspan="6" class="text-center text-slate-400 py-4">Aún no hay datos suficientes. Registra el "Origen del contacto" al crear tus pacientes.</td></tr>`;
@@ -1564,6 +1764,7 @@ window.printClinicalHistory = function() {
             tbody.innerHTML = rows.map(([key, v]) => {
                 const conv = v.leads ? ((v.atendidos / v.leads) * 100).toFixed(1) : '0.0';
                 const meta = ORIGEN_LABELS[key];
+                const ingresosLbl = `S/ ${v.ingresos.toFixed(2)}` + (v.ingresosUsd > 0 ? ` (+ $ ${v.ingresosUsd.toFixed(2)})` : '');
                 return `
                     <tr class="border-b border-slate-50 hover:bg-slate-50">
                         <td class="py-2 pr-2 font-semibold text-slate-700">${meta.icon} ${meta.label}</td>
@@ -1571,7 +1772,7 @@ window.printClinicalHistory = function() {
                         <td class="py-2 pr-2 text-center">${v.citas}</td>
                         <td class="py-2 pr-2 text-center">${v.atendidos}</td>
                         <td class="py-2 pr-2 text-center">${conv}%</td>
-                        <td class="py-2 pr-2 text-right font-semibold text-emerald-600">S/ ${v.ingresos.toFixed(2)}</td>
+                        <td class="py-2 pr-2 text-right font-semibold text-emerald-600">${ingresosLbl}</td>
                     </tr>`;
             }).join('');
         }
@@ -1628,10 +1829,11 @@ window.printClinicalHistory = function() {
             document.getElementById('print-head-date').innerText = periodLabel;
 
             const completas  = reportApps.filter(a => a.status === 'completada').length;
-            const recaudado  = reportApps.filter(a => a.status === 'completada').reduce((s, a) => s + a.cost, 0);
+            const recaudado  = reportApps.filter(a => a.status === 'completada' && isPenAppt(a)).reduce((s, a) => s + a.cost, 0);
+            const recaudadoUsd = reportApps.filter(a => a.status === 'completada' && isUsdAppt(a)).reduce((s, a) => s + a.cost, 0);
             document.getElementById('print-stat-total').innerText     = reportApps.length;
             document.getElementById('print-stat-completed').innerText = completas;
-            document.getElementById('print-stat-revenue').innerText   = `S/ ${recaudado.toFixed(2)}`;
+            document.getElementById('print-stat-revenue').innerText   = `S/ ${recaudado.toFixed(2)}` + (recaudadoUsd > 0 ? ` (+ $ ${recaudadoUsd.toFixed(2)})` : '');
 
             const dateHeader = document.getElementById('print-date-column-header');
             const tbody = document.getElementById('print-table-rows');
@@ -1716,44 +1918,49 @@ window.printClinicalHistory = function() {
             const byDate = {};
             reportApps.forEach(a => {
                 if (!byDate[a.date]) {
-                    byDate[a.date] = { total: 0, completadas: 0, recaudado: 0, pendiente: 0 };
+                    byDate[a.date] = { total: 0, completadas: 0, recaudado: 0, pendiente: 0, recaudadoUsd: 0, pendienteUsd: 0 };
                 }
                 byDate[a.date].total++;
+                const usd = isUsdAppt(a);
                 if (a.status === 'completada') {
                     byDate[a.date].completadas++;
-                    byDate[a.date].recaudado += a.cost;
+                    if (usd) byDate[a.date].recaudadoUsd += a.cost; else byDate[a.date].recaudado += a.cost;
                 }
                 if (a.paymentStatus === 'pendiente') {
-                    byDate[a.date].pendiente += a.cost;
+                    if (usd) byDate[a.date].pendienteUsd += a.cost; else byDate[a.date].pendiente += a.cost;
                 }
             });
             const dates = Object.keys(byDate).sort();
 
             const totalCitas       = reportApps.length;
             const totalCompletadas = reportApps.filter(a => a.status === 'completada').length;
-            const totalRecaudado   = reportApps.filter(a => a.status === 'completada').reduce((s, a) => s + a.cost, 0);
-            const totalPendiente   = reportApps.filter(a => a.paymentStatus === 'pendiente').reduce((s, a) => s + a.cost, 0);
+            const totalRecaudado   = reportApps.filter(a => a.status === 'completada' && isPenAppt(a)).reduce((s, a) => s + a.cost, 0);
+            const totalRecaudadoUsd = reportApps.filter(a => a.status === 'completada' && isUsdAppt(a)).reduce((s, a) => s + a.cost, 0);
+            const totalPendiente   = reportApps.filter(a => a.paymentStatus === 'pendiente' && isPenAppt(a)).reduce((s, a) => s + a.cost, 0);
+            const totalPendienteUsd = reportApps.filter(a => a.paymentStatus === 'pendiente' && isUsdAppt(a)).reduce((s, a) => s + a.cost, 0);
 
             document.getElementById('pf-stat-total').innerText     = totalCitas;
             document.getElementById('pf-stat-completed').innerText = totalCompletadas;
-            document.getElementById('pf-stat-revenue').innerText   = `S/ ${totalRecaudado.toFixed(2)}`;
-            document.getElementById('pf-stat-pending').innerText   = `S/ ${totalPendiente.toFixed(2)}`;
+            document.getElementById('pf-stat-revenue').innerText   = `S/ ${totalRecaudado.toFixed(2)}` + (totalRecaudadoUsd > 0 ? ` (+ $ ${totalRecaudadoUsd.toFixed(2)})` : '');
+            document.getElementById('pf-stat-pending').innerText   = `S/ ${totalPendiente.toFixed(2)}` + (totalPendienteUsd > 0 ? ` (+ $ ${totalPendienteUsd.toFixed(2)})` : '');
 
             document.getElementById('pf-total-citas').innerText       = totalCitas;
             document.getElementById('pf-total-completadas').innerText = totalCompletadas;
-            document.getElementById('pf-total-recaudado').innerText   = `S/ ${totalRecaudado.toFixed(2)}`;
-            document.getElementById('pf-total-pendiente').innerText   = `S/ ${totalPendiente.toFixed(2)}`;
+            document.getElementById('pf-total-recaudado').innerText   = `S/ ${totalRecaudado.toFixed(2)}` + (totalRecaudadoUsd > 0 ? ` (+ $ ${totalRecaudadoUsd.toFixed(2)})` : '');
+            document.getElementById('pf-total-pendiente').innerText   = `S/ ${totalPendiente.toFixed(2)}` + (totalPendienteUsd > 0 ? ` (+ $ ${totalPendienteUsd.toFixed(2)})` : '');
 
             const tbody = document.getElementById('pf-table-rows');
             tbody.innerHTML = dates.length
                 ? dates.map(dateStr => {
                     const d = byDate[dateStr];
+                    const recaudadoLbl = `S/ ${d.recaudado.toFixed(2)}` + (d.recaudadoUsd > 0 ? ` (+ $ ${d.recaudadoUsd.toFixed(2)})` : '');
+                    const pendienteLbl = `S/ ${d.pendiente.toFixed(2)}` + (d.pendienteUsd > 0 ? ` (+ $ ${d.pendienteUsd.toFixed(2)})` : '');
                     return `<tr class="border-b">
                         <td class="py-2.5 px-2 font-bold whitespace-nowrap">${dateStr}</td>
                         <td class="py-2.5 px-2">${d.total}</td>
                         <td class="py-2.5 px-2">${d.completadas}</td>
-                        <td class="py-2.5 px-2 font-semibold">S/ ${d.recaudado.toFixed(2)}</td>
-                        <td class="py-2.5 px-2 font-semibold text-amber-700">S/ ${d.pendiente.toFixed(2)}</td>
+                        <td class="py-2.5 px-2 font-semibold">${recaudadoLbl}</td>
+                        <td class="py-2.5 px-2 font-semibold text-amber-700">${pendienteLbl}</td>
                     </tr>`;
                 }).join('')
                 : `<tr><td colspan="5" class="py-4 text-center text-slate-400">No hay datos financieros para este periodo.</td></tr>`;
