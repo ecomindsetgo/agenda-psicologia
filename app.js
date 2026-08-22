@@ -2130,7 +2130,7 @@ window.printClinicalHistory = function() {
         };
 
         // ─── HORARIO SEMANAL (Modal "Revisar Horario") ─────────────────────────────
-        const HORARIO_SLOTS = ['10:00','11:00','16:00','17:00','18:00','19:00'];
+        const HORARIO_SLOTS = ['10:00','11:00','12:00','16:00','17:00','18:00','19:00'];
         const HORARIO_DAYS  = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 
         function getMondayOf(d) {
