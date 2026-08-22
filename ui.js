@@ -3,8 +3,8 @@
             pacientes: { title: 'Pacientes',                  eyebrow: 'Directorio Clínico' },
             finanzas:  { title: 'Estadísticas y Finanzas',    eyebrow: 'Análisis del Consultorio' }
         };
-        const SIDEBAR_TAB_INACTIVE = "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-brand-100 hover:bg-brand-800 font-medium text-sm transition-all tab-transition";
-        const SIDEBAR_TAB_ACTIVE   = "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white text-brand-900 font-semibold text-sm transition-all tab-transition";
+        const SIDEBAR_TAB_INACTIVE = "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sage-100 hover:bg-white/10 font-medium text-sm transition-all tab-transition";
+        const SIDEBAR_TAB_ACTIVE   = "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-clay-500 text-sage-950 font-semibold text-sm shadow-md shadow-black/10 transition-all tab-transition";
 
         function switchTab(target) {
             ['citas','pacientes','finanzas'].forEach(t => {
@@ -40,8 +40,8 @@
         function setFilterStatus(status) {
             ['todas','pendiente','completada','cancelada'].forEach(st => {
                 document.getElementById('btn-f-' + st).className = st === status
-                    ? "px-3 py-1 bg-brand-600 text-white text-xs font-semibold rounded-lg shadow-sm transition"
-                    : "px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition";
+                    ? "px-3 py-1 bg-sage-600 text-white text-xs font-semibold rounded-lg shadow-sm transition"
+                    : "px-3 py-1 bg-graphite-100 hover:bg-graphite-200 text-graphite-600 text-xs font-semibold rounded-lg transition";
             });
             // Puente limpio hacia el scope del módulo
             document.body.dispatchEvent(new CustomEvent('filter-status-changed', { detail: status }));
@@ -65,11 +65,11 @@
             const mainBtn = document.getElementById('btn-fab-main');
             if (menu.classList.contains('hidden')) {
                 menu.classList.remove('hidden');
-                setTimeout(() => { menu.classList.remove('scale-95','opacity-0'); menu.classList.add('scale-100','opacity-100'); mainBtn.classList.add('rotate-45','bg-slate-700'); }, 10);
+                setTimeout(() => { menu.classList.remove('scale-95','opacity-0'); menu.classList.add('scale-100','opacity-100'); mainBtn.classList.add('rotate-45','bg-graphite-700'); }, 10);
             } else {
                 menu.classList.remove('scale-100','opacity-100');
                 menu.classList.add('scale-95','opacity-0');
-                mainBtn.classList.remove('rotate-45','bg-slate-700');
+                mainBtn.classList.remove('rotate-45','bg-graphite-700');
                 setTimeout(() => menu.classList.add('hidden'), 200);
             }
         }
@@ -116,16 +116,16 @@
 
         function setPrintCategory(category) {
             window._printCategory = category;
-            const activeCls   = "flex-1 px-3 py-2 bg-brand-600 text-white text-xs font-semibold rounded-lg transition";
-            const inactiveCls = "flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition";
+            const activeCls   = "flex-1 px-3 py-2 bg-sage-600 text-white text-xs font-semibold rounded-lg transition";
+            const inactiveCls = "flex-1 px-3 py-2 bg-graphite-100 hover:bg-graphite-200 text-graphite-600 text-xs font-semibold rounded-lg transition";
             document.getElementById('btn-pc-citas').className    = category === 'citas'    ? activeCls : inactiveCls;
             document.getElementById('btn-pc-finanzas').className = category === 'finanzas' ? activeCls : inactiveCls;
         }
 
         function setPrintType(type) {
             window._printType = type;
-            const activeCls   = "flex-1 px-3 py-2 bg-brand-600 text-white text-xs font-semibold rounded-lg transition";
-            const inactiveCls = "flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition";
+            const activeCls   = "flex-1 px-3 py-2 bg-sage-600 text-white text-xs font-semibold rounded-lg transition";
+            const inactiveCls = "flex-1 px-3 py-2 bg-graphite-100 hover:bg-graphite-200 text-graphite-600 text-xs font-semibold rounded-lg transition";
             document.getElementById('btn-pt-dia').className    = type === 'dia'    ? activeCls : inactiveCls;
             document.getElementById('btn-pt-semana').className = type === 'semana' ? activeCls : inactiveCls;
             document.getElementById('btn-pt-mes').className    = type === 'mes'    ? activeCls : inactiveCls;
@@ -196,11 +196,11 @@
             ['perfil','clave'].forEach(t => {
                 document.getElementById('psec-' + t).classList.add('hidden');
                 document.getElementById('ptab-' + t).className =
-                    'flex-1 py-2 text-xs font-semibold rounded-lg text-brand-200 hover:bg-brand-800/50 transition';
+                    'flex-1 py-2 text-xs font-semibold rounded-lg text-sage-200 hover:bg-sage-800/50 transition';
             });
             document.getElementById('psec-' + tab).classList.remove('hidden');
             document.getElementById('ptab-' + tab).className =
-                'flex-1 py-2 text-xs font-semibold rounded-lg bg-white text-brand-700 shadow transition';
+                'flex-1 py-2 text-xs font-semibold rounded-lg bg-white text-sage-700 shadow transition';
         }
 
         function saveProfileData() {
