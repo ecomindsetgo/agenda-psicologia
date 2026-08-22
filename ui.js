@@ -3,8 +3,8 @@
             pacientes: { title: 'Pacientes',                  eyebrow: 'Directorio Clínico' },
             finanzas:  { title: 'Estadísticas y Finanzas',    eyebrow: 'Análisis del Consultorio' }
         };
-        const SIDEBAR_TAB_INACTIVE = "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sage-100 hover:bg-white/10 font-medium text-sm transition-all tab-transition";
-        const SIDEBAR_TAB_ACTIVE   = "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-clay-500 text-sage-950 font-semibold text-sm shadow-md shadow-black/10 transition-all tab-transition";
+        const SIDEBAR_TAB_INACTIVE = "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/90 hover:bg-white/10 font-medium text-sm transition-all tab-transition";
+        const SIDEBAR_TAB_ACTIVE   = "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white text-sage-700 font-semibold text-sm shadow-md transition-all tab-transition";
 
         function switchTab(target) {
             ['citas','pacientes','finanzas'].forEach(t => {
@@ -196,7 +196,7 @@
             ['perfil','clave'].forEach(t => {
                 document.getElementById('psec-' + t).classList.add('hidden');
                 document.getElementById('ptab-' + t).className =
-                    'flex-1 py-2 text-xs font-semibold rounded-lg text-sage-200 hover:bg-sage-800/50 transition';
+                    'flex-1 py-2 text-xs font-semibold rounded-lg text-white/80 hover:bg-white/15 transition';
             });
             document.getElementById('psec-' + tab).classList.remove('hidden');
             document.getElementById('ptab-' + tab).className =
