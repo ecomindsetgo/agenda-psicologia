@@ -476,7 +476,7 @@ window.newClinicalNote = function(note = {}) {
 
     const div = document.createElement("div");
 
-    div.className = "border rounded-xl p-4 bg-graphite-50";
+    div.className = "border rounded-xl p-4 bg-slate-50";
 
     div.dataset.id = id;
 
@@ -639,7 +639,7 @@ window.printClinicalHistory = function() {
             tbody.appendChild(tr);
         });
     } else {
-        tbody.innerHTML = '<tr><td colspan="3" class="py-3 text-center text-graphite-400">Sin evolución clínica registrada.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3" class="py-3 text-center text-slate-400">Sin evolución clínica registrada.</td></tr>';
     }
 
     // Ocultar todo lo demás e imprimir solo la historia clínica
@@ -883,7 +883,7 @@ window.printClinicalHistory = function() {
                 packageTypeEl.value = String(size);
                 paymentSel.disabled = false;
                 infoBox.classList.remove('hidden');
-                infoBox.className = 'text-xs rounded-xl p-3 border space-y-1 bg-sage-50 border-sage-200 text-sage-800';
+                infoBox.className = 'text-xs rounded-xl p-3 border space-y-1 bg-indigo-50 border-indigo-200 text-indigo-800';
                 infoBox.innerHTML = `
                     <p class="font-bold">🆕 Se creará un nuevo paquete</p>
                     <p>${size} sesiones · ${sym} ${packagePrice.toFixed(2)} en total (${sym} ${(packagePrice/size).toFixed(2)} por sesión)</p>
@@ -1271,7 +1271,7 @@ window.printClinicalHistory = function() {
             filtered.sort((a, b) => a.time.localeCompare(b.time));
 
             if (!filtered.length) {
-                container.innerHTML = `<div class="text-center p-8 bg-white rounded-2xl border border-graphite-100 text-graphite-400 text-sm">No hay citas programadas para este filtro o fecha.</div>`;
+                container.innerHTML = `<div class="text-center p-8 bg-white rounded-2xl border border-slate-100 text-slate-400 text-sm">No hay citas programadas para este filtro o fecha.</div>`;
                 return;
             }
             container.innerHTML = filtered.map(a => {
@@ -1283,22 +1283,22 @@ window.printClinicalHistory = function() {
                 const payBadge = a.paymentStatus === 'pagado' ? '💳 Pagado' : '⏳ Pendiente';
                 const modalityBadge = a.modality === 'virtual'
                     ? '<span class="text-xs font-semibold px-2 py-0.5 rounded-xl border bg-sky-50 text-sky-700 border-sky-200">💻 Virtual</span>'
-                    : '<span class="text-xs font-semibold px-2 py-0.5 rounded-xl border bg-graphite-50 text-graphite-600 border-graphite-200">🏢 Presencial</span>';
+                    : '<span class="text-xs font-semibold px-2 py-0.5 rounded-xl border bg-slate-50 text-slate-600 border-slate-200">🏢 Presencial</span>';
                 return `
-                <div class="bg-white p-5 rounded-3xl border border-sage-100/70 card-soft flex flex-col sm:flex-row justify-between sm:items-center gap-4 hover:shadow-md transition">
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-4 hover:shadow-md transition">
                     <div class="space-y-1">
                         <div class="flex items-center gap-2 flex-wrap">
-                            <span class="text-sm font-bold text-graphite-700 bg-graphite-100 px-2 py-0.5 rounded-lg">⏰ ${a.time}</span>
-                            <h4 class="font-extrabold text-graphite-800 text-base">${a.patientName}</h4>
+                            <span class="text-sm font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-lg">⏰ ${a.time}</span>
+                            <h4 class="font-extrabold text-slate-800 text-base">${a.patientName}</h4>
                             <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${a.status.toUpperCase()}</span>
                             ${modalityBadge}
                         </div>
-                        <p class="text-xs text-graphite-500 italic">"${a.notes || 'Sin observaciones para esta sesión'}"</p>
+                        <p class="text-xs text-slate-500 italic">"${a.notes || 'Sin observaciones para esta sesión'}"</p>
                     </div>
                     <div class="flex items-center gap-3 self-end sm:self-center">
                         <button onclick="enviarRecordatorioWhatsapp('${a.id}')" title="Enviar recordatorio por WhatsApp" class="bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-700 text-xs px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1">📲 WhatsApp</button>
-                        <button onclick="quickToggleStatus('${a.id}','${a.status}')" class="bg-graphite-50 border hover:bg-graphite-100 text-graphite-600 text-xs px-3 py-1.5 rounded-xl font-semibold">🔄 Estado</button>
-                        <button onclick="editAppointment('${a.id}')" class="text-sage-600 hover:text-sage-800 text-xs font-bold">✏️</button>
+                        <button onclick="quickToggleStatus('${a.id}','${a.status}')" class="bg-slate-50 border hover:bg-slate-100 text-slate-600 text-xs px-3 py-1.5 rounded-xl font-semibold">🔄 Estado</button>
+                        <button onclick="editAppointment('${a.id}')" class="text-indigo-600 hover:text-indigo-800 text-xs font-bold">✏️</button>
                         <button onclick="deleteAppointment('${a.id}')" class="text-red-500 hover:text-red-700 text-xs font-bold">🗑️</button>
                     </div>
                 </div>`;
@@ -1340,8 +1340,8 @@ window.printClinicalHistory = function() {
             const monthView = document.getElementById('citas-month-view');
             const btnDia    = document.getElementById('btn-view-dia');
             const btnMes    = document.getElementById('btn-view-mes');
-            const activeCls   = "px-3 py-1.5 bg-sage-600 text-white text-xs font-semibold rounded-lg shadow-sm transition";
-            const inactiveCls = "px-3 py-1.5 bg-graphite-100 hover:bg-graphite-200 text-graphite-600 text-xs font-semibold rounded-lg transition";
+            const activeCls   = "px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition";
+            const inactiveCls = "px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition";
 
             if (view === 'dia') {
                 dayView.classList.remove('hidden');
@@ -1397,7 +1397,7 @@ window.printClinicalHistory = function() {
 
             const container = document.getElementById('month-view-list');
             if (!dates.length) {
-                container.innerHTML = `<div class="text-center p-8 bg-white rounded-2xl border border-graphite-100 text-graphite-400 text-sm">No hay citas registradas para este mes.</div>`;
+                container.innerHTML = `<div class="text-center p-8 bg-white rounded-2xl border border-slate-100 text-slate-400 text-sm">No hay citas registradas para este mes.</div>`;
                 return;
             }
             container.innerHTML = dates.map(dateStr => {
@@ -1411,19 +1411,19 @@ window.printClinicalHistory = function() {
                         ? 'bg-red-50 text-red-600 border-red-200'
                         : 'bg-amber-50 text-amber-700 border-amber-200';
                     const modalityIcon = a.modality === 'virtual' ? '💻' : '🏢';
-                    return `<div class="flex items-center justify-between py-1.5 border-b border-graphite-50 last:border-0">
+                    return `<div class="flex items-center justify-between py-1.5 border-b border-slate-50 last:border-0">
                         <div class="flex items-center gap-2 flex-wrap">
-                            <span class="text-xs font-bold text-graphite-600 bg-graphite-100 px-2 py-0.5 rounded-lg">⏰ ${a.time}</span>
-                            <span class="text-sm font-semibold text-graphite-700">${modalityIcon} ${a.patientName}</span>
+                            <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-lg">⏰ ${a.time}</span>
+                            <span class="text-sm font-semibold text-slate-700">${modalityIcon} ${a.patientName}</span>
                             <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${a.status.toUpperCase()}</span>
                         </div>
-                        <span class="text-xs font-semibold text-graphite-500">${formatApptCostLabel(a)}</span>
+                        <span class="text-xs font-semibold text-slate-500">${formatApptCostLabel(a)}</span>
                     </div>`;
                 }).join('');
-                return `<div class="bg-white p-4 rounded-3xl border border-sage-100/70 card-soft">
+                return `<div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
                     <div class="flex justify-between items-center mb-2 cursor-pointer" onclick="jumpToDay('${dateStr}')">
-                        <h4 class="font-bold text-graphite-800 text-sm">📅 ${dayLabel}</h4>
-                        <span class="text-xs font-semibold text-sage-600 bg-sage-50 px-2 py-1 rounded-lg">${apps.length} cita${apps.length !== 1 ? 's' : ''} · Ver día ▶</span>
+                        <h4 class="font-bold text-slate-800 text-sm">📅 ${dayLabel}</h4>
+                        <span class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">${apps.length} cita${apps.length !== 1 ? 's' : ''} · Ver día ▶</span>
                     </div>
                     <div>${rows}</div>
                 </div>`;
@@ -1458,8 +1458,8 @@ window.printClinicalHistory = function() {
                     const activo = restantes > 0;
                     const pct = Math.min(100, Math.round((pk.sessionsUsed / pk.sessionsTotal) * 100));
                     const badgeClass = activo
-                        ? 'bg-sage-50 text-sage-700 border-sage-200'
-                        : 'bg-graphite-100 text-graphite-500 border-graphite-200';
+                        ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                        : 'bg-slate-100 text-slate-500 border-slate-200';
                     // Compatibilidad con paquetes antiguos que solo tenían el campo booleano "paid"
                     const hasSplitPayment = pk.firstPaymentStatus !== undefined;
                     const firstStatus  = hasSplitPayment ? pk.firstPaymentStatus  : (pk.paid ? 'pagado' : 'pendiente');
@@ -1475,12 +1475,12 @@ window.printClinicalHistory = function() {
                             <span class="font-bold">${attentionLabel[pk.attentionType] || pk.attentionType} · Paquete ${pk.sessionsTotal}</span>
                             <span class="flex items-center gap-2">
                                 <span class="font-semibold">${activo ? `${pk.sessionsUsed}/${pk.sessionsTotal} usadas` : 'Completado'}</span>
-                                <button type="button" title="Eliminar paquete" onclick="window.deletePatientPackage('${p.id}','${pk.id}')" class="text-graphite-400 hover:text-red-600 transition">🗑️</button>
+                                <button type="button" title="Eliminar paquete" onclick="window.deletePatientPackage('${p.id}','${pk.id}')" class="text-slate-400 hover:text-red-600 transition">🗑️</button>
                             </span>
                         </div>
-                        <div class="text-[10px] text-graphite-400">Creado: ${pk.purchaseDate || '—'} · ID: ${pk.id}</div>
+                        <div class="text-[10px] text-slate-400">Creado: ${pk.purchaseDate || '—'} · ID: ${pk.id}</div>
                         <div class="w-full bg-white/60 rounded-full h-1.5 overflow-hidden border border-white">
-                            <div class="h-full bg-sage-500" style="width:${pct}%"></div>
+                            <div class="h-full bg-indigo-500" style="width:${pct}%"></div>
                         </div>
                         <div class="flex justify-between text-[11px]">
                             <span>${activo ? `Restan ${restantes} sesión(es)` : 'Sin sesiones restantes'}</span>
@@ -1488,7 +1488,7 @@ window.printClinicalHistory = function() {
                         <div class="text-[11px]">${paymentLine}</div>
                     </div>`;
                 }).join('');
-            return `<div class="space-y-1.5"><p class="text-[11px] font-bold uppercase text-graphite-400">📦 Paquetes</p>${rows}</div>`;
+            return `<div class="space-y-1.5"><p class="text-[11px] font-bold uppercase text-slate-400">📦 Paquetes</p>${rows}</div>`;
         }
         window.renderPackagesSummary = renderPackagesSummary;
 
@@ -1505,10 +1505,10 @@ window.printClinicalHistory = function() {
             otro:        { label: 'Otro',                  icon: '❔' }
         };
         const LEAD_STATUS_LABELS = {
-            nuevo:         { label: 'Nuevo',         cls: 'bg-graphite-100 text-graphite-600' },
+            nuevo:         { label: 'Nuevo',         cls: 'bg-slate-100 text-slate-600' },
             contactado:    { label: 'Contactado',    cls: 'bg-blue-50 text-blue-600' },
             interesado:    { label: 'Interesado',    cls: 'bg-amber-50 text-amber-600' },
-            cita_agendada: { label: 'Cita agendada', cls: 'bg-sage-50 text-sage-600' },
+            cita_agendada: { label: 'Cita agendada', cls: 'bg-indigo-50 text-indigo-600' },
             atendido:      { label: 'Atendido',      cls: 'bg-emerald-50 text-emerald-600' },
             no_asistio:    { label: 'No asistió',    cls: 'bg-red-50 text-red-600' },
             cancelo:       { label: 'Canceló',       cls: 'bg-red-50 text-red-600' },
@@ -1524,29 +1524,29 @@ window.printClinicalHistory = function() {
             filtered.sort((a, b) => a.name.localeCompare(b.name));
 
             if (!filtered.length) {
-                grid.innerHTML = `<p class="text-graphite-400 text-sm col-span-2 text-center py-8">No hay registros de pacientes.</p>`;
+                grid.innerHTML = `<p class="text-slate-400 text-sm col-span-2 text-center py-8">No hay registros de pacientes.</p>`;
                 return;
             }
             grid.innerHTML = filtered.map(p => `
-                <div class="bg-white p-5 rounded-3xl border border-sage-100/70 card-soft flex flex-col justify-between space-y-3">
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between space-y-3">
                     <div class="space-y-2">
                         <div class="flex justify-between items-start">
-                            <h4 class="font-bold text-graphite-800 text-base">${p.name}</h4>
-                            <span class="text-xs bg-graphite-100 text-graphite-600 px-2.5 py-1 rounded-xl">📞 ${p.phone}</span>
+                            <h4 class="font-bold text-slate-800 text-base">${p.name}</h4>
+                            <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-xl">📞 ${p.phone}</span>
                         </div>
-                        <p class="text-xs text-graphite-500"><strong>Nacimiento:</strong> ${p.birth || 'No especificada'}</p>
+                        <p class="text-xs text-slate-500"><strong>Nacimiento:</strong> ${p.birth || 'No especificada'}</p>
                         <div class="flex flex-wrap gap-1.5">
-                            <span class="text-xs bg-sage-50 text-sage-600 px-2.5 py-1 rounded-lg font-medium">${(ORIGEN_LABELS[p.origen] || ORIGEN_LABELS.otro).icon} ${(ORIGEN_LABELS[p.origen] || ORIGEN_LABELS.otro).label}</span>
+                            <span class="text-xs bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-lg font-medium">${(ORIGEN_LABELS[p.origen] || ORIGEN_LABELS.otro).icon} ${(ORIGEN_LABELS[p.origen] || ORIGEN_LABELS.otro).label}</span>
                             ${p.currency === 'USD' ? '<span class="text-xs bg-amber-50 text-amber-700 px-2.5 py-1 rounded-lg font-medium border border-amber-200">🌎 Extranjero (USD)</span>' : ''}
                             <span class="text-xs px-2.5 py-1 rounded-lg font-medium ${(LEAD_STATUS_LABELS[p.leadStatus] || LEAD_STATUS_LABELS.nuevo).cls}">${(LEAD_STATUS_LABELS[p.leadStatus] || LEAD_STATUS_LABELS.nuevo).label}</span>
                         </div>
-                        <p class="text-xs text-graphite-600 bg-graphite-50 p-2.5 rounded-xl border border-graphite-100"><strong>Antecedentes:</strong> ${p.history || 'Sin observaciones históricas.'}</p>
+                        <p class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100"><strong>Antecedentes:</strong> ${p.history || 'Sin observaciones históricas.'}</p>
                         ${renderPackagesSummary(p)}
                     </div>
-                    <div class="flex justify-end gap-2 border-t pt-2 border-graphite-100 flex-wrap">
-                        <button onclick="openPatientHistory('${p.id}')" class="text-graphite-600 text-xs font-semibold px-3 py-1.5 bg-graphite-50 hover:bg-graphite-100 rounded-lg border border-graphite-200 transition">📋 Historial</button>
-                        <button onclick="openClinicalHistory('${p.id}')" class="text-sage-600 text-xs font-semibold px-3 py-1.5 bg-sage-50 hover:bg-sage-100 rounded-lg border border-sage-200">🩺 Historia Clínica</button>
-                        <button onclick="editPatient('${p.id}')" class="text-sage-600 text-xs font-semibold px-3 py-1.5 hover:underline">✏️ Editar</button>
+                    <div class="flex justify-end gap-2 border-t pt-2 border-slate-100 flex-wrap">
+                        <button onclick="openPatientHistory('${p.id}')" class="text-slate-600 text-xs font-semibold px-3 py-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 transition">📋 Historial</button>
+                        <button onclick="openClinicalHistory('${p.id}')" class="text-indigo-600 text-xs font-semibold px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200">🩺 Historia Clínica</button>
+                        <button onclick="editPatient('${p.id}')" class="text-indigo-600 text-xs font-semibold px-3 py-1.5 hover:underline">✏️ Editar</button>
                         <button onclick="deletePatient('${p.id}')" class="text-red-500 text-xs font-semibold px-3 py-1.5 hover:underline">🗑️ Eliminar</button>
                     </div>
                 </div>`).join('');
@@ -1591,8 +1591,8 @@ window.printClinicalHistory = function() {
                 const btn = document.getElementById('btn-fp-' + p);
                 if (!btn) return;
                 btn.className = p === period
-                    ? "px-3 py-1.5 bg-sage-600 text-white text-xs font-semibold rounded-lg shadow-sm transition"
-                    : "px-3 py-1.5 bg-graphite-100 hover:bg-graphite-200 text-graphite-600 text-xs font-semibold rounded-lg transition";
+                    ? "px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition"
+                    : "px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition";
             });
             const labels = { todo: 'Todo el tiempo', mes: 'Este mes', semana: 'Esta semana', dia: 'Hoy' };
             const lbl = document.getElementById('finance-period-label');
@@ -1656,68 +1656,12 @@ window.printClinicalHistory = function() {
 
             renderLeadsBySource(financeApps);
             renderWeeklyBarChart();
-
-            // ── Tarjetas adicionales exclusivas del Dashboard general ──
-            const dashPatientsEl = document.getElementById('dash-total-pacientes');
-            if (dashPatientsEl) dashPatientsEl.innerText = state.patients.length;
-
-            const monthStr    = todayStr.substring(0, 7);
-            const monthApps   = state.appointments.filter(a => a.date.startsWith(monthStr));
-            const monthRev    = monthApps.filter(a => a.status === 'completada' && isPenAppt(a)).reduce((s, a) => s + a.cost, 0);
-            const monthRevUsd = monthApps.filter(a => a.status === 'completada' && isUsdAppt(a)).reduce((s, a) => s + a.cost, 0);
-            const dashIngresosEl = document.getElementById('dash-ingresos-mes');
-            if (dashIngresosEl) {
-                dashIngresosEl.innerText = `S/ ${monthRev.toFixed(2)}` + (monthRevUsd > 0 ? ` (+ $ ${monthRevUsd.toFixed(2)})` : '');
-            }
-
-            const dashCancelEl = document.getElementById('dash-tasa-cancelacion');
-            if (dashCancelEl) {
-                const consideradasMes = monthApps.filter(a => a.status === 'completada' || a.status === 'cancelada');
-                const tasaCancel = consideradasMes.length
-                    ? (monthApps.filter(a => a.status === 'cancelada').length / consideradasMes.length) * 100
-                    : 0;
-                dashCancelEl.innerText = `${tasaCancel.toFixed(0)}%`;
-            }
-
-            renderDashboardTodayList();
         }
-
-        // ─── DASHBOARD GENERAL: RESUMEN DEL DÍA (mini-lista de citas de hoy) ───────
-        function renderDashboardTodayList() {
-            const container = document.getElementById('dashboard-today-list');
-            if (!container) return;
-            const todayApps = state.appointments
-                .filter(a => a.date === todayStr && a.status !== 'cancelada')
-                .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-
-            if (!todayApps.length) {
-                container.innerHTML = '<p class="text-sm text-graphite-400 text-center py-8">No hay citas programadas para hoy.</p>';
-                return;
-            }
-
-            const badge = (status) => status === 'completada'
-                ? '<span class="text-[10px] font-bold uppercase bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full whitespace-nowrap">Completada</span>'
-                : '<span class="text-[10px] font-bold uppercase bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full whitespace-nowrap">Pendiente</span>';
-
-            container.innerHTML = todayApps.slice(0, 8).map(a => `
-                <div class="flex items-center justify-between gap-3 py-2.5 border-b border-graphite-100 last:border-0">
-                    <div class="min-w-0">
-                        <p class="text-sm font-semibold text-graphite-800 truncate">${a.patientName}</p>
-                        <p class="text-xs text-graphite-400">⏰ ${(a.time || '').slice(0, 5)}</p>
-                    </div>
-                    ${badge(a.status)}
-                </div>`).join('');
-        }
-        window.renderDashboardTodayList = renderDashboardTodayList;
 
         // ─── GRÁFICO DE CITAS POR DÍA DE LA SEMANA (semana actual, Lun-Dom) ────────
-        // Se pinta en dos posibles ubicaciones: la sección Finanzas (id clásico) y,
-        // si existe, una copia dentro del Dashboard general (id con prefijo dash-).
         function renderWeeklyBarChart() {
-            const containerIds = ['weekly-chart-svg-wrap', 'dash-weekly-chart-svg-wrap'];
-            const labelIds     = ['weekly-chart-range-label', 'dash-weekly-chart-range-label'];
-            const anyContainer = containerIds.some(id => document.getElementById(id));
-            if (!anyContainer) return;
+            const container = document.getElementById('weekly-chart-svg-wrap');
+            if (!container) return;
 
             const [lunes] = getWeekRangeStr(todayStr);
             const mondayDate = new Date(lunes + 'T00:00:00');
@@ -1761,25 +1705,20 @@ window.printClinicalHistory = function() {
                     </g>`;
             }).join('');
 
-            const svgHtml = `
+            container.innerHTML = `
                 <svg viewBox="0 0 ${svgW} ${chartH + topPad + 26}" width="100%" height="${chartH + topPad + 26}" xmlns="http://www.w3.org/2000/svg">
                     ${bars}
                 </svg>`;
-            containerIds.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.innerHTML = svgHtml;
-            });
 
             const totalSemana = dayData.reduce((s, d) => s + d.total, 0);
             const completadasSemana = dayData.reduce((s, d) => s + d.completadas, 0);
             const canceladasSemana = dayData.reduce((s, d) => s + d.canceladas, 0);
-            const domingo = new Date(mondayDate); domingo.setDate(domingo.getDate() + 6);
-            const fmt = (d) => d.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
-            const rangeTxt = `Semana del ${fmt(mondayDate)} al ${fmt(domingo)} — ${totalSemana} citas (${completadasSemana} completadas, ${canceladasSemana} canceladas)`;
-            labelIds.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.innerText = rangeTxt;
-            });
+            const rangeLbl = document.getElementById('weekly-chart-range-label');
+            if (rangeLbl) {
+                const domingo = new Date(mondayDate); domingo.setDate(domingo.getDate() + 6);
+                const fmt = (d) => d.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
+                rangeLbl.innerText = `Semana del ${fmt(mondayDate)} al ${fmt(domingo)} — ${totalSemana} citas (${completadasSemana} completadas, ${canceladasSemana} canceladas)`;
+            }
         }
         window.renderWeeklyBarChart = renderWeeklyBarChart;
 
@@ -1818,7 +1757,7 @@ window.printClinicalHistory = function() {
                 .sort((a, b) => (b[1].ingresos + b[1].ingresosUsd) - (a[1].ingresos + a[1].ingresosUsd));
 
             if (!rows.length) {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-graphite-400 py-4">Aún no hay datos suficientes. Registra el "Origen del contacto" al crear tus pacientes.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-slate-400 py-4">Aún no hay datos suficientes. Registra el "Origen del contacto" al crear tus pacientes.</td></tr>`;
                 return;
             }
 
@@ -1827,8 +1766,8 @@ window.printClinicalHistory = function() {
                 const meta = ORIGEN_LABELS[key];
                 const ingresosLbl = `S/ ${v.ingresos.toFixed(2)}` + (v.ingresosUsd > 0 ? ` (+ $ ${v.ingresosUsd.toFixed(2)})` : '');
                 return `
-                    <tr class="border-b border-graphite-50 hover:bg-graphite-50">
-                        <td class="py-2 pr-2 font-semibold text-graphite-700">${meta.icon} ${meta.label}</td>
+                    <tr class="border-b border-slate-50 hover:bg-slate-50">
+                        <td class="py-2 pr-2 font-semibold text-slate-700">${meta.icon} ${meta.label}</td>
                         <td class="py-2 pr-2 text-center">${v.leads}</td>
                         <td class="py-2 pr-2 text-center">${v.citas}</td>
                         <td class="py-2 pr-2 text-center">${v.atendidos}</td>
@@ -1912,9 +1851,9 @@ window.printClinicalHistory = function() {
                             <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
                             <td class="py-2.5 px-2">${formatApptCostLabel(a)} (${a.paymentStatus.toUpperCase()})</td>
                             <td class="py-2.5 px-2 font-medium">${a.status.toUpperCase()}</td>
-                            <td class="py-2.5 px-2 text-graphite-600">${a.notes || 'Sin observaciones.'}</td>
+                            <td class="py-2.5 px-2 text-slate-600">${a.notes || 'Sin observaciones.'}</td>
                         </tr>`).join('')
-                    : `<tr><td colspan="7" class="py-4 text-center text-graphite-400">No hay consultas agendadas para este periodo.</td></tr>`;
+                    : `<tr><td colspan="7" class="py-4 text-center text-slate-400">No hay consultas agendadas para este periodo.</td></tr>`;
             } else {
                 dateHeader.classList.add('hidden');
                 tbody.innerHTML = reportApps.length
@@ -1925,9 +1864,9 @@ window.printClinicalHistory = function() {
                             <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
                             <td class="py-2.5 px-2">${formatApptCostLabel(a)} (${a.paymentStatus.toUpperCase()})</td>
                             <td class="py-2.5 px-2 font-medium">${a.status.toUpperCase()}</td>
-                            <td class="py-2.5 px-2 text-graphite-600">${a.notes || 'Sin observaciones.'}</td>
+                            <td class="py-2.5 px-2 text-slate-600">${a.notes || 'Sin observaciones.'}</td>
                         </tr>`).join('')
-                    : `<tr><td colspan="6" class="py-4 text-center text-graphite-400">No hay consultas agendadas para esta fecha.</td></tr>`;
+                    : `<tr><td colspan="6" class="py-4 text-center text-slate-400">No hay consultas agendadas para esta fecha.</td></tr>`;
             }
 
             // Asegurar que sólo se muestre la plantilla de citas
@@ -2024,7 +1963,7 @@ window.printClinicalHistory = function() {
                         <td class="py-2.5 px-2 font-semibold text-amber-700">${pendienteLbl}</td>
                     </tr>`;
                 }).join('')
-                : `<tr><td colspan="5" class="py-4 text-center text-graphite-400">No hay datos financieros para este periodo.</td></tr>`;
+                : `<tr><td colspan="5" class="py-4 text-center text-slate-400">No hay datos financieros para este periodo.</td></tr>`;
 
             // Asegurar que sólo se muestre la plantilla financiera
             document.getElementById('print-section').classList.add('hidden');
@@ -2064,17 +2003,17 @@ window.printClinicalHistory = function() {
             document.getElementById('hist-modal-subtitle').innerText = '📞 ' + p.phone + (p.birth ? '  •  🎂 ' + p.birth + ' (' + ageStr + ')' : '');
 
             document.getElementById('hist-patient-info').innerHTML = `
-                <div><span class="font-bold text-graphite-500 text-xs uppercase block mb-0.5">Nombre</span><span class="font-semibold">${p.name}</span></div>
-                <div><span class="font-bold text-graphite-500 text-xs uppercase block mb-0.5">Teléfono</span><span>${p.phone}</span></div>
-                <div><span class="font-bold text-graphite-500 text-xs uppercase block mb-0.5">Nacimiento</span><span>${p.birth || '—'}</span></div>
-                <div><span class="font-bold text-graphite-500 text-xs uppercase block mb-0.5">Edad</span><span>${ageStr}</span></div>
+                <div><span class="font-bold text-slate-500 text-xs uppercase block mb-0.5">Nombre</span><span class="font-semibold">${p.name}</span></div>
+                <div><span class="font-bold text-slate-500 text-xs uppercase block mb-0.5">Teléfono</span><span>${p.phone}</span></div>
+                <div><span class="font-bold text-slate-500 text-xs uppercase block mb-0.5">Nacimiento</span><span>${p.birth || '—'}</span></div>
+                <div><span class="font-bold text-slate-500 text-xs uppercase block mb-0.5">Edad</span><span>${ageStr}</span></div>
             `;
             document.getElementById('hist-patient-history').innerText = p.history || 'Sin antecedentes registrados.';
 
             const pkgsHtml = renderPackagesSummary(p);
             document.getElementById('hist-patient-packages').innerHTML = pkgsHtml
                 ? pkgsHtml
-                : '<p class="text-sm text-graphite-400 text-center py-3">Este paciente no tiene paquetes registrados.</p>';
+                : '<p class="text-sm text-slate-400 text-center py-3">Este paciente no tiene paquetes registrados.</p>';
 
             // Citas del paciente ordenadas por fecha desc
             const appts = state.appointments
@@ -2085,7 +2024,7 @@ window.printClinicalHistory = function() {
 
             if (!appts.length) {
                 document.getElementById('hist-appointments-list').innerHTML =
-                    '<p class="text-sm text-graphite-400 text-center py-4">No hay citas registradas para este paciente.</p>';
+                    '<p class="text-sm text-slate-400 text-center py-4">No hay citas registradas para este paciente.</p>';
             } else {
                 document.getElementById('hist-appointments-list').innerHTML = appts.map(a => {
                     const badge = a.status === 'completada'
@@ -2098,16 +2037,16 @@ window.printClinicalHistory = function() {
                         : 'text-amber-600 bg-amber-50 border-amber-200';
                     const modalityBadge = a.modality === 'virtual'
                         ? '<span class="text-xs font-semibold px-2 py-0.5 rounded-xl border bg-sky-50 text-sky-700 border-sky-200">💻 Virtual</span>'
-                        : '<span class="text-xs font-semibold px-2 py-0.5 rounded-xl border bg-graphite-100 text-graphite-600 border-graphite-200">🏢 Presencial</span>';
-                    return `<div class="bg-graphite-50 border border-graphite-200 rounded-xl p-3 space-y-1">
+                        : '<span class="text-xs font-semibold px-2 py-0.5 rounded-xl border bg-slate-100 text-slate-600 border-slate-200">🏢 Presencial</span>';
+                    return `<div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1">
                         <div class="flex flex-wrap gap-2 items-center">
-                            <span class="text-xs font-bold text-graphite-700">📅 ${a.date}</span>
-                            <span class="text-xs font-semibold text-graphite-600 bg-graphite-200 px-2 py-0.5 rounded-lg">⏰ ${a.time}</span>
+                            <span class="text-xs font-bold text-slate-700">📅 ${a.date}</span>
+                            <span class="text-xs font-semibold text-slate-600 bg-slate-200 px-2 py-0.5 rounded-lg">⏰ ${a.time}</span>
                             <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${a.status.toUpperCase()}</span>
                             ${modalityBadge}
                             <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${payBadge}">${a.paymentStatus === 'pagado' ? '💳 Pagado' : '⏳ Pendiente'} — ${formatApptCostLabel(a)}</span>
                         </div>
-                        ${a.notes ? `<p class="text-xs text-graphite-500 italic">"${a.notes}"</p>` : ''}
+                        ${a.notes ? `<p class="text-xs text-slate-500 italic">"${a.notes}"</p>` : ''}
                     </div>`;
                 }).join('');
             }
@@ -2170,9 +2109,9 @@ window.printClinicalHistory = function() {
                         <td class="py-1.5 px-2 font-medium">${a.status.toUpperCase()}</td>
                         <td class="py-1.5 px-2">${a.paymentStatus.toUpperCase()}</td>
                         <td class="py-1.5 px-2">${formatApptCostLabel(a)}</td>
-                        <td class="py-1.5 px-2 text-graphite-500">${a.notes || '—'}</td>
+                        <td class="py-1.5 px-2 text-slate-500">${a.notes || '—'}</td>
                     </tr>`).join('')
-                : `<tr><td colspan="7" class="py-3 text-center text-graphite-400">Sin citas registradas.</td></tr>`;
+                : `<tr><td colspan="7" class="py-3 text-center text-slate-400">Sin citas registradas.</td></tr>`;
 
             // Ocultar el modal de historial para la impresión y mostrar solo la ficha
             const histModal = document.getElementById('patient-history-modal');
@@ -2191,7 +2130,7 @@ window.printClinicalHistory = function() {
         };
 
         // ─── HORARIO SEMANAL (Modal "Revisar Horario") ─────────────────────────────
-        const HORARIO_SLOTS = ['10:00','11:00','12:00','16:00','17:00','18:00','19:00'];
+        const HORARIO_SLOTS = ['10:00','11:00','16:00','17:00','18:00','19:00'];
         const HORARIO_DAYS  = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 
         function getMondayOf(d) {
@@ -2254,7 +2193,7 @@ window.printClinicalHistory = function() {
             html += `<div></div>`;
             dayDates.forEach((d, i) => {
                 const isToday = horarioDateStr(d) === todayStr;
-                html += `<div class="text-center py-2.5 rounded-xl font-extrabold text-[11px] uppercase tracking-wide ${isToday ? 'bg-sage-600 text-white' : 'bg-clay-200 text-graphite-700'}">
+                html += `<div class="text-center py-2.5 rounded-xl font-extrabold text-[11px] uppercase tracking-wide ${isToday ? 'bg-indigo-600 text-white' : 'bg-orange-200 text-slate-700'}">
                             ${HORARIO_DAYS[i]}<br><span class="font-medium opacity-80 normal-case">${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}</span>
                          </div>`;
             });
@@ -2263,7 +2202,7 @@ window.printClinicalHistory = function() {
             HORARIO_SLOTS.forEach(slot => {
                 const [h, m] = slot.split(':').map(Number);
                 const endLabel = `${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-                html += `<div class="flex items-center justify-center text-center px-1.5 py-2.5 rounded-xl bg-clay-100 font-extrabold text-[11px] text-graphite-600">${slot} - ${endLabel}</div>`;
+                html += `<div class="flex items-center justify-center text-center px-1.5 py-2.5 rounded-xl bg-orange-100 font-extrabold text-[11px] text-slate-600">${slot} - ${endLabel}</div>`;
 
                 dayDates.forEach((d, dayIdx) => {
                     const dateStr = horarioDateStr(d);

@@ -1,48 +1,19 @@
-        const PAGE_TITLES = {
-            dashboard: { title: 'Panel de Control',          eyebrow: 'Vista General del Consultorio' },
-            citas:     { title: 'Gestión de Citas',          eyebrow: 'Agenda y Citas' },
-            pacientes: { title: 'Pacientes',                  eyebrow: 'Directorio Clínico' },
-            finanzas:  { title: 'Estadísticas y Finanzas',    eyebrow: 'Análisis del Consultorio' }
-        };
-        const SIDEBAR_TAB_INACTIVE = "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/90 hover:bg-white/10 font-medium text-sm transition-all tab-transition";
-        const SIDEBAR_TAB_ACTIVE   = "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white text-sage-700 font-semibold text-sm shadow-md transition-all tab-transition";
-
         function switchTab(target) {
-            ['dashboard','citas','pacientes','finanzas'].forEach(t => {
+            ['citas','pacientes','finanzas'].forEach(t => {
                 document.getElementById('sec-' + t).classList.add('hidden');
-                document.getElementById('tab-' + t).className = SIDEBAR_TAB_INACTIVE;
+                document.getElementById('tab-' + t).className =
+                    "py-3.5 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-sm flex items-center gap-2 tab-transition";
             });
             document.getElementById('sec-' + target).classList.remove('hidden');
-            document.getElementById('tab-' + target).className = SIDEBAR_TAB_ACTIVE;
-
-            const info = PAGE_TITLES[target];
-            if (info) {
-                const titleEl = document.getElementById('page-title');
-                const eyebrowEl = document.getElementById('page-title-eyebrow');
-                if (titleEl)   titleEl.innerText = info.title;
-                if (eyebrowEl) eyebrowEl.innerText = info.eyebrow;
-            }
-            if (window.innerWidth < 768) closeSidebar();
-        }
-
-        function openSidebar() {
-            document.getElementById('sidebar').classList.remove('-translate-x-full');
-            document.getElementById('sidebar-overlay').classList.remove('hidden');
-        }
-        function closeSidebar() {
-            document.getElementById('sidebar').classList.add('-translate-x-full');
-            document.getElementById('sidebar-overlay').classList.add('hidden');
-        }
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            if (sidebar.classList.contains('-translate-x-full')) { openSidebar(); } else { closeSidebar(); }
+            document.getElementById('tab-' + target).className =
+                "py-3.5 px-3 border-b-2 border-indigo-600 text-indigo-600 font-semibold text-sm flex items-center gap-2 tab-transition";
         }
 
         function setFilterStatus(status) {
             ['todas','pendiente','completada','cancelada'].forEach(st => {
                 document.getElementById('btn-f-' + st).className = st === status
-                    ? "px-3 py-1 bg-sage-600 text-white text-xs font-semibold rounded-lg shadow-sm transition"
-                    : "px-3 py-1 bg-graphite-100 hover:bg-graphite-200 text-graphite-600 text-xs font-semibold rounded-lg transition";
+                    ? "px-3 py-1 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition"
+                    : "px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition";
             });
             // Puente limpio hacia el scope del módulo
             document.body.dispatchEvent(new CustomEvent('filter-status-changed', { detail: status }));
@@ -66,11 +37,11 @@
             const mainBtn = document.getElementById('btn-fab-main');
             if (menu.classList.contains('hidden')) {
                 menu.classList.remove('hidden');
-                setTimeout(() => { menu.classList.remove('scale-95','opacity-0'); menu.classList.add('scale-100','opacity-100'); mainBtn.classList.add('rotate-45','bg-graphite-700'); }, 10);
+                setTimeout(() => { menu.classList.remove('scale-95','opacity-0'); menu.classList.add('scale-100','opacity-100'); mainBtn.classList.add('rotate-45','bg-slate-700'); }, 10);
             } else {
                 menu.classList.remove('scale-100','opacity-100');
                 menu.classList.add('scale-95','opacity-0');
-                mainBtn.classList.remove('rotate-45','bg-graphite-700');
+                mainBtn.classList.remove('rotate-45','bg-slate-700');
                 setTimeout(() => menu.classList.add('hidden'), 200);
             }
         }
@@ -117,16 +88,16 @@
 
         function setPrintCategory(category) {
             window._printCategory = category;
-            const activeCls   = "flex-1 px-3 py-2 bg-sage-600 text-white text-xs font-semibold rounded-lg transition";
-            const inactiveCls = "flex-1 px-3 py-2 bg-graphite-100 hover:bg-graphite-200 text-graphite-600 text-xs font-semibold rounded-lg transition";
+            const activeCls   = "flex-1 px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg transition";
+            const inactiveCls = "flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition";
             document.getElementById('btn-pc-citas').className    = category === 'citas'    ? activeCls : inactiveCls;
             document.getElementById('btn-pc-finanzas').className = category === 'finanzas' ? activeCls : inactiveCls;
         }
 
         function setPrintType(type) {
             window._printType = type;
-            const activeCls   = "flex-1 px-3 py-2 bg-sage-600 text-white text-xs font-semibold rounded-lg transition";
-            const inactiveCls = "flex-1 px-3 py-2 bg-graphite-100 hover:bg-graphite-200 text-graphite-600 text-xs font-semibold rounded-lg transition";
+            const activeCls   = "flex-1 px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg transition";
+            const inactiveCls = "flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition";
             document.getElementById('btn-pt-dia').className    = type === 'dia'    ? activeCls : inactiveCls;
             document.getElementById('btn-pt-semana').className = type === 'semana' ? activeCls : inactiveCls;
             document.getElementById('btn-pt-mes').className    = type === 'mes'    ? activeCls : inactiveCls;
@@ -197,11 +168,11 @@
             ['perfil','clave'].forEach(t => {
                 document.getElementById('psec-' + t).classList.add('hidden');
                 document.getElementById('ptab-' + t).className =
-                    'flex-1 py-2 text-xs font-semibold rounded-lg text-white/80 hover:bg-white/15 transition';
+                    'flex-1 py-2 text-xs font-semibold rounded-lg text-indigo-200 hover:bg-indigo-800/50 transition';
             });
             document.getElementById('psec-' + tab).classList.remove('hidden');
             document.getElementById('ptab-' + tab).className =
-                'flex-1 py-2 text-xs font-semibold rounded-lg bg-white text-sage-700 shadow transition';
+                'flex-1 py-2 text-xs font-semibold rounded-lg bg-white text-indigo-700 shadow transition';
         }
 
         function saveProfileData() {
