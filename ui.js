@@ -1,5 +1,6 @@
         const PAGE_TITLES = {
-            citas:     { title: 'Panel de Control',          eyebrow: 'Citas de Hoy' },
+            dashboard: { title: 'Panel de Control',          eyebrow: 'Vista General del Consultorio' },
+            citas:     { title: 'Gestión de Citas',          eyebrow: 'Agenda y Citas' },
             pacientes: { title: 'Pacientes',                  eyebrow: 'Directorio Clínico' },
             finanzas:  { title: 'Estadísticas y Finanzas',    eyebrow: 'Análisis del Consultorio' }
         };
@@ -7,7 +8,7 @@
         const SIDEBAR_TAB_ACTIVE   = "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white text-sage-700 font-semibold text-sm shadow-md transition-all tab-transition";
 
         function switchTab(target) {
-            ['citas','pacientes','finanzas'].forEach(t => {
+            ['dashboard','citas','pacientes','finanzas'].forEach(t => {
                 document.getElementById('sec-' + t).classList.add('hidden');
                 document.getElementById('tab-' + t).className = SIDEBAR_TAB_INACTIVE;
             });

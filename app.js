@@ -1656,12 +1656,68 @@ window.printClinicalHistory = function() {
 
             renderLeadsBySource(financeApps);
             renderWeeklyBarChart();
+
+            // ── Tarjetas adicionales exclusivas del Dashboard general ──
+            const dashPatientsEl = document.getElementById('dash-total-pacientes');
+            if (dashPatientsEl) dashPatientsEl.innerText = state.patients.length;
+
+            const monthStr    = todayStr.substring(0, 7);
+            const monthApps   = state.appointments.filter(a => a.date.startsWith(monthStr));
+            const monthRev    = monthApps.filter(a => a.status === 'completada' && isPenAppt(a)).reduce((s, a) => s + a.cost, 0);
+            const monthRevUsd = monthApps.filter(a => a.status === 'completada' && isUsdAppt(a)).reduce((s, a) => s + a.cost, 0);
+            const dashIngresosEl = document.getElementById('dash-ingresos-mes');
+            if (dashIngresosEl) {
+                dashIngresosEl.innerText = `S/ ${monthRev.toFixed(2)}` + (monthRevUsd > 0 ? ` (+ $ ${monthRevUsd.toFixed(2)})` : '');
+            }
+
+            const dashCancelEl = document.getElementById('dash-tasa-cancelacion');
+            if (dashCancelEl) {
+                const consideradasMes = monthApps.filter(a => a.status === 'completada' || a.status === 'cancelada');
+                const tasaCancel = consideradasMes.length
+                    ? (monthApps.filter(a => a.status === 'cancelada').length / consideradasMes.length) * 100
+                    : 0;
+                dashCancelEl.innerText = `${tasaCancel.toFixed(0)}%`;
+            }
+
+            renderDashboardTodayList();
         }
 
-        // ─── GRÁFICO DE CITAS POR DÍA DE LA SEMANA (semana actual, Lun-Dom) ────────
-        function renderWeeklyBarChart() {
-            const container = document.getElementById('weekly-chart-svg-wrap');
+        // ─── DASHBOARD GENERAL: RESUMEN DEL DÍA (mini-lista de citas de hoy) ───────
+        function renderDashboardTodayList() {
+            const container = document.getElementById('dashboard-today-list');
             if (!container) return;
+            const todayApps = state.appointments
+                .filter(a => a.date === todayStr && a.status !== 'cancelada')
+                .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+
+            if (!todayApps.length) {
+                container.innerHTML = '<p class="text-sm text-graphite-400 text-center py-8">No hay citas programadas para hoy.</p>';
+                return;
+            }
+
+            const badge = (status) => status === 'completada'
+                ? '<span class="text-[10px] font-bold uppercase bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full whitespace-nowrap">Completada</span>'
+                : '<span class="text-[10px] font-bold uppercase bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full whitespace-nowrap">Pendiente</span>';
+
+            container.innerHTML = todayApps.slice(0, 8).map(a => `
+                <div class="flex items-center justify-between gap-3 py-2.5 border-b border-graphite-100 last:border-0">
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-graphite-800 truncate">${a.patientName}</p>
+                        <p class="text-xs text-graphite-400">⏰ ${(a.time || '').slice(0, 5)}</p>
+                    </div>
+                    ${badge(a.status)}
+                </div>`).join('');
+        }
+        window.renderDashboardTodayList = renderDashboardTodayList;
+
+        // ─── GRÁFICO DE CITAS POR DÍA DE LA SEMANA (semana actual, Lun-Dom) ────────
+        // Se pinta en dos posibles ubicaciones: la sección Finanzas (id clásico) y,
+        // si existe, una copia dentro del Dashboard general (id con prefijo dash-).
+        function renderWeeklyBarChart() {
+            const containerIds = ['weekly-chart-svg-wrap', 'dash-weekly-chart-svg-wrap'];
+            const labelIds     = ['weekly-chart-range-label', 'dash-weekly-chart-range-label'];
+            const anyContainer = containerIds.some(id => document.getElementById(id));
+            if (!anyContainer) return;
 
             const [lunes] = getWeekRangeStr(todayStr);
             const mondayDate = new Date(lunes + 'T00:00:00');
@@ -1705,20 +1761,25 @@ window.printClinicalHistory = function() {
                     </g>`;
             }).join('');
 
-            container.innerHTML = `
+            const svgHtml = `
                 <svg viewBox="0 0 ${svgW} ${chartH + topPad + 26}" width="100%" height="${chartH + topPad + 26}" xmlns="http://www.w3.org/2000/svg">
                     ${bars}
                 </svg>`;
+            containerIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = svgHtml;
+            });
 
             const totalSemana = dayData.reduce((s, d) => s + d.total, 0);
             const completadasSemana = dayData.reduce((s, d) => s + d.completadas, 0);
             const canceladasSemana = dayData.reduce((s, d) => s + d.canceladas, 0);
-            const rangeLbl = document.getElementById('weekly-chart-range-label');
-            if (rangeLbl) {
-                const domingo = new Date(mondayDate); domingo.setDate(domingo.getDate() + 6);
-                const fmt = (d) => d.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
-                rangeLbl.innerText = `Semana del ${fmt(mondayDate)} al ${fmt(domingo)} — ${totalSemana} citas (${completadasSemana} completadas, ${canceladasSemana} canceladas)`;
-            }
+            const domingo = new Date(mondayDate); domingo.setDate(domingo.getDate() + 6);
+            const fmt = (d) => d.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
+            const rangeTxt = `Semana del ${fmt(mondayDate)} al ${fmt(domingo)} — ${totalSemana} citas (${completadasSemana} completadas, ${canceladasSemana} canceladas)`;
+            labelIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerText = rangeTxt;
+            });
         }
         window.renderWeeklyBarChart = renderWeeklyBarChart;
 

@@ -178,9 +178,13 @@
 
             <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
                 <p class="px-3 text-[11px] font-bold uppercase tracking-wider text-white/70 mb-2">Menú Principal</p>
-                <button id="tab-citas" onclick="switchTab('citas')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white text-sage-700 font-semibold text-sm shadow-md transition-all tab-transition">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <button id="tab-dashboard" onclick="switchTab('dashboard')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white text-sage-700 font-semibold text-sm shadow-md transition-all tab-transition">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"></path></svg>
                     <span>Dashboard</span>
+                </button>
+                <button id="tab-citas" onclick="switchTab('citas')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/90 hover:bg-white/10 font-medium text-sm transition-all tab-transition">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span>Citas</span>
                 </button>
                 <button id="tab-pacientes" onclick="switchTab('pacientes')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/90 hover:bg-white/10 font-medium text-sm transition-all tab-transition">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m5-3.13a4 4 0 100-8 4 4 0 000 8zm6 3.13a4 4 0 010 7.74M7 12.13a4 4 0 010-7.74"></path></svg>
@@ -235,8 +239,8 @@
             <!-- CONTENIDO PRINCIPAL -->
             <main class="flex-grow w-full mx-auto p-4 md:p-8 space-y-6 no-print max-w-7xl">
 
-            <!-- SECCIÓN: CITAS -->
-            <section id="sec-citas" class="space-y-4">
+            <!-- SECCIÓN: DASHBOARD (vista general) -->
+            <section id="sec-dashboard" class="space-y-6">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div class="bg-white p-5 rounded-3xl card-soft border border-sage-100/70 relative overflow-hidden">
                         <div class="flex items-center gap-3 mb-3">
@@ -253,45 +257,90 @@
                     </div>
                     <div class="bg-white p-5 rounded-3xl card-soft border border-sage-100/70 relative overflow-hidden">
                         <div class="flex items-center gap-3 mb-3">
-                            <span class="w-11 h-11 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span class="w-11 h-11 rounded-2xl bg-violet-100 text-violet-700 flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m5-3.13a4 4 0 100-8 4 4 0 000 8zm6 3.13a4 4 0 010 7.74M7 12.13a4 4 0 010-7.74"></path></svg>
                             </span>
-                            <span class="text-xs font-semibold text-graphite-400 uppercase tracking-wider leading-tight">Pendientes</span>
+                            <span class="text-xs font-semibold text-graphite-400 uppercase tracking-wider leading-tight">Pacientes Registrados</span>
                         </div>
                         <div class="flex items-end justify-between">
-                            <span id="stat-citas-pendientes" class="text-3xl font-extrabold text-graphite-800">0</span>
-                            <span class="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md font-medium">Por Atender</span>
+                            <span id="dash-total-pacientes" class="text-3xl font-extrabold text-graphite-800">0</span>
+                            <span class="text-xs text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded-md font-medium">Total</span>
                         </div>
-                        <div class="absolute bottom-0 left-0 right-0 h-1 bg-amber-400"></div>
-                    </div>
-                    <div class="bg-white p-5 rounded-3xl card-soft border border-sage-100/70 relative overflow-hidden">
-                        <div class="flex items-center gap-3 mb-3">
-                            <span class="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                            </span>
-                            <span class="text-xs font-semibold text-graphite-400 uppercase tracking-wider leading-tight">Completadas</span>
-                        </div>
-                        <div class="flex items-end justify-between">
-                            <span id="stat-citas-completas" class="text-3xl font-extrabold text-graphite-800">0</span>
-                            <span class="text-xs text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md font-medium">Asistidas</span>
-                        </div>
-                        <div class="absolute bottom-0 left-0 right-0 h-1 bg-emerald-400"></div>
+                        <div class="absolute bottom-0 left-0 right-0 h-1 bg-violet-400"></div>
                     </div>
                     <div class="bg-white p-5 rounded-3xl card-soft border border-sage-100/70 relative overflow-hidden">
                         <div class="flex items-center gap-3 mb-3">
                             <span class="w-11 h-11 rounded-2xl bg-clay-100 text-clay-700 flex items-center justify-center shrink-0">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V6m0 2v8m0 0v2m0-2c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             </span>
-                            <span class="text-xs font-semibold text-graphite-400 uppercase tracking-wider leading-tight">Recaudación</span>
+                            <span class="text-xs font-semibold text-graphite-400 uppercase tracking-wider leading-tight">Ingresos del Mes</span>
                         </div>
                         <div class="flex items-end justify-between">
-                            <span id="stat-citas-ingresos" class="text-2xl font-extrabold text-graphite-800">S/ 0.00</span>
-                            <span class="text-xs text-clay-600 bg-clay-50 px-1.5 py-0.5 rounded-md font-medium">Hoy</span>
+                            <span id="dash-ingresos-mes" class="text-2xl font-extrabold text-graphite-800">S/ 0.00</span>
+                            <span class="text-xs text-clay-600 bg-clay-50 px-1.5 py-0.5 rounded-md font-medium">Mes</span>
                         </div>
                         <div class="absolute bottom-0 left-0 right-0 h-1 bg-clay-400"></div>
                     </div>
+                    <div class="bg-white p-5 rounded-3xl card-soft border border-sage-100/70 relative overflow-hidden">
+                        <div class="flex items-center gap-3 mb-3">
+                            <span class="w-11 h-11 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </span>
+                            <span class="text-xs font-semibold text-graphite-400 uppercase tracking-wider leading-tight">Tasa de Cancelación</span>
+                        </div>
+                        <div class="flex items-end justify-between">
+                            <span id="dash-tasa-cancelacion" class="text-3xl font-extrabold text-graphite-800">0%</span>
+                            <span class="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md font-medium">Mes</span>
+                        </div>
+                        <div class="absolute bottom-0 left-0 right-0 h-1 bg-amber-400"></div>
+                    </div>
                 </div>
 
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-5 rounded-3xl card-soft border border-sage-100/70 space-y-1">
+                        <h3 class="text-sm font-bold text-graphite-700 uppercase tracking-wider">🗓️ Resumen del Día</h3>
+                        <p class="text-xs text-graphite-400 mb-2">Próximas citas de hoy</p>
+                        <div id="dashboard-today-list"></div>
+                        <button onclick="switchTab('citas')" class="w-full text-center text-xs font-semibold text-sage-600 hover:text-sage-800 pt-2">Ver todas las citas →</button>
+                    </div>
+                    <div class="md:col-span-2 bg-white p-5 rounded-3xl card-soft border border-sage-100/70 space-y-2">
+                        <h3 class="text-sm font-bold text-graphite-700 uppercase tracking-wider">📈 Tendencia de Citas (Semana)</h3>
+                        <p id="dash-weekly-chart-range-label" class="text-xs text-graphite-400">Cargando semana actual...</p>
+                        <div id="dash-weekly-chart-svg-wrap" class="pt-2"></div>
+                        <div class="flex items-center gap-4 text-xs text-graphite-500 pt-1">
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-sage-600 inline-block"></span> Completadas</span>
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-graphite-300 inline-block"></span> Total programadas</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <button onclick="switchTab('citas')" class="bg-white hover:bg-sage-50 p-4 rounded-2xl card-soft border border-sage-100/70 text-left transition flex items-center gap-3">
+                        <span class="w-10 h-10 rounded-xl bg-sage-100 text-sage-700 flex items-center justify-center text-lg shrink-0">🗓️</span>
+                        <span>
+                            <span class="block text-sm font-bold text-graphite-800">Gestionar Citas</span>
+                            <span class="block text-xs text-graphite-400">Agenda del día y del mes</span>
+                        </span>
+                    </button>
+                    <button onclick="switchTab('pacientes')" class="bg-white hover:bg-sage-50 p-4 rounded-2xl card-soft border border-sage-100/70 text-left transition flex items-center gap-3">
+                        <span class="w-10 h-10 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center text-lg shrink-0">👤</span>
+                        <span>
+                            <span class="block text-sm font-bold text-graphite-800">Directorio de Pacientes</span>
+                            <span class="block text-xs text-graphite-400">Fichas e historial clínico</span>
+                        </span>
+                    </button>
+                    <button onclick="switchTab('finanzas')" class="bg-white hover:bg-sage-50 p-4 rounded-2xl card-soft border border-sage-100/70 text-left transition flex items-center gap-3">
+                        <span class="w-10 h-10 rounded-xl bg-clay-100 text-clay-700 flex items-center justify-center text-lg shrink-0">💰</span>
+                        <span>
+                            <span class="block text-sm font-bold text-graphite-800">Estadísticas y Finanzas</span>
+                            <span class="block text-xs text-graphite-400">Ingresos, leads y reportes</span>
+                        </span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- SECCIÓN: CITAS -->
+            <section id="sec-citas" class="space-y-4 hidden">
                 <!-- Toggle Vista Día / Vista Mes -->
                 <div class="bg-white p-3 rounded-3xl card-soft border border-sage-100/70 flex items-center gap-2 flex-wrap">
                     <span class="text-xs font-bold text-graphite-400 uppercase mr-1">Vista:</span>
