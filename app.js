@@ -883,7 +883,7 @@ window.printClinicalHistory = function() {
                 packageTypeEl.value = String(size);
                 paymentSel.disabled = false;
                 infoBox.classList.remove('hidden');
-                infoBox.className = 'text-xs rounded-xl p-3 border space-y-1 bg-indigo-50 border-indigo-200 text-indigo-800';
+                infoBox.className = 'text-xs rounded-xl p-3 border space-y-1 bg-brand-50 border-brand-200 text-brand-800';
                 infoBox.innerHTML = `
                     <p class="font-bold">🆕 Se creará un nuevo paquete</p>
                     <p>${size} sesiones · ${sym} ${packagePrice.toFixed(2)} en total (${sym} ${(packagePrice/size).toFixed(2)} por sesión)</p>
@@ -1298,7 +1298,7 @@ window.printClinicalHistory = function() {
                     <div class="flex items-center gap-3 self-end sm:self-center">
                         <button onclick="enviarRecordatorioWhatsapp('${a.id}')" title="Enviar recordatorio por WhatsApp" class="bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-700 text-xs px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1">📲 WhatsApp</button>
                         <button onclick="quickToggleStatus('${a.id}','${a.status}')" class="bg-slate-50 border hover:bg-slate-100 text-slate-600 text-xs px-3 py-1.5 rounded-xl font-semibold">🔄 Estado</button>
-                        <button onclick="editAppointment('${a.id}')" class="text-indigo-600 hover:text-indigo-800 text-xs font-bold">✏️</button>
+                        <button onclick="editAppointment('${a.id}')" class="text-brand-600 hover:text-brand-800 text-xs font-bold">✏️</button>
                         <button onclick="deleteAppointment('${a.id}')" class="text-red-500 hover:text-red-700 text-xs font-bold">🗑️</button>
                     </div>
                 </div>`;
@@ -1340,7 +1340,7 @@ window.printClinicalHistory = function() {
             const monthView = document.getElementById('citas-month-view');
             const btnDia    = document.getElementById('btn-view-dia');
             const btnMes    = document.getElementById('btn-view-mes');
-            const activeCls   = "px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition";
+            const activeCls   = "px-3 py-1.5 bg-brand-600 text-white text-xs font-semibold rounded-lg shadow-sm transition";
             const inactiveCls = "px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition";
 
             if (view === 'dia') {
@@ -1423,7 +1423,7 @@ window.printClinicalHistory = function() {
                 return `<div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
                     <div class="flex justify-between items-center mb-2 cursor-pointer" onclick="jumpToDay('${dateStr}')">
                         <h4 class="font-bold text-slate-800 text-sm">📅 ${dayLabel}</h4>
-                        <span class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">${apps.length} cita${apps.length !== 1 ? 's' : ''} · Ver día ▶</span>
+                        <span class="text-xs font-semibold text-brand-600 bg-brand-50 px-2 py-1 rounded-lg">${apps.length} cita${apps.length !== 1 ? 's' : ''} · Ver día ▶</span>
                     </div>
                     <div>${rows}</div>
                 </div>`;
@@ -1458,7 +1458,7 @@ window.printClinicalHistory = function() {
                     const activo = restantes > 0;
                     const pct = Math.min(100, Math.round((pk.sessionsUsed / pk.sessionsTotal) * 100));
                     const badgeClass = activo
-                        ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                        ? 'bg-brand-50 text-brand-700 border-brand-200'
                         : 'bg-slate-100 text-slate-500 border-slate-200';
                     // Compatibilidad con paquetes antiguos que solo tenían el campo booleano "paid"
                     const hasSplitPayment = pk.firstPaymentStatus !== undefined;
@@ -1480,7 +1480,7 @@ window.printClinicalHistory = function() {
                         </div>
                         <div class="text-[10px] text-slate-400">Creado: ${pk.purchaseDate || '—'} · ID: ${pk.id}</div>
                         <div class="w-full bg-white/60 rounded-full h-1.5 overflow-hidden border border-white">
-                            <div class="h-full bg-indigo-500" style="width:${pct}%"></div>
+                            <div class="h-full bg-brand-500" style="width:${pct}%"></div>
                         </div>
                         <div class="flex justify-between text-[11px]">
                             <span>${activo ? `Restan ${restantes} sesión(es)` : 'Sin sesiones restantes'}</span>
@@ -1508,7 +1508,7 @@ window.printClinicalHistory = function() {
             nuevo:         { label: 'Nuevo',         cls: 'bg-slate-100 text-slate-600' },
             contactado:    { label: 'Contactado',    cls: 'bg-blue-50 text-blue-600' },
             interesado:    { label: 'Interesado',    cls: 'bg-amber-50 text-amber-600' },
-            cita_agendada: { label: 'Cita agendada', cls: 'bg-indigo-50 text-indigo-600' },
+            cita_agendada: { label: 'Cita agendada', cls: 'bg-brand-50 text-brand-600' },
             atendido:      { label: 'Atendido',      cls: 'bg-emerald-50 text-emerald-600' },
             no_asistio:    { label: 'No asistió',    cls: 'bg-red-50 text-red-600' },
             cancelo:       { label: 'Canceló',       cls: 'bg-red-50 text-red-600' },
@@ -1536,7 +1536,7 @@ window.printClinicalHistory = function() {
                         </div>
                         <p class="text-xs text-slate-500"><strong>Nacimiento:</strong> ${p.birth || 'No especificada'}</p>
                         <div class="flex flex-wrap gap-1.5">
-                            <span class="text-xs bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-lg font-medium">${(ORIGEN_LABELS[p.origen] || ORIGEN_LABELS.otro).icon} ${(ORIGEN_LABELS[p.origen] || ORIGEN_LABELS.otro).label}</span>
+                            <span class="text-xs bg-brand-50 text-brand-600 px-2.5 py-1 rounded-lg font-medium">${(ORIGEN_LABELS[p.origen] || ORIGEN_LABELS.otro).icon} ${(ORIGEN_LABELS[p.origen] || ORIGEN_LABELS.otro).label}</span>
                             ${p.currency === 'USD' ? '<span class="text-xs bg-amber-50 text-amber-700 px-2.5 py-1 rounded-lg font-medium border border-amber-200">🌎 Extranjero (USD)</span>' : ''}
                             <span class="text-xs px-2.5 py-1 rounded-lg font-medium ${(LEAD_STATUS_LABELS[p.leadStatus] || LEAD_STATUS_LABELS.nuevo).cls}">${(LEAD_STATUS_LABELS[p.leadStatus] || LEAD_STATUS_LABELS.nuevo).label}</span>
                         </div>
@@ -1545,8 +1545,8 @@ window.printClinicalHistory = function() {
                     </div>
                     <div class="flex justify-end gap-2 border-t pt-2 border-slate-100 flex-wrap">
                         <button onclick="openPatientHistory('${p.id}')" class="text-slate-600 text-xs font-semibold px-3 py-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 transition">📋 Historial</button>
-                        <button onclick="openClinicalHistory('${p.id}')" class="text-indigo-600 text-xs font-semibold px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200">🩺 Historia Clínica</button>
-                        <button onclick="editPatient('${p.id}')" class="text-indigo-600 text-xs font-semibold px-3 py-1.5 hover:underline">✏️ Editar</button>
+                        <button onclick="openClinicalHistory('${p.id}')" class="text-brand-600 text-xs font-semibold px-3 py-1.5 bg-brand-50 hover:bg-brand-100 rounded-lg border border-brand-200">🩺 Historia Clínica</button>
+                        <button onclick="editPatient('${p.id}')" class="text-brand-600 text-xs font-semibold px-3 py-1.5 hover:underline">✏️ Editar</button>
                         <button onclick="deletePatient('${p.id}')" class="text-red-500 text-xs font-semibold px-3 py-1.5 hover:underline">🗑️ Eliminar</button>
                     </div>
                 </div>`).join('');
@@ -1591,7 +1591,7 @@ window.printClinicalHistory = function() {
                 const btn = document.getElementById('btn-fp-' + p);
                 if (!btn) return;
                 btn.className = p === period
-                    ? "px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition"
+                    ? "px-3 py-1.5 bg-brand-600 text-white text-xs font-semibold rounded-lg shadow-sm transition"
                     : "px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition";
             });
             const labels = { todo: 'Todo el tiempo', mes: 'Este mes', semana: 'Esta semana', dia: 'Hoy' };
@@ -2193,7 +2193,7 @@ window.printClinicalHistory = function() {
             html += `<div></div>`;
             dayDates.forEach((d, i) => {
                 const isToday = horarioDateStr(d) === todayStr;
-                html += `<div class="text-center py-2.5 rounded-xl font-extrabold text-[11px] uppercase tracking-wide ${isToday ? 'bg-indigo-600 text-white' : 'bg-orange-200 text-slate-700'}">
+                html += `<div class="text-center py-2.5 rounded-xl font-extrabold text-[11px] uppercase tracking-wide ${isToday ? 'bg-brand-600 text-white' : 'bg-orange-200 text-slate-700'}">
                             ${HORARIO_DAYS[i]}<br><span class="font-medium opacity-80 normal-case">${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}</span>
                          </div>`;
             });

@@ -5,20 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agenda de Psicología Pro+</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50:  '#f2f6f2',
+                            100: '#e3ebe2',
+                            200: '#c7d8c4',
+                            300: '#a3c0a0',
+                            400: '#7fa47c',
+                            500: '#62885f',
+                            600: '#4f7350',
+                            700: '#405c40',
+                            800: '#354a36',
+                            900: '#293b2b',
+                            950: '#17211a'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="text-slate-800 min-h-screen flex flex-col pb-20 md:pb-6">
-
-<body class="text-slate-800 min-h-screen flex flex-col pb-20 md:pb-6">
+<body class="text-slate-800 min-h-screen bg-slate-50 pb-20 md:pb-0">
 
     <!-- ================= PANTALLA DE AUTENTICACIÓN ================= -->
     <div id="auth-screen" class="fixed inset-0 bg-slate-900 flex items-center justify-center z-50 p-4">
         <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 space-y-6 relative overflow-hidden">
-            <div class="absolute -top-10 -right-10 w-32 h-32 bg-indigo-50 rounded-full -z-10"></div>
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-brand-50 rounded-full -z-10"></div>
             <div class="text-center space-y-2">
-                <div class="inline-flex bg-indigo-100 p-3.5 rounded-2xl text-indigo-600 mb-2">
+                <div class="inline-flex bg-brand-100 p-3.5 rounded-2xl text-brand-600 mb-2">
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                     </svg>
@@ -32,30 +56,30 @@
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Correo Electrónico</label>
                     <input type="email" id="auth-email" placeholder="ejemplo@consultorio.com"
-                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
                 </div>
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Contraseña</label>
                     <input type="password" id="auth-password" placeholder="••••••••"
-                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
                 </div>
                 <div id="auth-error-msg" class="text-xs text-red-500 hidden font-semibold bg-red-50 p-3 rounded-lg border border-red-200"></div>
                 <button id="auth-submit-btn" onclick="handleLogin()"
-                    class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-md shadow-indigo-100 transition flex items-center justify-center gap-2">
+                    class="w-full bg-brand-600 hover:bg-brand-500 active:bg-brand-700 text-white font-bold py-3.5 rounded-xl shadow-md shadow-brand-100 transition flex items-center justify-center gap-2">
                     <span>Entrar al Consultorio</span><span>➔</span>
                 </button>
             </div>
 
             <div class="text-center space-y-3 pt-4 border-t border-slate-100">
                 <button type="button" onclick="recuperarContrasena()"
-                    class="text-xs text-slate-500 hover:text-indigo-600 transition underline">
+                    class="text-xs text-slate-500 hover:text-brand-600 transition underline">
                     ¿Olvidaste tu contraseña?
                 </button>
             </div>
             <div class="text-center pt-2 border-t border-slate-100">
                 <p class="text-xs text-slate-400">¿No tienes una licencia activa o perdiste tu acceso?</p>
                 <a href="https://wa.me/51912352126" target="_blank"
-                    class="inline-block text-xs font-medium text-indigo-600 hover:underline mt-1">Contactar a Soporte</a>
+                    class="inline-block text-xs font-medium text-brand-600 hover:underline mt-1">Contactar a Soporte</a>
             </div>
         </div>
     </div>
@@ -84,12 +108,12 @@
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Nueva Contraseña</label>
                     <input type="password" id="new-password-input" placeholder="Mínimo 8 caracteres"
-                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
                 </div>
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Confirmar Nueva Contraseña</label>
                     <input type="password" id="confirm-password-input" placeholder="Repite tu nueva contraseña"
-                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
                 </div>
                 <div id="change-pwd-error" class="text-xs text-red-500 hidden font-semibold bg-red-50 p-3 rounded-lg border border-red-200"></div>
                 <div id="change-pwd-success" class="text-xs text-emerald-600 hidden font-semibold bg-emerald-50 p-3 rounded-lg border border-emerald-200"></div>
@@ -102,92 +126,133 @@
     </div>
 
     <!-- ================= CONTENEDOR PRINCIPAL ================= -->
-    <div id="app-container" class="hidden flex-col flex-grow">
-        <!-- HEADER -->
-        <header class="bg-indigo-900 text-white shadow-md sticky top-0 z-40 no-print">
-            <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-3">
-                <div class="flex items-center gap-3">
-                    <div class="bg-indigo-600 p-2.5 rounded-xl shadow-inner">
-                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                        </svg>
+    <div id="app-container" class="hidden md:flex min-h-screen bg-slate-50">
+
+        <!-- Overlay para cerrar sidebar en móvil -->
+        <div id="sidebar-overlay" onclick="toggleSidebar()" class="hidden fixed inset-0 bg-slate-900/50 z-40 md:hidden no-print"></div>
+
+        <!-- SIDEBAR -->
+        <aside id="sidebar" class="fixed md:sticky top-0 left-0 h-screen w-72 bg-brand-900 text-white flex flex-col z-50 -translate-x-full md:translate-x-0 transition-transform duration-300 no-print shrink-0">
+            <div class="flex items-center gap-3 px-6 py-6 border-b border-brand-800">
+                <div class="bg-brand-600 p-2.5 rounded-xl shadow-inner shrink-0">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                </div>
+                <div class="min-w-0">
+                    <h1 class="font-extrabold text-base leading-tight tracking-tight truncate">Agenda Psicológica <span class="block text-brand-300 text-[11px] font-semibold">Pro+</span></h1>
+                    <p class="text-[11px] text-brand-300 flex items-center gap-1.5 mt-1">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse shrink-0" id="sync-indicator-dot"></span>
+                        <span id="sync-indicator-text" class="truncate max-w-[140px]">Conectado a la Nube</span>
+                    </p>
+                </div>
+                <button onclick="toggleSidebar()" class="md:hidden ml-auto text-brand-300 hover:text-white text-xl leading-none">✕</button>
+            </div>
+
+            <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+                <p class="px-3 text-[11px] font-bold uppercase tracking-wider text-brand-400 mb-2">Menú Principal</p>
+                <button id="tab-citas" onclick="switchTab('citas')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white text-brand-900 font-semibold text-sm transition-all tab-transition">
+                    <span class="text-lg">🗓️</span><span>Dashboard</span>
+                </button>
+                <button id="tab-pacientes" onclick="switchTab('pacientes')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-brand-100 hover:bg-brand-800 font-medium text-sm transition-all tab-transition">
+                    <span class="text-lg">👥</span><span>Pacientes</span>
+                </button>
+                <button id="tab-finanzas" onclick="switchTab('finanzas')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-brand-100 hover:bg-brand-800 font-medium text-sm transition-all tab-transition">
+                    <span class="text-lg">📊</span><span>Estadísticas y Finanzas</span>
+                </button>
+            </nav>
+
+            <div class="px-4 py-4 border-t border-brand-800 space-y-1.5">
+                <button onclick="openProfileModal()" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-brand-100 hover:bg-brand-800 font-medium text-sm transition-all">
+                    <span class="text-lg">⚙️</span><span>Configuración</span>
+                </button>
+                <button id="logout-btn" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-brand-100 hover:bg-red-900/40 font-medium text-sm transition-all">
+                    <span class="text-lg">🚪</span><span>Cerrar Sesión</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- COLUMNA PRINCIPAL -->
+        <div class="flex-1 flex flex-col min-w-0">
+            <!-- TOP BAR -->
+            <header class="bg-white border-b border-slate-200 sticky top-0 z-30 no-print">
+                <div class="px-4 md:px-8 py-4 flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <button onclick="toggleSidebar()" class="md:hidden text-slate-500 hover:text-brand-600 text-2xl leading-none shrink-0">☰</button>
+                        <div class="min-w-0">
+                            <p id="page-title-eyebrow" class="text-xs font-bold uppercase tracking-wider text-slate-400 truncate">Consultorio Psicológico</p>
+                            <h2 id="page-title" class="text-xl md:text-2xl font-black text-slate-800 truncate">Panel de Control</h2>
+                        </div>
                     </div>
-                    <div>
-                        <h1 class="font-extrabold text-xl tracking-tight">Agenda Psicológica <span class="text-indigo-400 text-xs font-semibold px-2 py-0.5 bg-indigo-950/50 rounded-full border border-indigo-800 ml-1">Pro+</span></h1>
-                        <p class="text-xs text-indigo-200 flex items-center gap-1.5 mt-0.5">
-                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block animate-pulse" id="sync-indicator-dot"></span>
-                            <span id="sync-indicator-text" class="truncate max-w-[180px]">Conectado a la Nube</span>
-                        </p>
+                    <div class="flex items-center gap-2 md:gap-3 shrink-0">
+                        <span id="current-date-lbl" class="hidden sm:inline-block text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg font-semibold"></span>
+                        <button onclick="openPrintModal()" class="bg-brand-50 hover:bg-brand-100 text-brand-700 font-medium w-9 h-9 md:w-auto md:px-3.5 md:py-1.5 rounded-lg shadow-sm transition flex items-center justify-center gap-2 text-sm" title="Imprimir Reporte">
+                            <span>🖨️</span><span class="hidden md:inline">Imprimir</span>
+                        </button>
+                        <button onclick="openProfileModal()" class="flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-full pl-1 pr-1 md:pr-3 py-1 transition" title="Mi Perfil">
+                            <span class="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs font-bold shrink-0">👤</span>
+                            <span id="header-user-name" class="hidden md:inline max-w-[120px] truncate text-xs font-semibold text-slate-700"></span>
+                        </button>
                     </div>
                 </div>
-                <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
-                    <span id="current-date-lbl" class="text-sm bg-indigo-950/40 px-3.5 py-1.5 rounded-lg border border-indigo-800 font-medium"></span>
-                    <button onclick="openPrintModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-3.5 py-1.5 rounded-lg shadow-sm transition flex items-center gap-2 text-sm" title="Imprimir Reporte">
-                        <span>🖨️</span><span class="hidden md:inline">Imprimir</span>
-                    </button>
-                    <button onclick="openProfileModal()" class="bg-indigo-700 hover:bg-indigo-600 border border-indigo-500/50 p-2 rounded-lg transition flex items-center gap-2 text-sm font-medium" title="Mi Perfil">
-                        <span>👤</span><span id="header-user-name" class="hidden md:inline max-w-[120px] truncate text-xs"></span>
-                    </button>
-                    <button id="logout-btn" class="bg-red-950/50 hover:bg-red-900 border border-red-800/60 p-2 rounded-lg transition" title="Cerrar Sesión">🚪</button>
-                </div>
-            </div>
-        </header>
+            </header>
 
-        <!-- NAVIGATION TABS -->
-        <nav class="bg-white border-b border-slate-200 sticky top-[72px] sm:top-[76px] z-30 no-print shadow-sm">
-            <div class="max-w-5xl mx-auto px-4 flex justify-around sm:justify-start sm:gap-6">
-                <button id="tab-citas" onclick="switchTab('citas')" class="py-3.5 px-3 border-b-2 border-indigo-600 text-indigo-600 font-semibold text-sm flex items-center gap-2 tab-transition">
-                    🗓️ <span>Citas de Hoy</span>
-                </button>
-                <button id="tab-pacientes" onclick="switchTab('pacientes')" class="py-3.5 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-sm flex items-center gap-2 tab-transition">
-                    👥 <span>Directorio de Pacientes</span>
-                </button>
-                <button id="tab-finanzas" onclick="switchTab('finanzas')" class="py-3.5 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-sm flex items-center gap-2 tab-transition">
-                    📊 <span>Estadísticas y Finanzas</span>
-                </button>
-            </div>
-        </nav>
-
-        <!-- CONTENIDO PRINCIPAL -->
-        <main class="flex-grow max-w-5xl w-full mx-auto p-4 md:p-6 space-y-6 no-print">
+            <!-- CONTENIDO PRINCIPAL -->
+            <main class="flex-grow w-full mx-auto p-4 md:p-8 space-y-6 no-print max-w-7xl">
 
             <!-- SECCIÓN: CITAS -->
             <section id="sec-citas" class="space-y-4">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
-                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Citas Hoy</span>
-                        <div class="flex items-baseline justify-between mt-1">
-                            <span id="stat-citas-hoy" class="text-3xl font-extrabold text-indigo-600">0</span>
-                            <span class="text-xs text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded-md font-medium">Hoy</span>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
+                        <div class="flex items-center gap-3 mb-3">
+                            <span class="w-11 h-11 rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center text-lg shrink-0">🗓️</span>
+                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider leading-tight">Citas Hoy</span>
                         </div>
-                    </div>
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
-                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pendientes</span>
-                        <div class="flex items-baseline justify-between mt-1">
-                            <span id="stat-citas-pendientes" class="text-3xl font-extrabold text-amber-500">0</span>
-                            <span class="text-xs text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-md font-medium">Por Atender</span>
+                        <div class="flex items-end justify-between">
+                            <span id="stat-citas-hoy" class="text-3xl font-extrabold text-slate-800">0</span>
+                            <span class="text-xs text-brand-600 bg-brand-50 px-1.5 py-0.5 rounded-md font-medium">Hoy</span>
                         </div>
+                        <div class="absolute bottom-0 left-0 right-0 h-1 bg-brand-400"></div>
                     </div>
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
-                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Completadas</span>
-                        <div class="flex items-baseline justify-between mt-1">
-                            <span id="stat-citas-completas" class="text-3xl font-extrabold text-emerald-500">0</span>
-                            <span class="text-xs text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md font-medium">Asistidas</span>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
+                        <div class="flex items-center gap-3 mb-3">
+                            <span class="w-11 h-11 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg shrink-0">⏳</span>
+                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider leading-tight">Pendientes</span>
                         </div>
+                        <div class="flex items-end justify-between">
+                            <span id="stat-citas-pendientes" class="text-3xl font-extrabold text-slate-800">0</span>
+                            <span class="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md font-medium">Por Atender</span>
+                        </div>
+                        <div class="absolute bottom-0 left-0 right-0 h-1 bg-amber-400"></div>
                     </div>
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
-                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Recaudación Estimada</span>
-                        <div class="flex items-baseline justify-between mt-1">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
+                        <div class="flex items-center gap-3 mb-3">
+                            <span class="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg shrink-0">✅</span>
+                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider leading-tight">Completadas</span>
+                        </div>
+                        <div class="flex items-end justify-between">
+                            <span id="stat-citas-completas" class="text-3xl font-extrabold text-slate-800">0</span>
+                            <span class="text-xs text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md font-medium">Asistidas</span>
+                        </div>
+                        <div class="absolute bottom-0 left-0 right-0 h-1 bg-emerald-400"></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
+                        <div class="flex items-center gap-3 mb-3">
+                            <span class="w-11 h-11 rounded-xl bg-orange-100 text-orange-700 flex items-center justify-center text-lg shrink-0">💰</span>
+                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider leading-tight">Recaudación</span>
+                        </div>
+                        <div class="flex items-end justify-between">
                             <span id="stat-citas-ingresos" class="text-2xl font-extrabold text-slate-800">S/ 0.00</span>
-                            <span class="text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md font-medium">Hoy</span>
+                            <span class="text-xs text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-md font-medium">Hoy</span>
                         </div>
+                        <div class="absolute bottom-0 left-0 right-0 h-1 bg-orange-400"></div>
                     </div>
                 </div>
 
                 <!-- Toggle Vista Día / Vista Mes -->
                 <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-2 flex-wrap">
                     <span class="text-xs font-bold text-slate-400 uppercase mr-1">Vista:</span>
-                    <button onclick="setCitasView('dia')" id="btn-view-dia" class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">📅 Día</button>
+                    <button onclick="setCitasView('dia')" id="btn-view-dia" class="px-3 py-1.5 bg-brand-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">📅 Día</button>
                     <button onclick="setCitasView('mes')" id="btn-view-mes" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">🗓️ Mes</button>
                     <button onclick="openHorarioModal()" id="btn-revisar-horario" class="ml-auto px-3 py-1.5 bg-orange-100 hover:bg-orange-200 text-orange-700 text-xs font-bold rounded-lg transition flex items-center gap-1.5">
                         🔍 Revisar Horario
@@ -201,7 +266,7 @@
                             <div class="relative flex-grow">
                                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none">🔍</span>
                                 <input type="text" id="appointment-search" oninput="renderAppointments()" placeholder="Buscar paciente por nombre o notas..."
-                                    class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
+                                    class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
                                 <div class="flex items-center bg-slate-50 border border-slate-200 rounded-xl p-1">
@@ -209,13 +274,13 @@
                                     <input type="date" id="date-filter" onchange="renderAppointments()" class="bg-transparent border-none text-sm font-semibold text-slate-700 focus:outline-none px-2 py-1">
                                     <button onclick="shiftDate(1)" class="px-2.5 py-1.5 text-slate-600 hover:bg-white rounded-lg transition-all text-xs font-semibold">Siguiente ▶</button>
                                 </div>
-                                <button onclick="goToToday()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3.5 py-2.5 rounded-xl text-xs transition">Hoy</button>
+                                <button onclick="goToToday()" class="bg-brand-50 hover:bg-brand-100 text-brand-700 font-semibold px-3.5 py-2.5 rounded-xl text-xs transition">Hoy</button>
                             </div>
                         </div>
 
                         <div class="flex items-center gap-2 border-t border-slate-100 pt-3 flex-wrap">
                             <span class="text-xs font-bold text-slate-400 uppercase mr-2">Filtrar Estado:</span>
-                            <button onclick="setFilterStatus('todas')" id="btn-f-todas" class="px-3 py-1 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">Todas</button>
+                            <button onclick="setFilterStatus('todas')" id="btn-f-todas" class="px-3 py-1 bg-brand-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">Todas</button>
                             <button onclick="setFilterStatus('pendiente')" id="btn-f-pendiente" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Pendientes</button>
                             <button onclick="setFilterStatus('completada')" id="btn-f-completada" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Completadas</button>
                             <button onclick="setFilterStatus('cancelada')" id="btn-f-cancelada" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Canceladas</button>
@@ -234,7 +299,7 @@
                             <button onclick="shiftMonth(1)" class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold transition">Mes Siguiente ▶</button>
                         </div>
                         <div class="flex items-center gap-3 text-xs font-semibold text-slate-500 flex-wrap justify-center">
-                            <span>Total: <span id="month-view-total" class="text-indigo-600 font-bold">0</span></span>
+                            <span>Total: <span id="month-view-total" class="text-brand-600 font-bold">0</span></span>
                             <span>Completadas: <span id="month-view-completed" class="text-emerald-600 font-bold">0</span></span>
                             <span>Recaudado: <span id="month-view-revenue" class="text-slate-800 font-bold">S/ 0.00</span></span>
                         </div>
@@ -251,7 +316,7 @@
                         <h2 class="text-lg font-bold text-slate-800">Directorio Clínico de Pacientes</h2>
                         <p class="text-xs text-slate-500">Registra pacientes, revisa datos de contacto e historial clínico.</p>
                     </div>
-                    <button onclick="openPatientModal()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                    <button onclick="openPatientModal()" class="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
                         ➕ Nuevo Paciente
                     </button>
                 </div>
@@ -259,7 +324,7 @@
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none">🔍</span>
                         <input type="text" id="patient-search-input" oninput="renderPatients()" placeholder="Buscar paciente por nombre o teléfono..."
-                            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
+                            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
                     </div>
                 </div>
                 <div id="patients-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
@@ -271,12 +336,12 @@
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-3">
                     <div class="flex items-center gap-2 flex-wrap">
                         <span class="text-xs font-bold text-slate-400 uppercase mr-1">Periodo:</span>
-                        <button onclick="setFinancePeriod('todo')" id="btn-fp-todo" class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">Todo el Tiempo</button>
+                        <button onclick="setFinancePeriod('todo')" id="btn-fp-todo" class="px-3 py-1.5 bg-brand-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">Todo el Tiempo</button>
                         <button onclick="setFinancePeriod('mes')" id="btn-fp-mes" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Este Mes</button>
                         <button onclick="setFinancePeriod('semana')" id="btn-fp-semana" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Esta Semana</button>
                         <button onclick="setFinancePeriod('dia')" id="btn-fp-dia" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Hoy</button>
                     </div>
-                    <button onclick="openPrintModal(window._profileState && window._profileState.financePeriod === 'mes' ? 'mes' : (window._profileState && window._profileState.financePeriod === 'semana' ? 'semana' : 'dia'), 'finanzas')" class="w-full sm:w-auto bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-4 py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+                    <button onclick="openPrintModal(window._profileState && window._profileState.financePeriod === 'mes' ? 'mes' : (window._profileState && window._profileState.financePeriod === 'semana' ? 'semana' : 'dia'), 'finanzas')" class="w-full sm:w-auto bg-brand-50 hover:bg-brand-100 text-brand-700 font-semibold px-4 py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
                         🖨️ Imprimir Reporte (Día, Semana o Mes)
                     </button>
                 </div>
@@ -287,9 +352,9 @@
                         <p id="finance-period-label" class="text-xs text-slate-400">Mostrando datos de: Todo el tiempo</p>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div class="bg-indigo-50 border border-indigo-100 p-5 rounded-2xl text-center">
-                            <span class="text-sm font-semibold text-indigo-500 block mb-1">Total de Pacientes Únicos</span>
-                            <span id="stats-total-patients" class="text-4xl font-extrabold text-indigo-900">0</span>
+                        <div class="bg-brand-50 border border-brand-100 p-5 rounded-2xl text-center">
+                            <span class="text-sm font-semibold text-brand-500 block mb-1">Total de Pacientes Únicos</span>
+                            <span id="stats-total-patients" class="text-4xl font-extrabold text-brand-900">0</span>
                         </div>
                         <div class="bg-emerald-50 border border-emerald-100 p-5 rounded-2xl text-center">
                             <span class="text-sm font-semibold text-emerald-500 block mb-1">Ingresos de Citas Completadas</span>
@@ -308,7 +373,7 @@
                         <p id="weekly-chart-range-label" class="text-xs text-slate-400">Cargando semana actual...</p>
                         <div id="weekly-chart-svg-wrap" class="pt-2"></div>
                         <div class="flex items-center gap-4 text-xs text-slate-500 pt-1">
-                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-indigo-600 inline-block"></span> Completadas</span>
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-brand-600 inline-block"></span> Completadas</span>
                             <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-slate-300 inline-block"></span> Total programadas</span>
                         </div>
                     </div>
@@ -352,39 +417,42 @@
                             </div>
                             <div class="flex justify-between items-center py-2">
                                 <span class="text-sm text-slate-500">Estimación de Ingresos Futuros:</span>
-                                <span id="finance-future-cobro" class="text-sm font-bold text-indigo-600">S/ 0.00</span>
+                                <span id="finance-future-cobro" class="text-sm font-bold text-brand-600">S/ 0.00</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
         </main>
+        </div>
+        <!-- /COLUMNA PRINCIPAL -->
 
         <!-- FLOATING ACTIONS -->
         <div class="fixed bottom-6 right-6 flex flex-col items-end gap-3 z-40 no-print">
-            <button onclick="toggleFloatingMenu()" id="btn-fab-main" class="w-14 h-14 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full text-2xl flex items-center justify-center shadow-lg transition-all duration-300 transform">➕</button>
+            <button onclick="toggleFloatingMenu()" id="btn-fab-main" class="w-14 h-14 bg-brand-600 hover:bg-brand-500 text-white rounded-full text-2xl flex items-center justify-center shadow-lg transition-all duration-300 transform">➕</button>
             <div id="fab-menu" class="hidden flex-col items-end gap-2.5 mb-2 transform scale-95 opacity-0 transition-all duration-200">
                 <button onclick="openPatientModal(); toggleFloatingMenu();" class="flex items-center gap-2 bg-white px-4 py-2 border border-slate-200 text-slate-700 rounded-xl shadow-md text-sm font-semibold hover:bg-slate-50 transition-all">👤 Nuevo Paciente</button>
-                <button onclick="openAppointmentModal(); toggleFloatingMenu();" class="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 text-sm rounded-xl shadow-md font-semibold hover:bg-indigo-500 transition-all">🗓️ Programar Cita</button>
+                <button onclick="openAppointmentModal(); toggleFloatingMenu();" class="flex items-center gap-2 bg-brand-600 text-white px-4 py-2 text-sm rounded-xl shadow-md font-semibold hover:bg-brand-500 transition-all">🗓️ Programar Cita</button>
             </div>
         </div>
     </div>
+    <!-- /app-container -->
 
     <!-- ================= MODALES ================= -->
     <!-- MODAL CITA -->
     <div id="appointment-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4 no-print">
         <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center">
+            <div class="bg-brand-900 text-white px-6 py-4 flex justify-between items-center">
                 <h3 id="app-modal-title" class="font-bold text-base flex items-center gap-2">🗓️ Programar Nueva Cita</h3>
-                <button onclick="closeAppointmentModal()" class="text-indigo-200 hover:text-white transition text-lg">&times;</button>
+                <button onclick="closeAppointmentModal()" class="text-brand-200 hover:text-white transition text-lg">&times;</button>
             </div>
             <form id="appointment-form" class="p-6 space-y-4 overflow-y-auto flex-grow">
                 <input type="hidden" id="app-id">
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Paciente Clínico *</label>
                     <div class="flex gap-2">
-                        <select id="app-patient-select" required onchange="autoSelectPatientPackage(); updateAppointmentPricing()" class="flex-grow p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
-                        <button type="button" onclick="switchToNewPatientFromAppoint()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 rounded-xl text-xs font-semibold border border-indigo-200 transition">➕ Nuevo</button>
+                        <select id="app-patient-select" required onchange="autoSelectPatientPackage(); updateAppointmentPricing()" class="flex-grow p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"></select>
+                        <button type="button" onclick="switchToNewPatientFromAppoint()" class="bg-brand-50 hover:bg-brand-100 text-brand-700 px-3 rounded-xl text-xs font-semibold border border-brand-200 transition">➕ Nuevo</button>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
@@ -400,12 +468,12 @@
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Tipo de Atención *</label>
                     <div class="grid grid-cols-2 gap-2">
-                        <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 has-[:checked]:text-indigo-700 has-[:checked]:font-semibold transition">
-                            <input type="radio" name="app-attention-type" id="app-attention-individual" value="individual" class="accent-indigo-600" checked onchange="autoSelectPatientPackage(); updateAppointmentPricing()">
+                        <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm cursor-pointer has-[:checked]:bg-brand-50 has-[:checked]:border-brand-400 has-[:checked]:text-brand-700 has-[:checked]:font-semibold transition">
+                            <input type="radio" name="app-attention-type" id="app-attention-individual" value="individual" class="accent-brand-600" checked onchange="autoSelectPatientPackage(); updateAppointmentPricing()">
                             👤 Individual
                         </label>
-                        <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 has-[:checked]:text-indigo-700 has-[:checked]:font-semibold transition">
-                            <input type="radio" name="app-attention-type" id="app-attention-pareja" value="pareja" class="accent-indigo-600" onchange="autoSelectPatientPackage(); updateAppointmentPricing()">
+                        <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm cursor-pointer has-[:checked]:bg-brand-50 has-[:checked]:border-brand-400 has-[:checked]:text-brand-700 has-[:checked]:font-semibold transition">
+                            <input type="radio" name="app-attention-type" id="app-attention-pareja" value="pareja" class="accent-brand-600" onchange="autoSelectPatientPackage(); updateAppointmentPricing()">
                             👥 Pareja
                         </label>
                     </div>
@@ -413,12 +481,12 @@
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Modalidad de la Cita *</label>
                     <div class="grid grid-cols-2 gap-2">
-                        <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 has-[:checked]:text-indigo-700 has-[:checked]:font-semibold transition">
-                            <input type="radio" name="app-modality" id="app-modality-presencial" value="presencial" class="accent-indigo-600" checked onchange="updateAppointmentPricing()">
+                        <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm cursor-pointer has-[:checked]:bg-brand-50 has-[:checked]:border-brand-400 has-[:checked]:text-brand-700 has-[:checked]:font-semibold transition">
+                            <input type="radio" name="app-modality" id="app-modality-presencial" value="presencial" class="accent-brand-600" checked onchange="updateAppointmentPricing()">
                             🏢 Presencial
                         </label>
-                        <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 has-[:checked]:text-indigo-700 has-[:checked]:font-semibold transition">
-                            <input type="radio" name="app-modality" id="app-modality-virtual" value="virtual" class="accent-indigo-600" onchange="updateAppointmentPricing()">
+                        <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm cursor-pointer has-[:checked]:bg-brand-50 has-[:checked]:border-brand-400 has-[:checked]:text-brand-700 has-[:checked]:font-semibold transition">
+                            <input type="radio" name="app-modality" id="app-modality-virtual" value="virtual" class="accent-brand-600" onchange="updateAppointmentPricing()">
                             💻 Virtual
                         </label>
                     </div>
@@ -435,7 +503,7 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label id="app-cost-label" class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Precio (S/) *</label>
-                        <input type="number" id="app-cost" min="0" step="0.50" value="50.00" required class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold">
+                        <input type="number" id="app-cost" min="0" step="0.50" value="50.00" required class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold">
                         <p class="text-[11px] text-slate-400 mt-1">Se autocompleta según la tarifa, pero puedes editarlo manualmente.</p>
                     </div>
                     <div>
@@ -464,7 +532,7 @@
                 </div>
                 <div class="flex gap-3 pt-2">
                     <button type="button" onclick="closeAppointmentModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-3 rounded-xl text-sm font-semibold transition">Cancelar</button>
-                    <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-sm font-semibold shadow-md transition">Guardar Cita</button>
+                    <button type="submit" class="flex-1 bg-brand-600 hover:bg-brand-500 text-white py-3 rounded-xl text-sm font-semibold shadow-md transition">Guardar Cita</button>
                 </div>
             </form>
         </div>
@@ -473,9 +541,9 @@
     <!-- MODAL PACIENTE -->
     <div id="patient-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4 no-print">
         <div class="bg-white w-full max-w-lg max-h-[90vh] rounded-2xl shadow-xl overflow-hidden flex flex-col">
-            <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center flex-shrink-0">
+            <div class="bg-brand-900 text-white px-6 py-4 flex justify-between items-center flex-shrink-0">
                 <h3 id="patient-modal-title" class="font-bold text-base">👤 Registrar Paciente Clínico</h3>
-                <button onclick="closePatientModal()" class="text-indigo-200 hover:text-white transition text-lg">&times;</button>
+                <button onclick="closePatientModal()" class="text-brand-200 hover:text-white transition text-lg">&times;</button>
             </div>
             <form id="patient-form" class="p-6 space-y-4 overflow-y-auto min-h-0">
                 <input type="hidden" id="patient-id">
@@ -507,8 +575,8 @@
                     <p class="text-[11px] text-slate-400">Define en qué moneda se registran automáticamente el costo de sus citas y sus paquetes.</p>
                 </div>
 
-                <div class="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3.5 space-y-3">
-                    <p class="text-xs font-bold uppercase text-indigo-500 flex items-center gap-1.5">📊 ¿Cómo nos conociste?</p>
+                <div class="bg-brand-50/60 border border-brand-100 rounded-xl p-3.5 space-y-3">
+                    <p class="text-xs font-bold uppercase text-brand-500 flex items-center gap-1.5">📊 ¿Cómo nos conociste?</p>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Origen del contacto</label>
@@ -557,7 +625,7 @@
                 </div>
                 <div class="flex gap-3 pt-2">
                     <button type="button" onclick="closePatientModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-3 rounded-xl text-sm font-semibold transition">Cancelar</button>
-                    <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-sm font-semibold shadow-md transition">Guardar Paciente</button>
+                    <button type="submit" class="flex-1 bg-brand-600 hover:bg-brand-500 text-white py-3 rounded-xl text-sm font-semibold shadow-md transition">Guardar Paciente</button>
                 </div>
             </form>
         </div>
@@ -568,22 +636,22 @@
     <div id="profile-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4 no-print">
         <div class="bg-white w-full max-w-md max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col">
             <!-- Header del modal con tabs -->
-            <div class="bg-indigo-900 text-white px-6 py-5 flex-shrink-0">
+            <div class="bg-brand-900 text-white px-6 py-5 flex-shrink-0">
                 <div class="flex justify-between items-start mb-4">
                     <div>
                         <h3 class="font-bold text-base">⚙️ Mi Cuenta</h3>
-                        <p id="profile-modal-email" class="text-xs text-indigo-300 mt-0.5"></p>
+                        <p id="profile-modal-email" class="text-xs text-brand-300 mt-0.5"></p>
                     </div>
-                    <button onclick="closeProfileModal()" class="text-indigo-200 hover:text-white transition text-xl leading-none">&times;</button>
+                    <button onclick="closeProfileModal()" class="text-brand-200 hover:text-white transition text-xl leading-none">&times;</button>
                 </div>
                 <!-- Tabs internos -->
-                <div class="flex gap-1 bg-indigo-950/40 p-1 rounded-xl">
+                <div class="flex gap-1 bg-brand-950/40 p-1 rounded-xl">
                     <button id="ptab-perfil" onclick="switchProfileTab('perfil')"
-                        class="flex-1 py-2 text-xs font-semibold rounded-lg bg-white text-indigo-700 shadow transition">
+                        class="flex-1 py-2 text-xs font-semibold rounded-lg bg-white text-brand-700 shadow transition">
                         👤 Editar Perfil
                     </button>
                     <button id="ptab-clave" onclick="switchProfileTab('clave')"
-                        class="flex-1 py-2 text-xs font-semibold rounded-lg text-indigo-200 hover:bg-indigo-800/50 transition">
+                        class="flex-1 py-2 text-xs font-semibold rounded-lg text-brand-200 hover:bg-brand-800/50 transition">
                         🔐 Cambiar Clave
                     </button>
                 </div>
@@ -594,23 +662,23 @@
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Nombre Completo</label>
                     <input type="text" id="profile-displayname" placeholder="Ej: Dra. Ana García"
-                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
                 </div>
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Especialidad / Cargo</label>
                     <input type="text" id="profile-specialty" placeholder="Ej: Psicóloga Clínica"
-                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
                 </div>
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Teléfono / Contacto</label>
                     <input type="tel" id="profile-phone" placeholder="Ej: 987654321"
-                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
                 </div>
                 <div id="profile-edit-error" class="text-xs text-red-500 hidden font-semibold bg-red-50 p-3 rounded-lg border border-red-200"></div>
                 <div id="profile-edit-success" class="text-xs text-emerald-600 hidden font-semibold bg-emerald-50 p-3 rounded-lg border border-emerald-200"></div>
                 <div class="flex gap-3 pt-1">
                     <button type="button" onclick="closeProfileModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-3 rounded-xl text-sm font-semibold transition">Cancelar</button>
-                    <button type="button" onclick="saveProfileData()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-sm font-semibold shadow-md transition">Guardar Cambios</button>
+                    <button type="button" onclick="saveProfileData()" class="flex-1 bg-brand-600 hover:bg-brand-500 text-white py-3 rounded-xl text-sm font-semibold shadow-md transition">Guardar Cambios</button>
                 </div>
             </div>
 
@@ -619,23 +687,23 @@
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Contraseña Actual</label>
                     <input type="password" id="profile-current-pwd" placeholder="••••••••"
-                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
                 </div>
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Nueva Contraseña</label>
                     <input type="password" id="profile-new-pwd" placeholder="Mínimo 8 caracteres"
-                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
                 </div>
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Confirmar Nueva Contraseña</label>
                     <input type="password" id="profile-confirm-pwd" placeholder="Repite tu nueva contraseña"
-                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
                 </div>
                 <div id="profile-pwd-error" class="text-xs text-red-500 hidden font-semibold bg-red-50 p-3 rounded-lg border border-red-200"></div>
                 <div id="profile-pwd-success" class="text-xs text-emerald-600 hidden font-semibold bg-emerald-50 p-3 rounded-lg border border-emerald-200"></div>
                 <div class="flex gap-3 pt-1">
                     <button type="button" onclick="closeProfileModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-3 rounded-xl text-sm font-semibold transition">Cancelar</button>
-                    <button type="button" onclick="saveNewPassword()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-sm font-semibold shadow-md transition">Actualizar Clave</button>
+                    <button type="button" onclick="saveNewPassword()" class="flex-1 bg-brand-600 hover:bg-brand-500 text-white py-3 rounded-xl text-sm font-semibold shadow-md transition">Actualizar Clave</button>
                 </div>
             </div>
         </div>
@@ -645,22 +713,22 @@
     <!-- MODAL IMPRESIÓN -->
     <div id="print-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4 no-print">
         <div class="bg-white w-full max-w-md max-h-[90vh] rounded-2xl shadow-xl overflow-hidden flex flex-col">
-            <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center flex-shrink-0">
+            <div class="bg-brand-900 text-white px-6 py-4 flex justify-between items-center flex-shrink-0">
                 <h3 class="font-bold text-base">🖨️ Generar Reporte de Consultas</h3>
-                <button onclick="closePrintModal()" class="text-indigo-200 hover:text-white transition text-lg">&times;</button>
+                <button onclick="closePrintModal()" class="text-brand-200 hover:text-white transition text-lg">&times;</button>
             </div>
             <div class="p-6 space-y-4 overflow-y-auto min-h-0">
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Contenido del Reporte</label>
                     <div class="flex gap-2">
-                        <button type="button" onclick="setPrintCategory('citas')" id="btn-pc-citas" class="flex-1 px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg transition">🗓️ Citas</button>
+                        <button type="button" onclick="setPrintCategory('citas')" id="btn-pc-citas" class="flex-1 px-3 py-2 bg-brand-600 text-white text-xs font-semibold rounded-lg transition">🗓️ Citas</button>
                         <button type="button" onclick="setPrintCategory('finanzas')" id="btn-pc-finanzas" class="flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">💰 Finanzas</button>
                     </div>
                 </div>
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Tipo de Reporte</label>
                     <div class="flex gap-2">
-                        <button type="button" onclick="setPrintType('dia')" id="btn-pt-dia" class="flex-1 px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg transition">📅 Por Día</button>
+                        <button type="button" onclick="setPrintType('dia')" id="btn-pt-dia" class="flex-1 px-3 py-2 bg-brand-600 text-white text-xs font-semibold rounded-lg transition">📅 Por Día</button>
                         <button type="button" onclick="setPrintType('semana')" id="btn-pt-semana" class="flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">📆 Por Semana</button>
                         <button type="button" onclick="setPrintType('mes')" id="btn-pt-mes" class="flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">🗓️ Por Mes</button>
                     </div>
@@ -679,7 +747,7 @@
                 </div>
                 <div class="flex gap-3 pt-2">
                     <button type="button" onclick="closePrintModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-3 rounded-xl text-sm font-semibold transition">Cancelar</button>
-                    <button type="button" onclick="executeReportPrint()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-sm font-semibold shadow-md transition">Imprimir PDF</button>
+                    <button type="button" onclick="executeReportPrint()" class="flex-1 bg-brand-600 hover:bg-brand-500 text-white py-3 rounded-xl text-sm font-semibold shadow-md transition">Imprimir PDF</button>
                 </div>
             </div>
         </div>
@@ -695,7 +763,7 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
 
     <!-- CABECERA -->
 
-    <div class="bg-indigo-700 text-white px-6 py-4 flex justify-between items-center">
+    <div class="bg-brand-700 text-white px-6 py-4 flex justify-between items-center">
 
         <div>
 
@@ -705,7 +773,7 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
 
             </h2>
 
-            <p class="text-sm text-indigo-100">
+            <p class="text-sm text-brand-100">
 
                 Registro clínico del paciente
 
@@ -717,7 +785,7 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
             <button
             type="button"
             onclick="printClinicalHistory()"
-            class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+            class="bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
                 🖨️ Imprimir
             </button>
 
@@ -1016,7 +1084,7 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
 
             onclick="saveClinicalHistory()"
 
-            class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white">
+            class="px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white">
 
                 💾 Guardar Historia Clínica
 
@@ -1128,14 +1196,14 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
     <!-- ================= MODAL: HISTORIAL DE PACIENTE ================= -->
     <div id="patient-history-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4 no-print">
         <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center">
+            <div class="bg-brand-900 text-white px-6 py-4 flex justify-between items-center">
                 <div>
                     <h3 id="hist-modal-title" class="font-bold text-base">📋 Historial Clínico</h3>
-                    <p id="hist-modal-subtitle" class="text-xs text-indigo-300 mt-0.5"></p>
+                    <p id="hist-modal-subtitle" class="text-xs text-brand-300 mt-0.5"></p>
                 </div>
                 <div class="flex items-center gap-3">
-                    <button onclick="printPatientCard()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">🖨️ Imprimir Ficha</button>
-                    <button onclick="closeHistoryModal()" class="text-indigo-200 hover:text-white transition text-xl leading-none">&times;</button>
+                    <button onclick="printPatientCard()" class="bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">🖨️ Imprimir Ficha</button>
+                    <button onclick="closeHistoryModal()" class="text-brand-200 hover:text-white transition text-xl leading-none">&times;</button>
                 </div>
             </div>
             <div class="overflow-y-auto flex-grow p-6 space-y-4">
@@ -1308,7 +1376,7 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
         <div class="flex justify-between items-start mb-5 gap-3 flex-wrap">
             <div class="flex items-center gap-2 flex-wrap ml-auto">
                 <button onclick="shiftHorarioWeek(-1)" class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold transition">◀ Semana Anterior</button>
-                <button onclick="goToCurrentHorarioWeek()" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-semibold transition">Esta Semana</button>
+                <button onclick="goToCurrentHorarioWeek()" class="px-3 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded-lg text-xs font-semibold transition">Esta Semana</button>
                 <button onclick="shiftHorarioWeek(1)" class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold transition">Semana Siguiente ▶</button>
                 <button onclick="downloadHorarioImage()" id="btn-descargar-horario" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5">
                     ⬇️ Descargar Imagen
