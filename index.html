@@ -655,7 +655,13 @@
                     <div class="flex gap-2">
                         <button type="button" onclick="setPrintCategory('citas')" id="btn-pc-citas" class="flex-1 px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg transition">🗓️ Citas</button>
                         <button type="button" onclick="setPrintCategory('finanzas')" id="btn-pc-finanzas" class="flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">💰 Finanzas</button>
+                        <button type="button" onclick="setPrintCategory('recepcion')" id="btn-pc-recepcion" class="flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">🛎️ Recepción</button>
                     </div>
+                    <p id="print-category-hint" class="text-[11px] text-slate-400 mt-1.5 hidden">Lista simple sin datos clínicos ni de pago, lista para entregar en recepción.</p>
+                </div>
+                <div id="print-presencial-wrap" class="hidden flex items-center gap-2 -mt-1">
+                    <input type="checkbox" id="print-only-presencial" checked class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                    <label for="print-only-presencial" class="text-xs text-slate-600">Incluir sólo consultas presenciales</label>
                 </div>
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Tipo de Reporte</label>
@@ -1121,6 +1127,44 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-p
                 <div class="border-t border-slate-400 w-full pt-2"></div>
                 <p class="text-xs font-semibold">Firma del Especialista de Turno</p>
                 <p class="text-[10px] text-slate-500" id="pf-foot-specialist"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PLANTILLA DE IMPRESIÓN: RECEPCIÓN (lista simple) ================= -->
+    <div id="print-section-reception" class="print-only hidden p-8 text-slate-950 space-y-6">
+        <div class="flex justify-between items-start border-b-2 border-slate-950 pb-5">
+            <div>
+                <h1 id="pr-title-main" class="text-3xl font-extrabold tracking-tight">LISTA DE CITAS DEL DÍA</h1>
+                <p class="text-sm font-medium uppercase mt-1">Especialista: <span id="pr-head-specialist" class="font-bold"></span></p>
+                <p class="text-xs text-slate-500">Lista de recepción. No contiene información clínica ni de pago.</p>
+            </div>
+            <div class="text-right">
+                <span id="pr-head-date-label" class="text-lg font-bold block">FECHA</span>
+                <span id="pr-head-date" class="text-sm font-semibold border px-3 py-1 bg-slate-100 rounded inline-block mt-1"></span>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 gap-4 border p-4 bg-slate-50 rounded w-max">
+            <div><span class="text-xs uppercase text-slate-500 font-bold block">Total de Citas</span><span id="pr-stat-total" class="text-xl font-bold">0</span></div>
+        </div>
+        <div class="space-y-3">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b bg-slate-100 text-xs font-extrabold uppercase">
+                        <th id="pr-date-column-header" class="py-2.5 px-2 w-[15%] hidden">Fecha</th>
+                        <th class="py-2.5 px-2 w-[15%]">Hora</th>
+                        <th class="py-2.5 px-2 w-[45%]">Paciente</th>
+                        <th class="py-2.5 px-2 w-[20%]">Modalidad</th>
+                        <th class="py-2.5 px-2 w-[20%]">Llegada</th>
+                    </tr>
+                </thead>
+                <tbody id="pr-table-rows" class="divide-y text-sm"></tbody>
+            </table>
+        </div>
+        <div class="pt-16 flex justify-center">
+            <div class="w-[50%] text-center">
+                <div class="border-t border-slate-400 w-full pt-2"></div>
+                <p class="text-xs font-semibold">Recepción</p>
             </div>
         </div>
     </div>

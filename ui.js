@@ -90,8 +90,13 @@
             window._printCategory = category;
             const activeCls   = "flex-1 px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg transition";
             const inactiveCls = "flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition";
-            document.getElementById('btn-pc-citas').className    = category === 'citas'    ? activeCls : inactiveCls;
-            document.getElementById('btn-pc-finanzas').className = category === 'finanzas' ? activeCls : inactiveCls;
+            document.getElementById('btn-pc-citas').className     = category === 'citas'     ? activeCls : inactiveCls;
+            document.getElementById('btn-pc-finanzas').className  = category === 'finanzas'  ? activeCls : inactiveCls;
+            document.getElementById('btn-pc-recepcion').className = category === 'recepcion' ? activeCls : inactiveCls;
+            const presencialWrap = document.getElementById('print-presencial-wrap');
+            const hint = document.getElementById('print-category-hint');
+            if (presencialWrap) presencialWrap.classList.toggle('hidden', category !== 'recepcion');
+            if (hint) hint.classList.toggle('hidden', category !== 'recepcion');
         }
 
         function setPrintType(type) {
@@ -122,6 +127,8 @@
                 const name = saved.displayName || user.email.split('@')[0];
                 document.getElementById('print-specialist-name').value = name;
             }
+            const presencialCheck = document.getElementById('print-only-presencial');
+            if (presencialCheck) presencialCheck.checked = true;
             setPrintCategory(presetCategory || 'citas');
             setPrintType(presetType || 'dia');
             const m = document.getElementById('print-modal');

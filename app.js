@@ -1844,6 +1844,8 @@ window.printClinicalHistory = function() {
             const printCategory = window._printCategory || 'citas';
             if (printCategory === 'finanzas') {
                 executeFinanceReportPrint(printType);
+            } else if (printCategory === 'recepcion') {
+                executeReceptionReportPrint(printType);
             } else {
                 executeAppointmentsReportPrint(printType);
             }
@@ -1933,6 +1935,7 @@ window.printClinicalHistory = function() {
             // Asegurar que sólo se muestre la plantilla de citas
             document.getElementById('print-section').classList.remove('hidden');
             document.getElementById('print-section-finance').classList.add('hidden');
+            document.getElementById('print-section-reception').classList.add('hidden');
 
             closePrintModal();
             setTimeout(() => window.print(), 300);
@@ -2029,6 +2032,93 @@ window.printClinicalHistory = function() {
             // Asegurar que sólo se muestre la plantilla financiera
             document.getElementById('print-section').classList.add('hidden');
             document.getElementById('print-section-finance').classList.remove('hidden');
+            document.getElementById('print-section-reception').classList.add('hidden');
+
+            closePrintModal();
+            setTimeout(() => window.print(), 300);
+        }
+
+        // ─── REPORTE PARA RECEPCIÓN (lista simple: hora, paciente, modalidad) ──────
+        function executeReceptionReportPrint(printType) {
+            const specialistName = document.getElementById('print-specialist-name').value.trim() || 'Especialista General';
+            const onlyPresencial = document.getElementById('print-only-presencial')
+                ? document.getElementById('print-only-presencial').checked
+                : false;
+            let reportApps = [];
+            let periodLabel = '';
+            const isMonth = printType === 'mes';
+            const isWeek  = printType === 'semana';
+
+            if (isMonth) {
+                const monthVal = document.getElementById('print-month-select').value; // YYYY-MM
+                reportApps = state.appointments
+                    .filter(a => a.date.startsWith(monthVal))
+                    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+                const [y, m] = monthVal.split('-').map(Number);
+                let lbl = new Date(y, m - 1, 1).toLocaleDateString('es-PE', { month: 'long', year: 'numeric' });
+                periodLabel = lbl.charAt(0).toUpperCase() + lbl.slice(1);
+                document.getElementById('pr-title-main').innerText = 'LISTA DE CITAS DEL MES';
+                document.getElementById('pr-head-date-label').innerText = 'PERIODO';
+            } else if (isWeek) {
+                const refDate = document.getElementById('print-date-select').value;
+                const [lunes, domingo] = getWeekRangeStr(refDate);
+                reportApps = state.appointments
+                    .filter(a => a.date >= lunes && a.date <= domingo)
+                    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+                const fmt = (s) => new Date(s + 'T00:00:00').toLocaleDateString('es-PE', { day: 'numeric', month: 'long' });
+                periodLabel = `Semana del ${fmt(lunes)} al ${fmt(domingo)}`;
+                document.getElementById('pr-title-main').innerText = 'LISTA DE CITAS DE LA SEMANA';
+                document.getElementById('pr-head-date-label').innerText = 'PERIODO';
+            } else {
+                const targetDate = document.getElementById('print-date-select').value;
+                reportApps = state.appointments.filter(a => a.date === targetDate).sort((a, b) => a.time.localeCompare(b.time));
+                periodLabel = new Date(targetDate + 'T00:00:00')
+                    .toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
+                document.getElementById('pr-title-main').innerText = 'LISTA DE CITAS DEL DÍA';
+                document.getElementById('pr-head-date-label').innerText = 'FECHA';
+            }
+
+            if (onlyPresencial) {
+                reportApps = reportApps.filter(a => a.modality !== 'virtual');
+            }
+
+            document.getElementById('pr-head-specialist').innerText = specialistName;
+            document.getElementById('pr-head-date').innerText = periodLabel;
+            document.getElementById('pr-stat-total').innerText = reportApps.length;
+
+            const dateHeader = document.getElementById('pr-date-column-header');
+            const tbody = document.getElementById('pr-table-rows');
+            const modalityLabel = (a) => a.modality === 'virtual' ? '💻 Virtual' : '🏢 Presencial';
+
+            if (isMonth || isWeek) {
+                dateHeader.classList.remove('hidden');
+                tbody.innerHTML = reportApps.length
+                    ? reportApps.map(a => `
+                        <tr class="border-b">
+                            <td class="py-2.5 px-2 font-bold whitespace-nowrap">${a.date}</td>
+                            <td class="py-2.5 px-2 font-bold">${a.time}</td>
+                            <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
+                            <td class="py-2.5 px-2">${modalityLabel(a)}</td>
+                            <td class="py-2.5 px-2"></td>
+                        </tr>`).join('')
+                    : `<tr><td colspan="5" class="py-4 text-center text-graphite-400">No hay consultas agendadas para este periodo.</td></tr>`;
+            } else {
+                dateHeader.classList.add('hidden');
+                tbody.innerHTML = reportApps.length
+                    ? reportApps.map(a => `
+                        <tr class="border-b">
+                            <td class="py-2.5 px-2 font-bold">${a.time}</td>
+                            <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
+                            <td class="py-2.5 px-2">${modalityLabel(a)}</td>
+                            <td class="py-2.5 px-2"></td>
+                        </tr>`).join('')
+                    : `<tr><td colspan="4" class="py-4 text-center text-graphite-400">No hay consultas agendadas para esta fecha.</td></tr>`;
+            }
+
+            // Asegurar que sólo se muestre la plantilla de recepción
+            document.getElementById('print-section').classList.add('hidden');
+            document.getElementById('print-section-finance').classList.add('hidden');
+            document.getElementById('print-section-reception').classList.remove('hidden');
 
             closePrintModal();
             setTimeout(() => window.print(), 300);
