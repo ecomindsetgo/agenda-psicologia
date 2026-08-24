@@ -2088,7 +2088,7 @@ window.printClinicalHistory = function() {
 
             const dateHeader = document.getElementById('pr-date-column-header');
             const tbody = document.getElementById('pr-table-rows');
-            const modalityLabel = (a) => a.modality === 'virtual' ? '💻 Virtual' : '🏢 Presencial';
+            const modalityLabel = (a) => a.modality === 'virtual' ? '💻 Virtual' : 'Presencial';
 
             if (isMonth || isWeek) {
                 dateHeader.classList.remove('hidden');
@@ -2099,9 +2099,8 @@ window.printClinicalHistory = function() {
                             <td class="py-2.5 px-2 font-bold">${a.time}</td>
                             <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
                             <td class="py-2.5 px-2">${modalityLabel(a)}</td>
-                            <td class="py-2.5 px-2"></td>
                         </tr>`).join('')
-                    : `<tr><td colspan="5" class="py-4 text-center text-graphite-400">No hay consultas agendadas para este periodo.</td></tr>`;
+                    : `<tr><td colspan="4" class="py-4 text-center text-graphite-400">No hay consultas agendadas para este periodo.</td></tr>`;
             } else {
                 dateHeader.classList.add('hidden');
                 tbody.innerHTML = reportApps.length
@@ -2110,9 +2109,8 @@ window.printClinicalHistory = function() {
                             <td class="py-2.5 px-2 font-bold">${a.time}</td>
                             <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
                             <td class="py-2.5 px-2">${modalityLabel(a)}</td>
-                            <td class="py-2.5 px-2"></td>
                         </tr>`).join('')
-                    : `<tr><td colspan="4" class="py-4 text-center text-graphite-400">No hay consultas agendadas para esta fecha.</td></tr>`;
+                    : `<tr><td colspan="3" class="py-4 text-center text-graphite-400">No hay consultas agendadas para esta fecha.</td></tr>`;
             }
 
             // Asegurar que sólo se muestre la plantilla de recepción
