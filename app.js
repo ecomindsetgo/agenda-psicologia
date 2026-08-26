@@ -2346,7 +2346,7 @@ window.printClinicalHistory = function() {
             html += `<div></div>`;
             dayDates.forEach((d, i) => {
                 const isToday = horarioDateStr(d) === todayStr;
-                html += `<div class="text-center py-2.5 rounded-xl font-extrabold text-[11px] uppercase tracking-wide ${isToday ? 'bg-sage-600 text-white' : 'bg-clay-200 text-graphite-700'}">
+                html += `<div class="text-center py-2.5 rounded-xl font-extrabold text-[11px] uppercase tracking-wide ${isToday ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}">
                             ${HORARIO_DAYS[i]}<br><span class="font-medium opacity-80 normal-case">${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}</span>
                          </div>`;
             });
@@ -2355,7 +2355,7 @@ window.printClinicalHistory = function() {
             HORARIO_SLOTS.forEach(slot => {
                 const [h, m] = slot.split(':').map(Number);
                 const endLabel = `${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-                html += `<div class="flex items-center justify-center text-center px-1.5 py-2.5 rounded-xl bg-clay-100 font-extrabold text-[11px] text-graphite-600">${slot} - ${endLabel}</div>`;
+                html += `<div class="flex items-center justify-center text-center px-1.5 py-2.5 rounded-xl bg-slate-100 font-extrabold text-[11px] text-slate-600">${slot} - ${endLabel}</div>`;
 
                 dayDates.forEach((d, dayIdx) => {
                     const dateStr = horarioDateStr(d);
