@@ -739,9 +739,13 @@ window.printClinicalHistory = function() {
         // Número de sesión en la que corresponde cobrar la segunda mitad del paquete.
         // Paquete de 6 sesiones -> se cobra en la sesión 3.
         // Paquete de 8 sesiones -> se cobra en la sesión 4.
+        // Nota: se usa Number(size) porque algunos paquetes antiguos guardaron
+        // sessionsTotal como texto ("8") en vez de número, y la comparación
+        // estricta (===) no los reconocía, dejando el valor viejo (4/5) sin corregir.
         function secondPaymentSessionNumber(size) {
-            if (size === 6) return 3;
-            if (size === 8) return 4;
+            const n = Number(size);
+            if (n === 6) return 3;
+            if (n === 8) return 4;
             return null;
         }
 
