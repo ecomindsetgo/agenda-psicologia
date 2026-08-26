@@ -1464,7 +1464,7 @@ window.printClinicalHistory = function() {
                     const hasSplitPayment = pk.firstPaymentStatus !== undefined;
                     const firstStatus  = hasSplitPayment ? pk.firstPaymentStatus  : (pk.paid ? 'pagado' : 'pendiente');
                     const secondStatus = hasSplitPayment ? pk.secondPaymentStatus : (pk.paid ? 'pagado' : 'pendiente');
-                    const secondSession = pk.secondPaymentSession || secondPaymentSessionNumber(pk.sessionsTotal);
+                    const secondSession = secondPaymentSessionNumber(pk.sessionsTotal) || pk.secondPaymentSession;
                     const half = pk.halfPrice || (pk.price / 2);
                     const pkgSym = currencySymbol(pk.currency);
                     const paymentLine = secondSession
