@@ -23,8 +23,7 @@ import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com
 import {
     getAuth, signInWithEmailAndPassword, signOut,
     onAuthStateChanged, sendPasswordResetEmail, updatePassword,
-    EmailAuthProvider, reauthenticateWithCredential,
-    verifyPasswordResetCode, confirmPasswordReset
+    EmailAuthProvider, reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import {
     getFirestore, doc, setDoc, deleteDoc,
@@ -59,142 +58,6 @@ try {
     console.error('[Error inicializando Firebase]', initError);
     mostrarErrorGlobal('⚠️ No se pudo conectar con el servidor de autenticación. Revisa la consola (F12) o contacta a soporte.');
 }
-
-        // ─── RECUPERACIÓN DE CONTRASEÑA (enlace enviado por Firebase) ─────────────
-        // sendPasswordResetEmail() envía un correo cuyo enlace apunta a authDomain
-        // con los parámetros ?mode=resetPassword&oobCode=XXXX. Hasta ahora la app
-        // no interceptaba ese enlace, así que Firebase mostraba su propia página
-        // genérica de error ("tu enlace ha vencido o ya fue usado"), incluso con
-        // un enlace recién generado. Detectamos ese caso al cargar la página y
-        // mostramos nuestra propia pantalla para completar el cambio.
-        window._passwordResetMode = false;
-        let _resetOobCode = null;
-
-        function getResetScreenEls() {
-            return {
-                screen:  document.getElementById('reset-password-screen'),
-                loading: document.getElementById('rp-loading'),
-                invalid: document.getElementById('rp-invalid'),
-                form:    document.getElementById('rp-form'),
-                success: document.getElementById('rp-success'),
-            };
-        }
-
-        function showResetStep(step) {
-            const els = getResetScreenEls();
-            if (!els.screen) return;
-            els.loading.classList.add('hidden');
-            els.invalid.classList.add('hidden');
-            els.form.classList.add('hidden');
-            els.success.classList.add('hidden');
-            if (step === 'loading') els.loading.classList.remove('hidden');
-            if (step === 'invalid') els.invalid.classList.remove('hidden');
-            if (step === 'form')    els.form.classList.remove('hidden');
-            if (step === 'success') els.success.classList.remove('hidden');
-        }
-
-        async function handlePasswordResetLink() {
-            const params   = new URLSearchParams(window.location.search);
-            const mode     = params.get('mode');
-            const oobCode  = params.get('oobCode');
-
-            if (mode !== 'resetPassword' || !oobCode) return; // flujo normal, no hacemos nada
-
-            window._passwordResetMode = true;
-            _resetOobCode = oobCode;
-
-            document.getElementById('auth-screen').classList.add('hidden');
-            const screen = document.getElementById('reset-password-screen');
-            screen.classList.remove('hidden');
-            screen.classList.add('flex');
-            showResetStep('loading');
-
-            if (!auth) {
-                document.getElementById('rp-invalid-msg').innerText =
-                    '⚠️ La app no se conectó correctamente al servidor. Recarga la página o contacta a soporte.';
-                showResetStep('invalid');
-                return;
-            }
-
-            try {
-                // Verifica que el oobCode siga siendo válido y devuelve el correo asociado
-                const email = document.getElementById('rp-email-label');
-                const verifiedEmail = await verifyPasswordResetCode(auth, oobCode);
-                if (email) email.innerText = verifiedEmail;
-                showResetStep('form');
-            } catch (error) {
-                const mensajes = {
-                    'auth/expired-action-code': '🔴 El enlace ha vencido. Solicita uno nuevo desde "¿Olvidaste tu contraseña?".',
-                    'auth/invalid-action-code': '🔴 El enlace ya fue utilizado o no es válido. Solicita uno nuevo.',
-                    'auth/user-disabled':       'Esta cuenta ha sido deshabilitada. Contacta a soporte.',
-                    'auth/user-not-found':      'No existe ninguna cuenta asociada a este enlace.',
-                };
-                document.getElementById('rp-invalid-msg').innerText =
-                    mensajes[error.code] || ('🔴 No se pudo validar el enlace: ' + error.message);
-                showResetStep('invalid');
-            }
-        }
-
-        window.handleConfirmPasswordReset = async function() {
-            const newPwd     = document.getElementById('rp-new-password').value;
-            const confirmPwd = document.getElementById('rp-confirm-password').value;
-            const errorDiv   = document.getElementById('rp-form-error');
-
-            errorDiv.classList.add('hidden');
-
-            if (!_resetOobCode) {
-                errorDiv.innerText = "El enlace ya no es válido. Vuelve a solicitar uno nuevo.";
-                errorDiv.classList.remove('hidden');
-                return;
-            }
-            if (newPwd.length < 8) {
-                errorDiv.innerText = "La contraseña debe tener al menos 8 caracteres.";
-                errorDiv.classList.remove('hidden');
-                return;
-            }
-            if (newPwd.startsWith('temp_')) {
-                errorDiv.innerText = "No puedes usar una contraseña que empiece con 'temp_'. Elige otra.";
-                errorDiv.classList.remove('hidden');
-                return;
-            }
-            if (newPwd !== confirmPwd) {
-                errorDiv.innerText = "Las contraseñas no coinciden. Vuelve a intentarlo.";
-                errorDiv.classList.remove('hidden');
-                return;
-            }
-
-            try {
-                await confirmPasswordReset(auth, _resetOobCode, newPwd);
-                _resetOobCode = null;
-                showResetStep('success');
-            } catch (error) {
-                const mensajes = {
-                    'auth/expired-action-code': '🔴 El enlace ha vencido. Solicita uno nuevo desde "¿Olvidaste tu contraseña?".',
-                    'auth/invalid-action-code': '🔴 El enlace ya fue utilizado o no es válido. Solicita uno nuevo.',
-                    'auth/weak-password':       'La contraseña es demasiado débil. Usa al menos 8 caracteres, con letras y números.',
-                };
-                errorDiv.innerText = mensajes[error.code] || ('🔴 Error: ' + error.message);
-                errorDiv.classList.remove('hidden');
-            }
-        };
-
-        // Vuelve a la pantalla de login normal, limpiando mode/oobCode de la URL
-        window.goToLoginFromReset = function() {
-            const url = new URL(window.location.href);
-            url.searchParams.delete('mode');
-            url.searchParams.delete('oobCode');
-            url.searchParams.delete('apiKey');
-            url.searchParams.delete('lang');
-            window.history.replaceState({}, document.title, url.pathname + (url.search || ''));
-
-            window._passwordResetMode = false;
-            const screen = document.getElementById('reset-password-screen');
-            screen.classList.add('hidden');
-            screen.classList.remove('flex');
-            document.getElementById('auth-screen').classList.remove('hidden');
-        };
-
-        handlePasswordResetLink();
 
         let activeListeners = [];
         // Exponer referencias globales para funciones del modal de perfil
@@ -372,9 +235,7 @@ try {
                 }
             } else {
                 state.currentUser = null;
-                if (!window._passwordResetMode) {
-                    document.getElementById('auth-screen').classList.remove('hidden');
-                }
+                document.getElementById('auth-screen').classList.remove('hidden');
                 document.getElementById('app-container').classList.add('hidden');
                 document.getElementById('app-container').classList.remove('flex');
                 activeListeners.forEach(u => u());
@@ -876,11 +737,11 @@ window.printClinicalHistory = function() {
         }
 
         // Número de sesión en la que corresponde cobrar la segunda mitad del paquete.
-        // Paquete de 6 sesiones -> se cobra en la sesión 4.
-        // Paquete de 8 sesiones -> se cobra en la sesión 5.
+        // Paquete de 6 sesiones -> se cobra en la sesión 3.
+        // Paquete de 8 sesiones -> se cobra en la sesión 4.
         function secondPaymentSessionNumber(size) {
-            if (size === 6) return 4;
-            if (size === 8) return 5;
+            if (size === 6) return 3;
+            if (size === 8) return 4;
             return null;
         }
 
