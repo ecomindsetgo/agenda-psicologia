@@ -344,322 +344,194 @@ id:doc.id,
             }
         };
 window.openClinicalHistory = function(patientId){
-
     const patient = state.patients.find(p => p.id === patientId);
+    if(!patient){ alert("No se encontró el paciente."); return; }
 
-    if(!patient){
-
-        alert("No se encontró el paciente.");
-
-        return;
-
-    }
-
-    const history = state.histories.find(h => h.id === patientId);
+    const history = state.histories.find(h => h.id === patientId) || {};
+    const appts = state.appointments.filter(a => a.patientId === patientId).sort((x,y) => (x.date + x.time).localeCompare(y.date + y.time));
+    const firstSession = history.firstSession || (appts[0] ? appts[0].date : '');
 
     document.getElementById("hc-patient-id").value = patientId;
-
     document.getElementById("hc-patient-name").value = patient.name || "";
-
     document.getElementById("hc-patient-dni").value = patient.dni || "";
+    document.getElementById("hc-patient-phone").value = patient.phone || "";
+    document.getElementById("hc-patient-birth").value = patient.birth || "";
+    document.getElementById("hc-patient-age").value = calculatePatientAge(patient.birth);
+    document.getElementById("hc-first-session").value = firstSession;
 
-    document.getElementById("hc-motivo").value = history?.motivo || "";
+    document.getElementById("hc-civil-status").value = history.civilStatus || history.estadoCivil || "";
+    document.getElementById("hc-occupation").value = history.occupation || history.ocupacion || "";
 
-    document.getElementById("hc-problema").value = history?.problema || "";
+    // Nuevos campos del formato solicitado, con compatibilidad hacia atrás.
+    document.getElementById("hc-motivo").value = history.motivo || "";
+    document.getElementById("hc-problema").value = history.problema || "";
+    document.getElementById("hc-impacto").value = history.impacto || history.impactoVida || "";
+    document.getElementById("hc-historia-personal").value = history.historiaPersonal || history.antecedentes || patient.history || "";
+    document.getElementById("hc-vinculos").value = history.vinculos || history.familiares || "";
+    document.getElementById("hc-tecnicas").value = history.tecnicas || "";
+    document.getElementById("hc-conducta").value = history.conducta || history.observaciones || "";
+    document.getElementById("hc-hipotesis").value = history.hipotesis || history.diagnostico || "";
+    document.getElementById("hc-recomendaciones").value = history.recomendaciones || "";
+    document.getElementById("hc-frecuencia").value = history.frecuencia || "";
+    document.getElementById("hc-enfoque").value = history.enfoque || "";
+    document.getElementById("hc-duracion").value = history.duracion || "";
+    document.getElementById("hc-tareas").value = history.tareas || "";
 
-    document.getElementById("hc-antecedentes").value = history?.antecedentes || "";
+    const container = document.getElementById("clinical-notes-container");
+    container.innerHTML = "";
+    state.notes.filter(n => n.patientId === patientId).sort((x,y)=>x.fecha.localeCompare(y.fecha)).forEach(n => newClinicalNote(n));
 
-    document.getElementById("hc-familiares").value = history?.familiares || "";
+    const modal = document.getElementById("clinical-history-modal");
+    modal.classList.remove("hidden"); modal.classList.add("flex");
+};
 
-    document.getElementById("hc-diagnostico").value = history?.diagnostico || "";
-
-    document.getElementById("hc-objetivos").value = history?.objetivos || "";
-
-    document.getElementById("hc-tratamiento").value = history?.tratamiento || "";
-
-    document.getElementById("hc-observaciones").value = history?.observaciones || "";
-
-    const container =
-document.getElementById("clinical-notes-container");
-
-container.innerHTML = "";
-
-state.notes
-.filter(n => n.patientId === patientId)
-.sort((a,b)=>a.fecha.localeCompare(b.fecha))
-.forEach(n => newClinicalNote(n));
-const modal = document.getElementById("clinical-history-modal");
-
-    modal.classList.remove("hidden");
-
-    modal.classList.add("flex");
-
+function calculatePatientAge(birth){
+    if(!birth) return "";
+    const born = new Date(birth + 'T00:00:00');
+    const today = new Date();
+    let age = today.getFullYear() - born.getFullYear();
+    const m = today.getMonth() - born.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < born.getDate())) age--;
+    return age >= 0 ? age + ' años' : '';
 }
+
 window.closeClinicalHistory=function(){
+    const modal=document.getElementById("clinical-history-modal");
+    modal.classList.remove("flex"); modal.classList.add("hidden");
+};
 
-const modal=document.getElementById("clinical-history-modal");
-
-modal.classList.remove("flex");
-
-modal.classList.add("hidden");
-
-}
 window.saveClinicalHistory = async function(){
-
-try{
-
-    const patientId = document.getElementById("hc-patient-id").value;
-
-    // 1. Guardar los datos de la historia clínica
-    await setDoc(
-        doc(
-            db,
-            'artifacts',
-            appId,
-            'users',
-            state.currentUser.uid,
-            'clinicalHistories',
-            patientId
-        ),
-        {
+    try{
+        const patientId = document.getElementById("hc-patient-id").value;
+        if(!patientId) return;
+        const data = {
+            firstSession: document.getElementById("hc-first-session").value,
+            civilStatus: document.getElementById("hc-civil-status").value,
+            occupation: document.getElementById("hc-occupation").value,
             motivo: document.getElementById("hc-motivo").value,
             problema: document.getElementById("hc-problema").value,
-            antecedentes: document.getElementById("hc-antecedentes").value,
-            familiares: document.getElementById("hc-familiares").value,
-            diagnostico: document.getElementById("hc-diagnostico").value,
-            objetivos: document.getElementById("hc-objetivos").value,
-            tratamiento: document.getElementById("hc-tratamiento").value,
-            observaciones: document.getElementById("hc-observaciones").value,
+            impacto: document.getElementById("hc-impacto").value,
+            historiaPersonal: document.getElementById("hc-historia-personal").value,
+            vinculos: document.getElementById("hc-vinculos").value,
+            tecnicas: document.getElementById("hc-tecnicas").value,
+            conducta: document.getElementById("hc-conducta").value,
+            hipotesis: document.getElementById("hc-hipotesis").value,
+            recomendaciones: document.getElementById("hc-recomendaciones").value,
+            frecuencia: document.getElementById("hc-frecuencia").value,
+            enfoque: document.getElementById("hc-enfoque").value,
+            duracion: document.getElementById("hc-duracion").value,
+            tareas: document.getElementById("hc-tareas").value,
+            // Mantener compatibilidad con la estructura anterior.
+            antecedentes: document.getElementById("hc-historia-personal").value,
+            familiares: document.getElementById("hc-vinculos").value,
+            diagnostico: document.getElementById("hc-hipotesis").value,
+            observaciones: document.getElementById("hc-conducta").value,
             updatedAt: new Date().toISOString()
-        },
-        { merge: true }
-    );
+        };
+        await setDoc(doc(db,'artifacts',appId,'users',state.currentUser.uid,'clinicalHistories',patientId), data, {merge:true});
 
-    // 2. Guardar cada nota clínica asociada a la sesión
-    const cards = document.querySelectorAll("#clinical-notes-container > div");
-    for (const card of cards) {
-        const id = card.dataset.id;
-        await setDoc(
-            doc(
-                db,
-                "artifacts",
-                appId,
-                "users",
-                state.currentUser.uid,
-                "clinicalNotes",
-                id
-            ),
-            {
+        const cards = document.querySelectorAll("#clinical-notes-container > div");
+        for (const card of cards) {
+            const id = card.dataset.id;
+            await setDoc(doc(db,"artifacts",appId,"users",state.currentUser.uid,"clinicalNotes",id), {
                 patientId,
                 fecha: card.querySelector(".note-date").value,
                 sesion: card.querySelector(".note-session").value,
                 evolucion: card.querySelector(".note-text").value,
                 updatedAt: new Date().toISOString()
-            },
-            { merge: true }
-        );
+            }, {merge:true});
+        }
+        closeClinicalHistory();
+        alert("✅ Historia Clínica guardada correctamente.");
+    } catch (error) {
+        console.error('[Error guardando historia clínica]', error);
+        alert("❌ No se pudo guardar la Historia Clínica. Revisa la consola para más detalles.");
     }
-
-    closeClinicalHistory();
-    alert("✅ Historia Clínica guardada correctamente.");
-
-} catch (error) {
-    console.error('[Error guardando historia clínica]', error);
-    alert("❌ No se pudo guardar la Historia Clínica. Revisa la consola (F12) para más detalles.");
-}
-
 };
 
 window.newClinicalNote = function(note = {}) {
-
     const id = note.id || ("note_" + Date.now());
-
     const div = document.createElement("div");
-
-    div.className = "border rounded-xl p-4 bg-graphite-50";
-
+    div.className = "border rounded-xl p-4 bg-white";
     div.dataset.id = id;
-
     div.innerHTML = `
         <div class="grid md:grid-cols-2 gap-3">
-
-            <div>
-                <label class="font-semibold">Fecha</label>
-                <input type="date"
-                       class="note-date w-full border rounded-lg p-2"
-                       value="${note.fecha || new Date().toISOString().split("T")[0]}">
-            </div>
-
-            <div>
-                <label class="font-semibold">Sesión</label>
-                <input type="text"
-                       class="note-session w-full border rounded-lg p-2"
-                       value="${note.sesion || ""}"
-                       placeholder="Sesión 1">
-            </div>
-
+            <div><label class="font-semibold">Fecha</label><input type="date" class="note-date w-full border rounded-lg p-2" value="${note.fecha || new Date().toISOString().split("T")[0]}"></div>
+            <div><label class="font-semibold">Sesión</label><input type="text" class="note-session w-full border rounded-lg p-2" value="${note.sesion || ""}" placeholder="Sesión 1"></div>
         </div>
-
-        <div class="mt-3">
-
-            <label class="font-semibold">
-
-                Evolución Clínica
-
-            </label>
-
-            <textarea
-                class="note-text w-full border rounded-xl p-3 mt-2"
-                rows="5">${note.evolucion || ""}</textarea>
-
-        </div>
-
-        <div class="text-right mt-3">
-
-            <button
-                type="button"
-                onclick="deleteClinicalNoteCard('${id}', this)"
-                class="bg-red-500 text-white px-3 py-2 rounded-lg">
-
-                Eliminar
-
-            </button>
-
-        </div>
-    `;
-
-    document.getElementById("clinical-notes-container")
-            .appendChild(div);
-
-}
-
-window.deleteClinicalNoteCard = async function(noteId, btnEl) {
-
-    if (!confirm("¿Eliminar esta evolución? Esta acción no se puede deshacer.")) {
-        return;
-    }
-
-    try {
-        if (state.currentUser) {
-            // Se borra el documento real en Firestore para que no vuelva a aparecer al guardar.
-            await deleteDoc(
-                doc(
-                    db,
-                    'artifacts',
-                    appId,
-                    'users',
-                    state.currentUser.uid,
-                    'clinicalNotes',
-                    noteId
-                )
-            );
-        }
-        // También se quita cualquier referencia local en memoria, por si el listener
-        // de Firestore tarda en refrescar el arreglo state.notes.
-        if (Array.isArray(state.notes)) {
-            const idx = state.notes.findIndex(n => n.id === noteId);
-            if (idx !== -1) state.notes.splice(idx, 1);
-        }
-    } catch (error) {
-        console.error('[Error eliminando evolución]', error);
-        alert("❌ No se pudo eliminar la evolución. Revisa la consola (F12) para más detalles.");
-        return;
-    }
-
-    // Recién ahora se quita la tarjeta visualmente.
-    btnEl.closest('.border').remove();
+        <div class="mt-3"><label class="font-semibold">Evolución Clínica</label><textarea class="note-text w-full border rounded-xl p-3 mt-2" rows="5">${note.evolucion || ""}</textarea></div>
+        <div class="text-right mt-3"><button type="button" onclick="deleteClinicalNoteCard('${id}', this)" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg">Eliminar</button></div>`;
+    document.getElementById("clinical-notes-container").appendChild(div);
 };
 
-window.printClinicalHistory = function() {
+window.deleteClinicalNoteCard = async function(noteId, btnEl) {
+    if (!confirm("¿Eliminar esta evolución? Esta acción no se puede deshacer.")) return;
+    try {
+        if (state.currentUser) await deleteDoc(doc(db,'artifacts',appId,'users',state.currentUser.uid,'clinicalNotes',noteId));
+        if (Array.isArray(state.notes)) { const idx=state.notes.findIndex(n=>n.id===noteId); if(idx!==-1) state.notes.splice(idx,1); }
+    } catch(error){ console.error('[Error eliminando evolución]',error); alert("❌ No se pudo eliminar la evolución."); return; }
+    btnEl.closest('[data-id]').remove();
+};
 
+function hideAllPrintSections(){
+    ['print-section','print-section-finance','print-section-reception','print-patient-card','print-clinical-history'].forEach(id=>{
+        const el=document.getElementById(id); if(el) el.classList.add('hidden');
+    });
+}
+
+function setPrintText(id, value){
+    const el=document.getElementById(id); if(el) el.innerText=value || '—';
+}
+
+window.printClinicalHistory = function() {
     const patientId = document.getElementById("hc-patient-id").value;
     const patient = state.patients.find(p => p.id === patientId);
+    if (!patient) { alert("No se encontró el paciente."); return; }
 
-    if (!patient) {
-        alert("No se encontró el paciente.");
-        return;
-    }
-
-    // Especialista desde el perfil guardado
+    const history = state.histories.find(h=>h.id===patientId) || {};
     const user = window._profileState && window._profileState.currentUser;
-    let specialistName = 'Especialista';
-    if (user) {
-        const saved = JSON.parse(localStorage.getItem('userProfile_' + user.uid) || '{}');
-        specialistName = saved.displayName || user.email.split('@')[0];
-    }
+    let specialistName='Especialista';
+    if(user){ const saved=JSON.parse(localStorage.getItem('userProfile_'+user.uid)||'{}'); specialistName=saved.displayName || user.email.split('@')[0]; }
 
-    document.getElementById('pch-specialist').innerText = specialistName;
-    document.getElementById('pch-specialist-foot').innerText = specialistName;
-    document.getElementById('pch-date').innerText = new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
+    setPrintText('pch-specialist-foot', specialistName);
+    setPrintText('pch-specialist-foot-2', specialistName);
+    setPrintText('pch-name', patient.name);
+    setPrintText('pch-dni', patient.dni);
+    setPrintText('pch-phone', patient.phone);
+    setPrintText('pch-birth', patient.birth || '—');
+    setPrintText('pch-age', calculatePatientAge(patient.birth) || '—');
+    setPrintText('pch-civil', document.getElementById('hc-civil-status').value || history.civilStatus || '—');
+    setPrintText('pch-occupation', document.getElementById('hc-occupation').value || history.occupation || '—');
+    setPrintText('pch-first-session', document.getElementById('hc-first-session').value || history.firstSession || '—');
+    setPrintText('pch-motivo', document.getElementById('hc-motivo').value);
+    setPrintText('pch-problema', document.getElementById('hc-problema').value);
+    setPrintText('pch-impacto', document.getElementById('hc-impacto').value);
+    const hp=document.getElementById('hc-historia-personal').value; setPrintText('pch-historia-personal', hp); setPrintText('pch-historia-personal-2', hp);
+    setPrintText('pch-vinculos', document.getElementById('hc-vinculos').value);
+    setPrintText('pch-tecnicas', document.getElementById('hc-tecnicas').value);
+    setPrintText('pch-conducta', document.getElementById('hc-conducta').value);
+    setPrintText('pch-hipotesis', document.getElementById('hc-hipotesis').value);
+    setPrintText('pch-recomendaciones', document.getElementById('hc-recomendaciones').value);
+    setPrintText('pch-frecuencia', document.getElementById('hc-frecuencia').value);
+    setPrintText('pch-enfoque', document.getElementById('hc-enfoque').value);
+    setPrintText('pch-duracion', document.getElementById('hc-duracion').value);
+    setPrintText('pch-tareas', document.getElementById('hc-tareas').value);
 
-    document.getElementById('pch-name').innerText = patient.name || '—';
-    document.getElementById('pch-dni').innerText  = patient.dni  || '—';
+    const cards=Array.from(document.querySelectorAll('#clinical-notes-container > div'));
+    const notesData=cards.map(card=>({fecha:card.querySelector('.note-date').value||'—',sesion:card.querySelector('.note-session').value||'—',evolucion:card.querySelector('.note-text').value||''})).sort((x,y)=>x.fecha.localeCompare(y.fecha));
+    const tbody=document.getElementById('pch-notes-body'); tbody.innerHTML='';
+    if(notesData.length){ notesData.forEach(n=>{ const tr=document.createElement('tr'); [n.fecha,n.sesion,n.evolucion||'—'].forEach((v,i)=>{const td=document.createElement('td'); td.innerText=v; tr.appendChild(td);}); tbody.appendChild(tr); }); }
+    else tbody.innerHTML='<tr><td colspan="3">Sin evolución clínica registrada.</td></tr>';
 
-    document.getElementById('pch-motivo').innerText        = document.getElementById('hc-motivo').value        || 'Sin información registrada.';
-    document.getElementById('pch-problema').innerText      = document.getElementById('hc-problema').value      || 'Sin información registrada.';
-    document.getElementById('pch-antecedentes').innerText  = document.getElementById('hc-antecedentes').value  || 'Sin información registrada.';
-    document.getElementById('pch-familiares').innerText    = document.getElementById('hc-familiares').value    || 'Sin información registrada.';
-    document.getElementById('pch-diagnostico').innerText   = document.getElementById('hc-diagnostico').value   || 'Sin información registrada.';
-    document.getElementById('pch-objetivos').innerText     = document.getElementById('hc-objetivos').value     || 'Sin información registrada.';
-    document.getElementById('pch-tratamiento').innerText   = document.getElementById('hc-tratamiento').value   || 'Sin información registrada.';
-    document.getElementById('pch-observaciones').innerText = document.getElementById('hc-observaciones').value || 'Sin información registrada.';
-
-    // Evolución clínica: se toma directamente de las tarjetas abiertas en el modal
-    const cards = Array.from(document.querySelectorAll('#clinical-notes-container > div'));
-    const notesData = cards
-        .map(card => ({
-            fecha:     card.querySelector('.note-date').value    || '—',
-            sesion:    card.querySelector('.note-session').value || '—',
-            evolucion: card.querySelector('.note-text').value    || ''
-        }))
-        .sort((a, b) => a.fecha.localeCompare(b.fecha));
-
-    const tbody = document.getElementById('pch-notes-body');
-    if (notesData.length) {
-        tbody.innerHTML = '';
-        notesData.forEach(n => {
-            const tr = document.createElement('tr');
-            tr.className = 'border-b align-top';
-
-            const tdFecha = document.createElement('td');
-            tdFecha.className = 'py-2 px-2 font-semibold whitespace-nowrap';
-            tdFecha.innerText = n.fecha;
-
-            const tdSesion = document.createElement('td');
-            tdSesion.className = 'py-2 px-2 font-medium whitespace-nowrap';
-            tdSesion.innerText = n.sesion;
-
-            const tdEvol = document.createElement('td');
-            tdEvol.className = 'py-2 px-2 whitespace-pre-line';
-            tdEvol.innerText = n.evolucion || '—';
-
-            tr.appendChild(tdFecha);
-            tr.appendChild(tdSesion);
-            tr.appendChild(tdEvol);
-            tbody.appendChild(tr);
-        });
-    } else {
-        tbody.innerHTML = '<tr><td colspan="3" class="py-3 text-center text-graphite-400">Sin evolución clínica registrada.</td></tr>';
-    }
-
-    // Ocultar todo lo demás e imprimir solo la historia clínica
-    const clinicalModal = document.getElementById('clinical-history-modal');
-    const cardSection    = document.getElementById('print-patient-card');
-    const reportSection  = document.getElementById('print-section');
-    const pchSection     = document.getElementById('print-clinical-history');
-
-    clinicalModal.classList.add('hidden');
-    clinicalModal.classList.remove('flex');
-    if (cardSection)   cardSection.classList.add('hidden');
-    if (reportSection) reportSection.classList.add('hidden');
-    pchSection.classList.remove('hidden');
-
-    setTimeout(() => {
+    hideAllPrintSections();
+    const clinicalModal=document.getElementById('clinical-history-modal');
+    clinicalModal.classList.add('hidden'); clinicalModal.classList.remove('flex');
+    document.getElementById('print-clinical-history').classList.remove('hidden');
+    setTimeout(()=>{
         window.print();
-        pchSection.classList.add('hidden');
-        clinicalModal.classList.remove('hidden');
-        clinicalModal.classList.add('flex');
-    }, 300);
+        document.getElementById('print-clinical-history').classList.add('hidden');
+        clinicalModal.classList.remove('hidden'); clinicalModal.classList.add('flex');
+    },300);
 };
 
         window.editPatient = function(pid) {
@@ -1936,10 +1808,8 @@ window.printClinicalHistory = function() {
                     : `<tr><td colspan="6" class="py-4 text-center text-graphite-400">No hay consultas agendadas para esta fecha.</td></tr>`;
             }
 
-            // Asegurar que sólo se muestre la plantilla de citas
+            hideAllPrintSections();
             document.getElementById('print-section').classList.remove('hidden');
-            document.getElementById('print-section-finance').classList.add('hidden');
-            document.getElementById('print-section-reception').classList.add('hidden');
 
             closePrintModal();
             setTimeout(() => window.print(), 300);
@@ -2033,10 +1903,8 @@ window.printClinicalHistory = function() {
                 }).join('')
                 : `<tr><td colspan="5" class="py-4 text-center text-graphite-400">No hay datos financieros para este periodo.</td></tr>`;
 
-            // Asegurar que sólo se muestre la plantilla financiera
-            document.getElementById('print-section').classList.add('hidden');
+            hideAllPrintSections();
             document.getElementById('print-section-finance').classList.remove('hidden');
-            document.getElementById('print-section-reception').classList.add('hidden');
 
             closePrintModal();
             setTimeout(() => window.print(), 300);
@@ -2117,9 +1985,7 @@ window.printClinicalHistory = function() {
                     : `<tr><td colspan="3" class="py-4 text-center text-graphite-400">No hay consultas agendadas para esta fecha.</td></tr>`;
             }
 
-            // Asegurar que sólo se muestre la plantilla de recepción
-            document.getElementById('print-section').classList.add('hidden');
-            document.getElementById('print-section-finance').classList.add('hidden');
+            hideAllPrintSections();
             document.getElementById('print-section-reception').classList.remove('hidden');
 
             closePrintModal();
@@ -2269,16 +2135,14 @@ window.printClinicalHistory = function() {
             // Ocultar el modal de historial para la impresión y mostrar solo la ficha
             const histModal = document.getElementById('patient-history-modal');
             const cardSection = document.getElementById('print-patient-card');
-            const reportSection = document.getElementById('print-section');
             histModal.classList.add('hidden');
+            hideAllPrintSections();
             cardSection.classList.remove('hidden');
-            reportSection.classList.add('hidden');
             setTimeout(() => {
                 window.print();
                 histModal.classList.remove('hidden');
                 histModal.classList.add('flex');
                 cardSection.classList.add('hidden');
-                reportSection.classList.remove('hidden');
             }, 300);
         };
 
