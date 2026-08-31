@@ -344,45 +344,77 @@ id:doc.id,
             }
         };
 window.openClinicalHistory = function(patientId){
-    const patient = state.patients.find(p => p.id === patientId);
-    if(!patient){ alert("No se encontró el paciente."); return; }
+    try {
+        const patients = Array.isArray(state.patients) ? state.patients : [];
+        const patient = patients.find(p => String(p.id) === String(patientId));
+        if (!patient) {
+            alert("No se encontró el paciente para abrir la Historia Clínica.");
+            return;
+        }
 
-    const history = state.histories.find(h => h.id === patientId) || {};
-    const appts = state.appointments.filter(a => a.patientId === patientId).sort((x,y) => (x.date + x.time).localeCompare(y.date + y.time));
-    const firstSession = history.firstSession || (appts[0] ? appts[0].date : '');
+        const histories = Array.isArray(state.histories) ? state.histories : [];
+        const appointments = Array.isArray(state.appointments) ? state.appointments : [];
+        const history = histories.find(h => String(h.id) === String(patientId)) || {};
+        const appts = appointments
+            .filter(a => String(a.patientId) === String(patientId))
+            .sort((x,y) => String(x.date || '') .concat(String(x.time || '')).localeCompare(String(y.date || '').concat(String(y.time || ''))));
+        const firstSession = history.firstSession || (appts[0] ? appts[0].date : '');
 
-    document.getElementById("hc-patient-id").value = patientId;
-    document.getElementById("hc-patient-name").value = patient.name || "";
-    document.getElementById("hc-patient-dni").value = patient.dni || "";
-    document.getElementById("hc-patient-phone").value = patient.phone || "";
-    document.getElementById("hc-patient-birth").value = patient.birth || "";
-    document.getElementById("hc-patient-age").value = calculatePatientAge(patient.birth);
-    document.getElementById("hc-first-session").value = firstSession;
+        const setValue = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.value = value == null ? '' : String(value);
+        };
 
-    document.getElementById("hc-civil-status").value = history.civilStatus || history.estadoCivil || "";
-    document.getElementById("hc-occupation").value = history.occupation || history.ocupacion || "";
+        setValue("hc-patient-id", patientId);
+        setValue("hc-patient-name", patient.name || "");
+        setValue("hc-patient-dni", patient.dni || "");
+        setValue("hc-patient-phone", patient.phone || "");
+        setValue("hc-patient-birth", patient.birth || "");
+        setValue("hc-patient-age", calculatePatientAge(patient.birth));
+        setValue("hc-first-session", firstSession);
+        setValue("hc-civil-status", history.civilStatus || history.estadoCivil || "");
+        setValue("hc-occupation", history.occupation || history.ocupacion || "");
 
-    // Nuevos campos del formato solicitado, con compatibilidad hacia atrás.
-    document.getElementById("hc-motivo").value = history.motivo || "";
-    document.getElementById("hc-problema").value = history.problema || "";
-    document.getElementById("hc-impacto").value = history.impacto || history.impactoVida || "";
-    document.getElementById("hc-historia-personal").value = history.historiaPersonal || history.antecedentes || patient.history || "";
-    document.getElementById("hc-vinculos").value = history.vinculos || history.familiares || "";
-    document.getElementById("hc-tecnicas").value = history.tecnicas || "";
-    document.getElementById("hc-conducta").value = history.conducta || history.observaciones || "";
-    document.getElementById("hc-hipotesis").value = history.hipotesis || history.diagnostico || "";
-    document.getElementById("hc-recomendaciones").value = history.recomendaciones || "";
-    document.getElementById("hc-frecuencia").value = history.frecuencia || "";
-    document.getElementById("hc-enfoque").value = history.enfoque || "";
-    document.getElementById("hc-duracion").value = history.duracion || "";
-    document.getElementById("hc-tareas").value = history.tareas || "";
+        setValue("hc-motivo", history.motivo || "");
+        setValue("hc-problema", history.problema || "");
+        setValue("hc-impacto", history.impacto || history.impactoVida || "");
+        setValue("hc-historia-personal", history.historiaPersonal || history.antecedentes || patient.history || "");
+        setValue("hc-vinculos", history.vinculos || history.familiares || "");
+        setValue("hc-tecnicas", history.tecnicas || "");
+        setValue("hc-conducta", history.conducta || history.observaciones || "");
+        setValue("hc-hipotesis", history.hipotesis || history.diagnostico || "");
+        setValue("hc-recomendaciones", history.recomendaciones || "");
+        setValue("hc-frecuencia", history.frecuencia || "");
+        setValue("hc-enfoque", history.enfoque || "");
+        setValue("hc-duracion", history.duracion || "");
+        setValue("hc-tareas", history.tareas || "");
 
-    const container = document.getElementById("clinical-notes-container");
-    container.innerHTML = "";
-    state.notes.filter(n => n.patientId === patientId).sort((x,y)=>x.fecha.localeCompare(y.fecha)).forEach(n => newClinicalNote(n));
+        const container = document.getElementById("clinical-notes-container");
+        if (container) {
+            container.innerHTML = "";
+            const notes = Array.isArray(state.notes) ? state.notes : [];
+            notes
+                .filter(n => String(n.patientId) === String(patientId))
+                .sort((x,y) => String(x.fecha || '').localeCompare(String(y.fecha || '')))
+                .forEach(n => newClinicalNote(n));
+        }
 
-    const modal = document.getElementById("clinical-history-modal");
-    modal.classList.remove("hidden"); modal.classList.add("flex");
+        const modal = document.getElementById("clinical-history-modal");
+        if (!modal) {
+            alert("No se encontró la ventana de Historia Clínica en la página. Verifica que index.html esté actualizado.");
+            return;
+        }
+
+        // Mostrar explícitamente el modal por encima del resto de la aplicación.
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        modal.style.display = "flex";
+        modal.style.zIndex = "9999";
+        document.body.classList.add('overflow-hidden');
+    } catch (error) {
+        console.error('[Error abriendo historia clínica]', error);
+        alert("❌ No se pudo abrir la Historia Clínica: " + (error?.message || 'error inesperado'));
+    }
 };
 
 function calculatePatientAge(birth){
@@ -397,7 +429,11 @@ function calculatePatientAge(birth){
 
 window.closeClinicalHistory=function(){
     const modal=document.getElementById("clinical-history-modal");
-    modal.classList.remove("flex"); modal.classList.add("hidden");
+    if (!modal) return;
+    modal.classList.remove("flex");
+    modal.classList.add("hidden");
+    modal.style.display = "none";
+    document.body.classList.remove('overflow-hidden');
 };
 
 window.saveClinicalHistory = async function(){
