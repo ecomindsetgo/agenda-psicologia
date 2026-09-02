@@ -941,6 +941,40 @@ window.printClinicalHistory = function() {
                 await adjustPackageSession(appointment.patientId, appointment.packageId, +1);
                 await updateDoc(ref, { packageConsumed: true });
                 appointment.packageConsumed = true;
+
+                // ─── CORRECCIÓN AUTOMÁTICA DEL SEGUNDO PAGO ────────────────────
+                // Si esta cita se agendó POR ADELANTADO (por ejemplo, se
+                // programaron varias sesiones del paquete de una sola vez),
+                // en el momento de crearla el contador "sessionsUsed" del
+                // paquete todavía no había llegado al número que corresponde
+                // al segundo pago, así que se guardó con costo S/0 como
+                // "sesión incluida". Ahora que se marca como completada y el
+                // contador ya se actualizó, volvemos a verificar: si el
+                // conteo ACTUAL de sesiones usadas coincide con la sesión de
+                // pago y esta cita todavía tiene costo S/0, se corrige el
+                // costo a la mitad del paquete para que sí se contabilice en
+                // Finanzas.
+                const patientObj = state.patients.find(p => p.id === appointment.patientId);
+                const pkg = patientObj && Array.isArray(patientObj.packages)
+                    ? patientObj.packages.find(pk => pk.id === appointment.packageId)
+                    : null;
+                if (pkg) {
+                    const secondPayAt   = secondPaymentSessionNumber(pkg.sessionsTotal);
+                    const currentCost   = parseFloat(appointment.cost || 0);
+                    if (secondPayAt && pkg.sessionsUsed === secondPayAt &&
+                        pkg.secondPaymentStatus !== 'pagado' && currentCost === 0) {
+                        const halfPrice = pkg.halfPrice || (pkg.price / 2);
+                        await updateDoc(ref, { cost: halfPrice, paymentStatus: 'pendiente' });
+                        appointment.cost = halfPrice;
+                        appointment.paymentStatus = 'pendiente';
+                        const localAppt = state.appointments.find(a => a.id === appointment.id);
+                        if (localAppt) {
+                            localAppt.cost = halfPrice;
+                            localAppt.paymentStatus = 'pendiente';
+                        }
+                        alert(`💰 Esta sesión corresponde al segundo pago del paquete (sesión ${secondPayAt} de ${pkg.sessionsTotal}).\n\nSe agendó por adelantado, así que el cobro no se había registrado. Se corrigió automáticamente a ${currencySymbol(pkg.currency)} ${halfPrice.toFixed(2)} para que se refleje en Finanzas.\n\nAbre esta cita y márcala como "Pagado" cuando el paciente cancele el monto.`);
+                    }
+                }
             } else if (oldStatus === 'completada' && newStatus !== 'completada' && wasConsumed) {
                 await adjustPackageSession(appointment.patientId, appointment.packageId, -1);
                 await updateDoc(ref, { packageConsumed: false });
