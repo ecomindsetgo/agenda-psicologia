@@ -428,9 +428,7 @@ function calculatePatientAge(birth){
 }
 
 window.closeClinicalHistory=function(){
-    // Si el dictado por voz seguía escuchando dentro de esta ventana, lo detenemos
-    // al cerrar; de lo contrario el micrófono se queda activo en segundo plano
-    // aunque el modal ya no esté visible.
+    // Cerrar Historia Clínica debe detener SIEMPRE el dictado y liberar el micrófono.
     if (typeof stopVoiceDictation === 'function') stopVoiceDictation();
     const modal=document.getElementById("clinical-history-modal");
     if (!modal) return;
@@ -520,82 +518,91 @@ let activeVoiceRecognition = null;
 let activeVoiceTarget = null;
 let activeVoiceButton = null;
 let activeVoiceBaseText = '';
-// Bandera explícita: true cuando el usuario pidió detener (o cambiamos de campo).
-// Es la única fuente de verdad para decidir si onend debe reiniciar el reconocimiento;
-// antes se usaba la clase CSS 'is-listening', que todavía seguía puesta en el botón
-// en el momento de llamar a stop(), así que onend la veía activa y volvía a arrancar
-// el micrófono en bucle infinito (por eso "Detener" no detenía nada).
-let voiceStopRequested = false;
+let voiceDictationActive = false;
+let voiceSessionId = 0;
 
 function getSpeechRecognitionConstructor(){
     return window.SpeechRecognition || window.webkitSpeechRecognition || null;
 }
 
-// Corta cualquier dictado por voz en curso de inmediato (usado al cerrar modales
-// o ventanas para que el micrófono no se quede escuchando en segundo plano).
-window.stopVoiceDictation = function(){
-    if (activeVoiceRecognition) {
-        voiceStopRequested = true;
-        try { activeVoiceRecognition.stop(); } catch(e) {}
+function stopVoiceDictation(){
+    // Invalidamos cualquier promesa pendiente de permiso/inicio.
+    voiceDictationActive = false;
+    voiceSessionId++;
+
+    const recognition = activeVoiceRecognition;
+    const button = activeVoiceButton;
+    const target = activeVoiceTarget;
+
+    // Quitar el estado visual ANTES de detener para que onend nunca lo reinicie.
+    if (button) {
+        button.classList.remove('is-listening','is-requesting');
+        button.textContent = '🎙️';
+        button.title = 'Dictar por voz';
+        button.setAttribute('aria-label','Dictar por voz');
     }
-    resetVoiceUI();
-};
+    if (target) delete target.dataset.voiceInterim;
+
+    activeVoiceRecognition = null;
+    activeVoiceTarget = null;
+    activeVoiceButton = null;
+    activeVoiceBaseText = '';
+
+    if (recognition) {
+        try { recognition.abort(); } catch(e) {}
+        try { recognition.stop(); } catch(e) {}
+    }
+}
+
+window.stopVoiceDictation = stopVoiceDictation;
 
 window.toggleVoiceDictation = function(targetOrId, button){
     const target = typeof targetOrId === 'string' ? document.getElementById(targetOrId) : targetOrId;
     if (!target || !button) return;
 
-    if (activeVoiceRecognition && activeVoiceButton === button) {
-        voiceStopRequested = true;
-        button.classList.remove('is-listening');
-        button.textContent = '🎙️';
-        button.title = 'Dictar por voz';
-        button.setAttribute('aria-label','Dictar por voz');
-        try { activeVoiceRecognition.stop(); } catch(e) {}
+    // Si este botón es el que está grabando, el segundo toque SIEMPRE detiene.
+    if (voiceDictationActive && activeVoiceButton === button) {
+        stopVoiceDictation();
         return;
     }
-    if (activeVoiceRecognition) {
-        voiceStopRequested = true;
-        try { activeVoiceRecognition.stop(); } catch(e) {}
-        resetVoiceUI();
-    }
-    voiceStopRequested = false;
 
-    // Aviso inmediato de que se procesó el toque (evita la sensación de "botón muerto"
-    // mientras se resuelve el permiso de micrófono, que en Android puede tardar).
+    // Solo puede existir una sesión de dictado a la vez.
+    if (voiceDictationActive || activeVoiceRecognition) stopVoiceDictation();
+
+    const session = ++voiceSessionId;
+    voiceDictationActive = true;
+
     button.classList.add('is-requesting');
     button.textContent = '…';
 
     if (!window.isSecureContext) {
-        button.classList.remove('is-requesting');
-        button.textContent = '🎙️';
-        alert('El dictado por voz requiere una conexión segura (https://). Este sitio no se está cargando por https, por eso el micrófono no funciona en el celular.');
+        stopVoiceDictation();
+        alert('El dictado por voz requiere una conexión segura (https://).');
         return;
     }
 
     const Recognition = getSpeechRecognitionConstructor();
     if (!Recognition) {
-        button.classList.remove('is-requesting');
-        button.textContent = '🎙️';
+        stopVoiceDictation();
         button.classList.add('is-unsupported');
         alert('El dictado por voz no está disponible en este navegador. Prueba con Google Chrome o Microsoft Edge actualizado.');
         return;
     }
 
-    // En Android, pedir el micrófono explícitamente con getUserMedia primero hace que
-    // el permiso se resuelva de forma confiable y con un mensaje claro si se bloqueó,
-    // en vez de que SpeechRecognition falle en silencio.
     const startRecognition = function(){
+        // El usuario pudo haber cerrado la ventana mientras se pedía el permiso.
+        if (!voiceDictationActive || session !== voiceSessionId) return;
+
         let recognition;
         try {
             recognition = new Recognition();
         } catch (error) {
             console.error('[Dictado por voz] No se pudo crear el reconocedor', error);
-            button.classList.remove('is-requesting');
-            button.textContent = '🎙️';
-            alert('No se pudo iniciar el dictado por voz en este dispositivo. Intenta cerrar y volver a abrir el navegador, o revisa los permisos de micrófono de Chrome en Ajustes del celular.');
+            stopVoiceDictation();
+            alert('No se pudo iniciar el dictado por voz. Revisa los permisos de micrófono.');
             return;
         }
+
         recognition.lang = 'es-PE';
         recognition.continuous = true;
         recognition.interimResults = true;
@@ -612,13 +619,14 @@ window.toggleVoiceDictation = function(targetOrId, button){
         button.title = 'Detener dictado';
         button.setAttribute('aria-label','Detener dictado');
         target.focus();
-        attachRecognitionHandlers(recognition, target, button);
+
+        attachRecognitionHandlers(recognition, target, button, session);
 
         try {
             recognition.start();
         } catch(error) {
             console.error('[Error iniciando dictado]', error);
-            resetVoiceUI();
+            stopVoiceDictation();
             alert('No se pudo iniciar el dictado por voz. Revisa el permiso del micrófono.');
         }
     };
@@ -626,30 +634,34 @@ window.toggleVoiceDictation = function(targetOrId, button){
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ audio: true })
             .then(function(stream){
-                // Solo pedíamos el permiso; no necesitamos grabar audio, así que
-                // cerramos el stream de inmediato (no se guarda ni se envía audio).
+                // getUserMedia solo se usa para solicitar/verificar el permiso.
+                // SpeechRecognition administra su propio acceso al micrófono.
                 stream.getTracks().forEach(function(track){ track.stop(); });
-                startRecognition();
+                if (voiceDictationActive && session === voiceSessionId) {
+                    startRecognition();
+                }
             })
             .catch(function(error){
                 console.warn('[Dictado por voz] getUserMedia rechazado', error);
-                button.classList.remove('is-requesting');
-                button.textContent = '🎙️';
+                if (session !== voiceSessionId || !voiceDictationActive) return;
+                stopVoiceDictation();
                 if (error && (error.name === 'NotAllowedError' || error.name === 'SecurityError')) {
-                    alert('El micrófono está bloqueado para esta página. En Android: toca el ícono de candado o los tres puntos junto a la dirección del sitio → Permisos del sitio → Micrófono → Permitir. Luego recarga la página.');
+                    alert('El micrófono está bloqueado para esta página. Permite el acceso al micrófono en los permisos del sitio y vuelve a intentarlo.');
                 } else if (error && error.name === 'NotFoundError') {
                     alert('No se encontró un micrófono disponible en este dispositivo.');
                 } else {
-                    alert('No se pudo acceder al micrófono. Revisa los permisos de Chrome en Ajustes del celular (Ajustes → Apps → Chrome → Permisos → Micrófono).');
+                    alert('No se pudo acceder al micrófono. Revisa los permisos de Chrome/Edge.');
                 }
             });
     } else {
         startRecognition();
     }
-    return;
+};
 
-function attachRecognitionHandlers(recognition, target, button){
+function attachRecognitionHandlers(recognition, target, button, session){
     recognition.onresult = function(event){
+        if (!voiceDictationActive || session !== voiceSessionId) return;
+
         let finalText = '';
         let interimText = '';
         for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -657,42 +669,69 @@ function attachRecognitionHandlers(recognition, target, button){
             if (event.results[i].isFinal) finalText += piece;
             else interimText += piece;
         }
+
         if (finalText) {
             const current = String(target.value || '').trimEnd();
-            const separator = current ? (/[\s.!?,;:]$/.test(current) ? ' ' : ' ') : '';
+            const separator = current ? ' ' : '';
             target.value = current + separator + normalizeVoicePunctuation(finalText.trim());
             target.dispatchEvent(new Event('input', {bubbles:true}));
         }
-        // El texto provisional se muestra en el placeholder para no alterar el valor guardado.
+
         if (interimText) target.dataset.voiceInterim = interimText;
         else delete target.dataset.voiceInterim;
     };
 
     recognition.onerror = function(event){
         console.warn('[Dictado por voz]', event.error);
+
+        if (session !== voiceSessionId || !voiceDictationActive) return;
+
+        // Estos errores terminan la sesión; NO se intenta reiniciar.
+        // Especialmente importante para evitar bucles donde el micrófono queda abierto.
         if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-            resetVoiceUI();
-            alert('El navegador bloqueó el micrófono. Permite el acceso al micrófono para esta página (candado junto a la dirección → Permisos → Micrófono) y vuelve a intentarlo.');
-        } else if (event.error === 'no-speech') {
-            // No mostrar error por silencio; se puede volver a intentar.
+            stopVoiceDictation();
+            alert('El navegador bloqueó el micrófono. Revisa los permisos del sitio y vuelve a intentarlo.');
         } else if (event.error === 'audio-capture') {
-            resetVoiceUI();
+            stopVoiceDictation();
             alert('No se encontró un micrófono disponible. Revisa el micrófono del equipo.');
         } else if (event.error === 'network') {
-            resetVoiceUI();
+            stopVoiceDictation();
             alert('El dictado por voz necesita conexión a internet. Revisa tu conexión e intenta de nuevo.');
+        } else if (event.error === 'aborted') {
+            // Es normal cuando el usuario pulsa Detener o se cierra la Historia Clínica.
+        } else if (event.error === 'no-speech') {
+            // No detenemos por silencio; Chrome puede terminar y onend decidirá.
         }
     };
 
     recognition.onend = function(){
-        // continuous puede finalizar por decisión del navegador; si sigue activo,
-        // reanudamos mientras el usuario NO haya pulsado detener (voiceStopRequested).
-        if (!voiceStopRequested && activeVoiceRecognition === recognition && activeVoiceButton === button) {
-            try { recognition.start(); return; } catch(e) {}
+        // Si el usuario pulsó Detener/cerró la ventana, voiceDictationActive ya es false.
+        if (session !== voiceSessionId || !voiceDictationActive || activeVoiceRecognition !== recognition) {
+            return;
         }
-        if (activeVoiceRecognition === recognition) resetVoiceUI();
+
+        // El navegador puede cerrar una sesión continua por sí solo.
+        // En ese único caso intentamos reanudar mientras el usuario siga grabando.
+        try {
+            recognition.start();
+        } catch(e) {
+            stopVoiceDictation();
+        }
     };
 }
+
+// Seguridad adicional: al ocultar la pestaña, detener el reconocimiento.
+document.addEventListener('visibilitychange', function(){
+    if (document.hidden && voiceDictationActive) stopVoiceDictation();
+});
+
+window.addEventListener('pagehide', function(){
+    if (voiceDictationActive) stopVoiceDictation();
+});
+
+window.addEventListener('beforeunload', function(){
+    if (voiceDictationActive) stopVoiceDictation();
+});
 
 function normalizeVoicePunctuation(text){
     return text
@@ -718,7 +757,6 @@ function resetVoiceUI(){
     activeVoiceTarget = null;
     activeVoiceButton = null;
     activeVoiceBaseText = '';
-    voiceStopRequested = false;
 }
 
 function hideAllPrintSections(){
