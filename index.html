@@ -8,6 +8,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+
+<style>
+.hc-voice-field{position:relative;display:flex;align-items:stretch;gap:.5rem}
+.hc-voice-field .hc-input,.hc-voice-field .hc-textarea{flex:1;min-width:0}
+.hc-mic-btn{flex:0 0 auto;min-width:44px;border:1px solid #cbd5e1;background:#fff;border-radius:.75rem;padding:0 .7rem;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;justify-content:center;font-size:1.05rem}
+.hc-mic-btn:hover{background:#f1f5f9;transform:translateY(-1px)}
+.hc-mic-btn.is-listening{background:#fee2e2;border-color:#f87171;color:#b91c1c;animation:hcMicPulse 1.2s infinite}
+.hc-mic-btn.is-unsupported{opacity:.55;cursor:not-allowed}
+@keyframes hcMicPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.25)}50%{box-shadow:0 0 0 7px rgba(239,68,68,0)}}
+</style>
 </head>
 <body class="text-slate-800 min-h-screen flex flex-col pb-20 md:pb-6">
 
@@ -801,30 +811,30 @@
                             <option value="">Seleccionar</option><option>Soltera(o)</option><option>Casada(o)</option><option>Viuda(o)</option><option>Separada(o)</option><option>Conviviente</option>
                         </select>
                     </div>
-                    <div><label class="hc-label">Ocupación</label><input id="hc-occupation" class="hc-input" placeholder="Ocupación actual"></div>
+                    <div><label class="hc-label">Ocupación</label><div class="hc-voice-field"><input id="hc-occupation" class="hc-input" placeholder="Ocupación actual"><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-occupation', this)" title="Dictar por voz" aria-label="Dictar ocupación">🎙️</button></div></div>
                     <div><label class="hc-label">Número de contacto</label><input id="hc-patient-phone" class="hc-input bg-slate-100" readonly></div>
                     <div><label class="hc-label">DNI</label><input id="hc-patient-dni" class="hc-input bg-slate-100" readonly></div>
                 </div>
             </div>
 
-            <div class="hc-form-section"><div class="hc-section-title">MOTIVO DE CONSULTA</div><p class="hc-question">¿Por qué decide venir a consulta? ¿Qué le está afectando actualmente?</p><textarea id="hc-motivo" rows="4" class="hc-textarea"></textarea></div>
-            <div class="hc-form-section"><div class="hc-section-title">PROBLEMA ACTUAL</div><p class="hc-question">¿Desde cuándo ocurre? ¿En qué situaciones se presenta? ¿Cómo reacciona? ¿Qué emociones predominan? ¿Qué pensamientos aparecen?</p><textarea id="hc-problema" rows="5" class="hc-textarea"></textarea></div>
-            <div class="hc-form-section"><div class="hc-section-title">IMPACTO EN SU VIDA</div><p class="hc-question">Área personal / Área de pareja / Área familiar / Área laboral</p><textarea id="hc-impacto" rows="5" class="hc-textarea"></textarea></div>
-            <div class="hc-form-section"><div class="hc-section-title">HISTORIA PERSONAL RELEVANTE</div><p class="hc-question">Relación con padres / cuidadores · Experiencias significativas en infancia · Eventos importantes (duelos, rupturas, cambios)</p><textarea id="hc-historia-personal" rows="6" class="hc-textarea"></textarea></div>
-            <div class="hc-form-section"><div class="hc-section-title">VÍNCULOS Y RELACIONES</div><p class="hc-question">¿Cómo son sus relaciones actualmente? ¿Qué patrones se repiten? ¿Qué suele necesitar emocionalmente?</p><textarea id="hc-vinculos" rows="5" class="hc-textarea"></textarea></div>
-            <div class="hc-form-section"><div class="hc-section-title">TÉCNICAS E INSTRUMENTOS APLICADOS</div><textarea id="hc-tecnicas" rows="5" class="hc-textarea" placeholder="Entrevista, observación, pruebas o instrumentos aplicados..."></textarea></div>
-            <div class="hc-form-section"><div class="hc-section-title">OBSERVACIÓN DE CONDUCTA</div><p class="hc-question">Actitud en sesión / Nivel de apertura · Resistencias / Insight</p><textarea id="hc-conducta" rows="5" class="hc-textarea"></textarea></div>
-            <div class="hc-form-section"><div class="hc-section-title">HIPÓTESIS / CONCLUSIONES</div><textarea id="hc-hipotesis" rows="5" class="hc-textarea"></textarea></div>
-            <div class="hc-form-section"><div class="hc-section-title">RECOMENDACIONES</div><textarea id="hc-recomendaciones" rows="5" class="hc-textarea"></textarea></div>
+            <div class="hc-form-section"><div class="hc-section-title">MOTIVO DE CONSULTA</div><p class="hc-question">¿Por qué decide venir a consulta? ¿Qué le está afectando actualmente?</p><div class="hc-voice-field"><textarea id="hc-motivo" rows="4" class="hc-textarea"></textarea><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-motivo', this)" title="Dictar por voz" aria-label="Dictar motivo de consulta">🎙️</button></div></div>
+            <div class="hc-form-section"><div class="hc-section-title">PROBLEMA ACTUAL</div><p class="hc-question">¿Desde cuándo ocurre? ¿En qué situaciones se presenta? ¿Cómo reacciona? ¿Qué emociones predominan? ¿Qué pensamientos aparecen?</p><div class="hc-voice-field"><textarea id="hc-problema" rows="5" class="hc-textarea"></textarea><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-problema', this)" title="Dictar por voz" aria-label="Dictar problema actual">🎙️</button></div></div>
+            <div class="hc-form-section"><div class="hc-section-title">IMPACTO EN SU VIDA</div><p class="hc-question">Área personal / Área de pareja / Área familiar / Área laboral</p><div class="hc-voice-field"><textarea id="hc-impacto" rows="5" class="hc-textarea"></textarea><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-impacto', this)" title="Dictar por voz" aria-label="Dictar impacto en su vida">🎙️</button></div></div>
+            <div class="hc-form-section"><div class="hc-section-title">HISTORIA PERSONAL RELEVANTE</div><p class="hc-question">Relación con padres / cuidadores · Experiencias significativas en infancia · Eventos importantes (duelos, rupturas, cambios)</p><div class="hc-voice-field"><textarea id="hc-historia-personal" rows="6" class="hc-textarea"></textarea><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-historia-personal', this)" title="Dictar por voz" aria-label="Dictar historia personal">🎙️</button></div></div>
+            <div class="hc-form-section"><div class="hc-section-title">VÍNCULOS Y RELACIONES</div><p class="hc-question">¿Cómo son sus relaciones actualmente? ¿Qué patrones se repiten? ¿Qué suele necesitar emocionalmente?</p><div class="hc-voice-field"><textarea id="hc-vinculos" rows="5" class="hc-textarea"></textarea><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-vinculos', this)" title="Dictar por voz" aria-label="Dictar vínculos y relaciones">🎙️</button></div></div>
+            <div class="hc-form-section"><div class="hc-section-title">TÉCNICAS E INSTRUMENTOS APLICADOS</div><div class="hc-voice-field"><textarea id="hc-tecnicas" rows="5" class="hc-textarea" placeholder="Entrevista, observación, pruebas o instrumentos aplicados..."></textarea><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-tecnicas', this)" title="Dictar por voz" aria-label="Dictar técnicas e instrumentos">🎙️</button></div></div>
+            <div class="hc-form-section"><div class="hc-section-title">OBSERVACIÓN DE CONDUCTA</div><p class="hc-question">Actitud en sesión / Nivel de apertura · Resistencias / Insight</p><div class="hc-voice-field"><textarea id="hc-conducta" rows="5" class="hc-textarea"></textarea><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-conducta', this)" title="Dictar por voz" aria-label="Dictar observación de conducta">🎙️</button></div></div>
+            <div class="hc-form-section"><div class="hc-section-title">HIPÓTESIS / CONCLUSIONES</div><div class="hc-voice-field"><textarea id="hc-hipotesis" rows="5" class="hc-textarea"></textarea><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-hipotesis', this)" title="Dictar por voz" aria-label="Dictar hipótesis y conclusiones">🎙️</button></div></div>
+            <div class="hc-form-section"><div class="hc-section-title">RECOMENDACIONES</div><div class="hc-voice-field"><textarea id="hc-recomendaciones" rows="5" class="hc-textarea"></textarea><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-recomendaciones', this)" title="Dictar por voz" aria-label="Dictar recomendaciones">🎙️</button></div></div>
             <div class="hc-form-section">
                 <div class="hc-section-title">PLAN DE INTERVENCIÓN</div>
                 <div class="grid md:grid-cols-3 gap-4">
-                    <div><label class="hc-label">Frecuencia</label><input id="hc-frecuencia" class="hc-input"></div>
-                    <div><label class="hc-label">Enfoque</label><input id="hc-enfoque" class="hc-input"></div>
-                    <div><label class="hc-label">Duración sugerida</label><input id="hc-duracion" class="hc-input"></div>
+                    <div><label class="hc-label">Frecuencia</label><div class="hc-voice-field"><input id="hc-frecuencia" class="hc-input"><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-frecuencia', this)" title="Dictar por voz" aria-label="Dictar frecuencia">🎙️</button></div></div>
+                    <div><label class="hc-label">Enfoque</label><div class="hc-voice-field"><input id="hc-enfoque" class="hc-input"><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-enfoque', this)" title="Dictar por voz" aria-label="Dictar enfoque">🎙️</button></div></div>
+                    <div><label class="hc-label">Duración sugerida</label><div class="hc-voice-field"><input id="hc-duracion" class="hc-input"><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-duracion', this)" title="Dictar por voz" aria-label="Dictar duración sugerida">🎙️</button></div></div>
                 </div>
             </div>
-            <div class="hc-form-section"><div class="hc-section-title">TAREAS / ACUERDOS</div><p class="hc-question">Ejercicio asignado / Reflexión / Compromisos</p><textarea id="hc-tareas" rows="5" class="hc-textarea"></textarea></div>
+            <div class="hc-form-section"><div class="hc-section-title">TAREAS / ACUERDOS</div><p class="hc-question">Ejercicio asignado / Reflexión / Compromisos</p><div class="hc-voice-field"><textarea id="hc-tareas" rows="5" class="hc-textarea"></textarea><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-tareas', this)" title="Dictar por voz" aria-label="Dictar tareas y acuerdos">🎙️</button></div></div>
 
             <div class="hc-form-section mt-8">
                 <div class="flex justify-between items-center gap-3 flex-wrap">

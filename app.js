@@ -495,7 +495,7 @@ window.newClinicalNote = function(note = {}) {
             <div><label class="font-semibold">Fecha</label><input type="date" class="note-date w-full border rounded-lg p-2" value="${note.fecha || new Date().toISOString().split("T")[0]}"></div>
             <div><label class="font-semibold">Sesión</label><input type="text" class="note-session w-full border rounded-lg p-2" value="${note.sesion || ""}" placeholder="Sesión 1"></div>
         </div>
-        <div class="mt-3"><label class="font-semibold">Evolución Clínica</label><textarea class="note-text w-full border rounded-xl p-3 mt-2" rows="5">${note.evolucion || ""}</textarea></div>
+        <div class="mt-3"><label class="font-semibold">Evolución Clínica</label><div class="hc-voice-field mt-2"><textarea class="note-text w-full border rounded-xl p-3" rows="5">${note.evolucion || ""}</textarea><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation(this.closest('[data-id]').querySelector('.note-text'), this)" title="Dictar evolución" aria-label="Dictar evolución clínica">🎙️</button></div></div>
         <div class="text-right mt-3"><button type="button" onclick="deleteClinicalNoteCard('${id}', this)" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg">Eliminar</button></div>`;
     document.getElementById("clinical-notes-container").appendChild(div);
 };
@@ -508,6 +508,129 @@ window.deleteClinicalNoteCard = async function(noteId, btnEl) {
     } catch(error){ console.error('[Error eliminando evolución]',error); alert("❌ No se pudo eliminar la evolución."); return; }
     btnEl.closest('[data-id]').remove();
 };
+
+// ─── DICTADO POR VOZ (sin IA, sin guardar audio) ─────────────────────────
+// Usa la Web Speech API del navegador. El texto reconocido se escribe directamente
+// en el campo seleccionado. No se almacena audio en Firebase ni en la aplicación.
+let activeVoiceRecognition = null;
+let activeVoiceTarget = null;
+let activeVoiceButton = null;
+let activeVoiceBaseText = '';
+
+function getSpeechRecognitionConstructor(){
+    return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
+
+window.toggleVoiceDictation = function(targetOrId, button){
+    const target = typeof targetOrId === 'string' ? document.getElementById(targetOrId) : targetOrId;
+    if (!target || !button) return;
+
+    if (activeVoiceRecognition && activeVoiceButton === button) {
+        activeVoiceRecognition.stop();
+        return;
+    }
+    if (activeVoiceRecognition) {
+        try { activeVoiceRecognition.stop(); } catch(e) {}
+        resetVoiceUI();
+    }
+
+    const Recognition = getSpeechRecognitionConstructor();
+    if (!Recognition) {
+        button.classList.add('is-unsupported');
+        alert('El dictado por voz no está disponible en este navegador. Prueba con Google Chrome o Microsoft Edge actualizado.');
+        return;
+    }
+
+    const recognition = new Recognition();
+    recognition.lang = 'es-PE';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    activeVoiceRecognition = recognition;
+    activeVoiceTarget = target;
+    activeVoiceButton = button;
+    activeVoiceBaseText = String(target.value || '');
+
+    button.classList.add('is-listening');
+    button.textContent = '⏹️';
+    button.title = 'Detener dictado';
+    button.setAttribute('aria-label','Detener dictado');
+    target.focus();
+
+    recognition.onresult = function(event){
+        let finalText = '';
+        let interimText = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            const piece = event.results[i][0].transcript;
+            if (event.results[i].isFinal) finalText += piece;
+            else interimText += piece;
+        }
+        if (finalText) {
+            const current = String(target.value || '').trimEnd();
+            const separator = current ? (/[\\s.!?,;:]$/.test(current) ? ' ' : ' ') : '';
+            target.value = current + separator + normalizeVoicePunctuation(finalText.trim());
+            target.dispatchEvent(new Event('input', {bubbles:true}));
+        }
+        // El texto provisional se muestra en el placeholder para no alterar el valor guardado.
+        if (interimText) target.dataset.voiceInterim = interimText;
+        else delete target.dataset.voiceInterim;
+    };
+
+    recognition.onerror = function(event){
+        console.warn('[Dictado por voz]', event.error);
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+            alert('El navegador bloqueó el micrófono. Permite el acceso al micrófono para esta página y vuelve a intentarlo.');
+        } else if (event.error === 'no-speech') {
+            // No mostrar error por silencio; se puede volver a intentar.
+        } else if (event.error === 'audio-capture') {
+            alert('No se encontró un micrófono disponible. Revisa el micrófono del equipo.');
+        }
+    };
+
+    recognition.onend = function(){
+        // continuous puede finalizar por decisión del navegador; si sigue activo,
+        // reanudamos mientras el usuario no haya pulsado detener.
+        if (activeVoiceRecognition === recognition && activeVoiceButton === button && button.classList.contains('is-listening')) {
+            try { recognition.start(); return; } catch(e) {}
+        }
+        if (activeVoiceRecognition === recognition) resetVoiceUI();
+    };
+
+    try {
+        recognition.start();
+    } catch(error) {
+        console.error('[Error iniciando dictado]', error);
+        resetVoiceUI();
+        alert('No se pudo iniciar el dictado por voz. Revisa el permiso del micrófono.');
+    }
+};
+
+function normalizeVoicePunctuation(text){
+    return text
+        .replace(/\\bpunto y aparte\\b/gi, '\\n\\n')
+        .replace(/\\bnuevo párrafo\\b/gi, '\\n\\n')
+        .replace(/\\bpunto\\b/gi, '.')
+        .replace(/\\bcoma\\b/gi, ',')
+        .replace(/\\bdos puntos\\b/gi, ':')
+        .replace(/\\bpunto y coma\\b/gi, ';')
+        .replace(/\\binterrogación\\b/gi, '?')
+        .replace(/\\bexclamación\\b/gi, '!');
+}
+
+function resetVoiceUI(){
+    if (activeVoiceButton) {
+        activeVoiceButton.classList.remove('is-listening');
+        activeVoiceButton.textContent = '🎙️';
+        activeVoiceButton.title = 'Dictar por voz';
+        activeVoiceButton.setAttribute('aria-label','Dictar por voz');
+    }
+    if (activeVoiceTarget) delete activeVoiceTarget.dataset.voiceInterim;
+    activeVoiceRecognition = null;
+    activeVoiceTarget = null;
+    activeVoiceButton = null;
+    activeVoiceBaseText = '';
+}
 
 function hideAllPrintSections(){
     ['print-section','print-section-finance','print-section-reception','print-patient-card','print-clinical-history'].forEach(id=>{
