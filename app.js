@@ -667,7 +667,23 @@ window.toggleVoiceDictation = function(targetOrId, button){
     }
 };
 
+function startVoiceRecognitionAgain(target, button, session){
+    if (!voiceDictationActive || session !== voiceSessionId) return;
+    const Recognition = getSpeechRecognitionConstructor();
+    if (!Recognition) { stopVoiceDictation(); return; }
+    const recognition = new Recognition();
+    recognition.lang = 'es-PE';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    activeVoiceRecognition = recognition;
+    attachRecognitionHandlers(recognition, target, button, session);
+    try { recognition.start(); } catch(e) { stopVoiceDictation(); }
+}
+
 function attachRecognitionHandlers(recognition, target, button, session){
+    let recognitionHadFinalResult = false;
+    let lastFinalText = '';
     recognition.onresult = function(event){
         if (!voiceDictationActive || session !== voiceSessionId) return;
 
@@ -680,10 +696,23 @@ function attachRecognitionHandlers(recognition, target, button, session){
         }
 
         if (finalText) {
-            const current = String(target.value || '').trimEnd();
-            const separator = current ? ' ' : '';
-            target.value = current + separator + normalizeVoicePunctuation(finalText.trim());
-            target.dispatchEvent(new Event('input', {bubbles:true}));
+            recognitionHadFinalResult = true;
+            const cleanedFinal = normalizeVoicePunctuation(finalText.trim());
+            const normalizedFinal = cleanedFinal.toLowerCase().replace(/\s+/g, ' ').trim();
+
+            // Chrome puede entregar nuevamente el último resultado cuando una sesión
+            // termina/reinicia. No volver a insertar exactamente la misma frase.
+            if (normalizedFinal && normalizedFinal !== lastFinalText) {
+                const current = String(target.value || '').trimEnd();
+                const normalizedCurrent = current.toLowerCase().replace(/\s+/g, ' ').trim();
+                const alreadyAtEnd = normalizedCurrent.endsWith(normalizedFinal);
+                if (!alreadyAtEnd) {
+                    const separator = current ? ' ' : '';
+                    target.value = current + separator + cleanedFinal;
+                    target.dispatchEvent(new Event('input', {bubbles:true}));
+                }
+                lastFinalText = normalizedFinal;
+            }
         }
 
         if (interimText) {
@@ -719,15 +748,23 @@ function attachRecognitionHandlers(recognition, target, button, session){
     };
 
     recognition.onend = function(){
-        // Si el usuario pulsó Detener/cerró la ventana, voiceDictationActive ya es false.
+        // Si el usuario pulsó Detener/cerró la ventana, no hacemos absolutamente nada.
         if (session !== voiceSessionId || !voiceDictationActive || activeVoiceRecognition !== recognition) {
             return;
         }
 
-        // El navegador puede cerrar una sesión continua por sí solo.
-        // En ese único caso intentamos reanudar mientras el usuario siga grabando.
+        // IMPORTANTE: no reiniciar automáticamente una sesión que ya entregó resultados.
+        // Chrome puede repetir el último resultado al volver a iniciar el reconocedor,
+        // provocando frases duplicadas. Si terminó sin reconocer nada, permitimos un
+        // único reinicio para recuperar una interrupción silenciosa.
+        if (recognitionHadFinalResult) {
+            stopVoiceDictation();
+            return;
+        }
+
         try {
-            recognition.start();
+            activeVoiceRecognition = null;
+            startVoiceRecognitionAgain(target, button, session);
         } catch(e) {
             stopVoiceDictation();
         }
