@@ -606,6 +606,10 @@ window.toggleVoiceDictation = function(targetOrId, button){
         recognition.lang = 'es-PE';
         recognition.continuous = true;
         recognition.interimResults = true;
+        // Mejora la tolerancia a frases cortas y voz de volumen normal.
+        // La ganancia real del micrófono la controla Chrome/Windows; la Web Speech API
+        // no expone un control de volumen directo al JavaScript.
+        recognition.grammars = recognition.grammars || undefined;
         recognition.maxAlternatives = 1;
 
         activeVoiceRecognition = recognition;
@@ -632,7 +636,12 @@ window.toggleVoiceDictation = function(targetOrId, button){
     };
 
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ audio: true })
+        navigator.mediaDevices.getUserMedia({ audio: {
+                autoGainControl: true,
+                noiseSuppression: true,
+                echoCancellation: true,
+                channelCount: 1
+            } })
             .then(function(stream){
                 // getUserMedia solo se usa para solicitar/verificar el permiso.
                 // SpeechRecognition administra su propio acceso al micrófono.
@@ -677,8 +686,13 @@ function attachRecognitionHandlers(recognition, target, button, session){
             target.dispatchEvent(new Event('input', {bubbles:true}));
         }
 
-        if (interimText) target.dataset.voiceInterim = interimText;
-        else delete target.dataset.voiceInterim;
+        if (interimText) {
+            target.dataset.voiceInterim = interimText;
+            button.title = 'Escuchando… ' + interimText;
+        } else {
+            delete target.dataset.voiceInterim;
+            button.title = 'Escuchando… habla con normalidad';
+        }
     };
 
     recognition.onerror = function(event){

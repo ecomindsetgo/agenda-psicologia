@@ -17,6 +17,9 @@
 .hc-mic-btn.is-listening{background:#fee2e2;border-color:#f87171;color:#b91c1c;animation:hcMicPulse 1.2s infinite}
 .hc-mic-btn.is-unsupported{opacity:.55;cursor:not-allowed}
 .hc-mic-btn.is-requesting{opacity:.7;cursor:wait}
+.hc-mic-btn.is-listening{min-width:48px}
+.hc-voice-field{position:relative}
+.hc-voice-field .hc-mic-btn.is-listening::after{content:"";position:absolute;right:2px;bottom:2px;width:6px;height:6px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,.12)}
 @keyframes hcMicPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.25)}50%{box-shadow:0 0 0 7px rgba(239,68,68,0)}}
 </style>
 </head>
