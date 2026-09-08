@@ -428,6 +428,10 @@ function calculatePatientAge(birth){
 }
 
 window.closeClinicalHistory=function(){
+    // Si el dictado por voz seguía escuchando dentro de esta ventana, lo detenemos
+    // al cerrar; de lo contrario el micrófono se queda activo en segundo plano
+    // aunque el modal ya no esté visible.
+    if (typeof stopVoiceDictation === 'function') stopVoiceDictation();
     const modal=document.getElementById("clinical-history-modal");
     if (!modal) return;
     modal.classList.remove("flex");
@@ -516,23 +520,46 @@ let activeVoiceRecognition = null;
 let activeVoiceTarget = null;
 let activeVoiceButton = null;
 let activeVoiceBaseText = '';
+// Bandera explícita: true cuando el usuario pidió detener (o cambiamos de campo).
+// Es la única fuente de verdad para decidir si onend debe reiniciar el reconocimiento;
+// antes se usaba la clase CSS 'is-listening', que todavía seguía puesta en el botón
+// en el momento de llamar a stop(), así que onend la veía activa y volvía a arrancar
+// el micrófono en bucle infinito (por eso "Detener" no detenía nada).
+let voiceStopRequested = false;
 
 function getSpeechRecognitionConstructor(){
     return window.SpeechRecognition || window.webkitSpeechRecognition || null;
 }
+
+// Corta cualquier dictado por voz en curso de inmediato (usado al cerrar modales
+// o ventanas para que el micrófono no se quede escuchando en segundo plano).
+window.stopVoiceDictation = function(){
+    if (activeVoiceRecognition) {
+        voiceStopRequested = true;
+        try { activeVoiceRecognition.stop(); } catch(e) {}
+    }
+    resetVoiceUI();
+};
 
 window.toggleVoiceDictation = function(targetOrId, button){
     const target = typeof targetOrId === 'string' ? document.getElementById(targetOrId) : targetOrId;
     if (!target || !button) return;
 
     if (activeVoiceRecognition && activeVoiceButton === button) {
-        activeVoiceRecognition.stop();
+        voiceStopRequested = true;
+        button.classList.remove('is-listening');
+        button.textContent = '🎙️';
+        button.title = 'Dictar por voz';
+        button.setAttribute('aria-label','Dictar por voz');
+        try { activeVoiceRecognition.stop(); } catch(e) {}
         return;
     }
     if (activeVoiceRecognition) {
+        voiceStopRequested = true;
         try { activeVoiceRecognition.stop(); } catch(e) {}
         resetVoiceUI();
     }
+    voiceStopRequested = false;
 
     // Aviso inmediato de que se procesó el toque (evita la sensación de "botón muerto"
     // mientras se resuelve el permiso de micrófono, que en Android puede tardar).
@@ -659,8 +686,8 @@ function attachRecognitionHandlers(recognition, target, button){
 
     recognition.onend = function(){
         // continuous puede finalizar por decisión del navegador; si sigue activo,
-        // reanudamos mientras el usuario no haya pulsado detener.
-        if (activeVoiceRecognition === recognition && activeVoiceButton === button && button.classList.contains('is-listening')) {
+        // reanudamos mientras el usuario NO haya pulsado detener (voiceStopRequested).
+        if (!voiceStopRequested && activeVoiceRecognition === recognition && activeVoiceButton === button) {
             try { recognition.start(); return; } catch(e) {}
         }
         if (activeVoiceRecognition === recognition) resetVoiceUI();
@@ -691,6 +718,7 @@ function resetVoiceUI(){
     activeVoiceTarget = null;
     activeVoiceButton = null;
     activeVoiceBaseText = '';
+    voiceStopRequested = false;
 }
 
 function hideAllPrintSections(){
