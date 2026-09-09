@@ -8,6 +8,9 @@
 
   const KEY_NAME = 'agenda_pro_gemini_api_key';
   const MODEL = 'gemini-2.0-flash';
+  let lastAnswerText = '';
+  let voiceQueryActive = false;
+  let autoSpeak = true;
 
   function $(id) { return document.getElementById(id); }
 
@@ -145,11 +148,15 @@
 
   function localIntent(q) {
     const x = normalizeQuestion(q);
-    // Rangos explícitos: "del 01/09/2026 al 10/09/2026", "entre ... y ..."
     if (parseDateRange(q)) return 'range';
-    const isIncome = /ingres|cobrad|recaud|dinero|gane|gan(e|é|e)|pago/.test(x);
-    if (isIncome) return 'income';
-    if (/manana/.test(x)) return 'tomorrow';
+
+    // Finanzas: se distinguen ingresos realmente cobrados, pendientes y proyección.
+    if (/proyecc|proyectad|esperad|estimad|cuanto.*voy.*ingres|cuanto.*ingres.*futuro/.test(x)) return 'projection';
+    if (/pendient|por cobrar|sin pagar|no pagad|debo cobrar|falta cobrar/.test(x)) return 'pending';
+    if (/ingres.*real|ingreso real|recaudad|cobrad|cobrado|efectiv|cuanto.*cobre|cuanto.*recibi|cuanto.*me.*pagaron/.test(x)) return 'real_income';
+    if (/ingres|dinero|gane|gan(e|é|e)|pago/.test(x)) return 'real_income';
+
+    if (/mana/.test(x)) return 'tomorrow';
     if (/hoy/.test(x)) return 'today';
     if (/esta semana|semana/.test(x)) return 'week';
     if (/este mes|mes/.test(x)) return 'month';
@@ -204,7 +211,7 @@
   async function classifyWithGemini(question) {
     const key = localStorage.getItem(KEY_NAME);
     if (!key) return null;
-    const prompt = `Clasifica esta pregunta administrativa de una agenda de psicología en UNA sola categoría. NO solicites ni devuelvas datos de pacientes. Categorías permitidas: today, tomorrow, week, month, cancelled, income, patient_time, people, count, range, help. Responde únicamente con la categoría. Pregunta: ${question}`;
+    const prompt = `Clasifica esta pregunta administrativa de una agenda de psicología en UNA sola categoría. NO solicites ni devuelvas datos de pacientes. Categorías permitidas: today, tomorrow, week, month, cancelled, real_income, pending, projection, patient_time, people, count, range, help. Responde únicamente con la categoría. Pregunta: ${question}`;
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(key)}`;
     const response = await fetch(url, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -213,8 +220,30 @@
     if (!response.ok) throw new Error('Gemini respondió con HTTP ' + response.status);
     const data = await response.json();
     const text = (((data.candidates || [])[0] || {}).content || {}).parts?.[0]?.text || '';
-    const allowed = ['today','tomorrow','week','month','cancelled','income','patient_time','people','count','range','help'];
+    const allowed = ['today','tomorrow','week','month','cancelled','real_income','pending','projection','patient_time','people','count','range','help'];
     return allowed.includes(text.trim().toLowerCase()) ? text.trim().toLowerCase() : null;
+  }
+
+  function sumByCurrency(items) {
+    const out = {};
+    (items || []).forEach(a => {
+      const c = a.currency === 'USD' ? 'USD' : 'PEN';
+      out[c] = (out[c] || 0) + Number(a.cost || 0);
+    });
+    return out;
+  }
+
+  function formatTotals(byCurrency) {
+    const keys = Object.keys(byCurrency || {});
+    return keys.length ? keys.map(c => money(byCurrency[c], c)).join(' + ') : 'S/ 0.00';
+  }
+
+  function isPaid(a) {
+    return String(a.paymentStatus || '').toLowerCase() === 'pagado';
+  }
+
+  function isPendingPayment(a) {
+    return String(a.paymentStatus || '').toLowerCase() === 'pendiente';
   }
 
   function answer(intent, question) {
@@ -224,6 +253,9 @@
     let list = all.filter(a => a && a.date);
     let title = '';
 
+    // Proyección = citas futuras/no canceladas cuyo importe representa el cobro esperado.
+    // Ingreso real = únicamente paymentStatus === "pagado".
+    // Pendiente = paymentStatus === "pendiente", independientemente de que esté completada.
     if (intent === 'today' || intent === 'people' || intent === 'count') {
       list = list.filter(a => a.date === today && isActiveAppointment(a));
       title = 'Citas de hoy';
@@ -239,46 +271,55 @@
       const [start, end] = getMonthRange(today);
       list = list.filter(a => a.date >= start && a.date < end && isActiveAppointment(a));
       title = 'Citas de este mes';
-    } else if (intent === 'income') {
-      const [start, end] = getMonthRange(today);
-      list = list.filter(a => a.date >= start && a.date < end && isActiveAppointment(a));
-      title = 'Ingresos de este mes';
-      if (/semana/.test(normalizeQuestion(question))) {
-        const [ws, we] = getWeekRange(today);
-        list = list.filter(a => a.date >= ws && a.date < we);
-        title = 'Ingresos de esta semana';
-      }
     } else if (intent === 'range') {
       const range = parseDateRange(question);
-      if (!range) return '<div class="assistant-title">📅 Rango no reconocido</div><div>Usa, por ejemplo: “¿Cuántas citas tuve del 01/09/2026 al 10/09/2026?”</div>';
+      if (!range) return '<div class="assistant-title">📅 Rango no reconocido</div><div>Usa, por ejemplo: “¿Cuánto ingresé del 01/09/2026 al 10/09/2026?”</div>';
       list = list.filter(a => a.date >= range.start && a.date <= range.end && isActiveAppointment(a));
       title = `Periodo ${range.label}`;
-      if (/ingres|cobrad|recaud|dinero|pago|gan(e|é|e)/.test(normalizeQuestion(question))) {
-        const byCurrency = {};
-        list.filter(a => String(a.paymentStatus || '').toLowerCase() === 'pagado' || String(a.status || '').toLowerCase() === 'completada')
-          .forEach(a => { const c = a.currency === 'USD' ? 'USD' : 'PEN'; byCurrency[c] = (byCurrency[c] || 0) + Number(a.cost || 0); });
-        const parts = Object.keys(byCurrency).map(c => money(byCurrency[c], c));
-        return `<div class="assistant-title">💰 Ingresos ${escapeHtml(title.replace('Periodo ','').toLowerCase())}</div><div class="assistant-total">${parts.length ? parts.join(' + ') : 'S/ 0.00'}</div><div class="mt-1 text-slate-500">Se consideran pagos registrados como pagados o citas completadas.</div>`;
+      const qn = normalizeQuestion(question);
+      if (/proyecc|proyectad|esperad|estimad/.test(qn)) {
+        const future = list.filter(a => a.date >= today);
+        return `<div class="assistant-title">📈 Proyección ${escapeHtml(range.label)}</div><div class="assistant-total">${formatTotals(sumByCurrency(future))}</div><div class="mt-1 text-slate-500">${future.length} cita(s) futuras/no canceladas.</div>`;
       }
+      if (/pendient|por cobrar|sin pagar|no pagad|falta cobrar/.test(qn)) {
+        const pending = list.filter(isPendingPayment);
+        return `<div class="assistant-title">⏳ Pendiente ${escapeHtml(range.label)}</div><div class="assistant-total">${formatTotals(sumByCurrency(pending))}</div><div class="mt-1 text-slate-500">${pending.length} cita(s) pendientes de pago.</div>`;
+      }
+      const paid = list.filter(isPaid);
+      return `<div class="assistant-title">💰 Ingresos reales ${escapeHtml(range.label)}</div><div class="assistant-total">${formatTotals(sumByCurrency(paid))}</div><div class="mt-1 text-slate-500">${paid.length} pago(s) registrado(s) como pagado.</div>`;
+    } else if (intent === 'real_income' || intent === 'pending' || intent === 'projection') {
+      let [start, end] = getMonthRange(today);
+      title = 'este mes';
+      if (/semana/.test(normalizeQuestion(question))) {
+        [start, end] = getWeekRange(today);
+        title = 'esta semana';
+      } else if (/hoy/.test(normalizeQuestion(question))) {
+        start = today; end = addDays(today, 1); title = 'de hoy';
+      } else if (/mana/.test(normalizeQuestion(question))) {
+        start = addDays(today, 1); end = addDays(today, 2); title = 'de mañana';
+      }
+      list = list.filter(a => a.date >= start && a.date < end && isActiveAppointment(a));
+
+      if (intent === 'real_income') {
+        const paid = list.filter(isPaid);
+        return `<div class="assistant-title">💰 Ingresos reales ${title}</div><div class="assistant-total">${formatTotals(sumByCurrency(paid))}</div><div class="mt-1 text-slate-500">${paid.length} pago(s) efectivamente registrado(s).</div>`;
+      }
+      if (intent === 'pending') {
+        const pending = list.filter(isPendingPayment);
+        return `<div class="assistant-title">⏳ Pendiente por cobrar ${title}</div><div class="assistant-total">${formatTotals(sumByCurrency(pending))}</div><div class="mt-1 text-slate-500">${pending.length} cita(s) con pago pendiente.</div>`;
+      }
+      const future = list.filter(a => a.date >= today);
+      return `<div class="assistant-title">📈 Proyección de ingresos ${title}</div><div class="assistant-total">${formatTotals(sumByCurrency(future))}</div><div class="mt-1 text-slate-500">${future.length} cita(s) futuras/no canceladas consideradas.</div>`;
     } else if (intent === 'patient_time') {
       const words = normalizeQuestion(question).split(/\s+/).filter(w => w.length > 2 && !['quien','tiene','cita','hora','que','a','para','el','la','de'].includes(w));
       const matches = words.length ? list.filter(a => words.some(w => normalizeQuestion(a.patientName).includes(w))) : [];
       if (!matches.length) return '<div class="assistant-title">🔎 No encontré una coincidencia.</div><div>Prueba con el nombre del paciente, por ejemplo: “¿A qué hora tiene cita María?”</div>';
       return '<div class="assistant-title">🕐 Horario encontrado</div><ul class="assistant-list">' + matches.slice(0, 10).map(a => `<li><b>${escapeHtml(a.patientName)}</b>: ${escapeHtml(a.time || 'sin hora')} — ${formatDate(a.date)}</li>`).join('') + '</ul>';
+    } else if (intent === 'cancelled') {
+      list = all.filter(a => a && a.date && String(a.status || '').toLowerCase() === 'cancelada');
+      return `<div class="assistant-title">❌ Citas canceladas</div><div class="assistant-total">${list.length}</div>${list.length ? '<ul class="assistant-list">' + list.slice(0, 20).map(a => `<li>${formatDate(a.date)} ${escapeHtml(a.time || '')} — ${escapeHtml(a.patientName)}</li>`).join('') + '</ul>' : '<div>No hay citas canceladas registradas.</div>'}`;
     } else if (intent === 'help') {
-      return '<div class="assistant-title">🤖 Puedo ayudarte con la agenda</div><div>Prueba: “¿Cuántas citas tengo esta semana?”, “¿Cuántas citas tengo este mes?”, “¿Cuánto ingresé del 01/09/2026 al 09/09/2026?” o “¿Cuántas citas canceladas tuve?”</div>';
-    }
-
-    if (intent === 'income') {
-      const byCurrency = {};
-      list.filter(a => String(a.paymentStatus || '').toLowerCase() === 'pagado' || String(a.status || '').toLowerCase() === 'completada')
-        .forEach(a => { const c = a.currency === 'USD' ? 'USD' : 'PEN'; byCurrency[c] = (byCurrency[c] || 0) + Number(a.cost || 0); });
-      const parts = Object.keys(byCurrency).map(c => money(byCurrency[c], c));
-      return `<div class="assistant-title">💰 ${title}</div><div class="assistant-total">${parts.length ? parts.join(' + ') : 'S/ 0.00'}</div><div class="mt-1 text-slate-500">Basado en pagos registrados como pagados o citas completadas.</div>`;
-    }
-
-    if (intent === 'cancelled') {
-      return `<div class="assistant-title">❌ ${title}</div><div class="assistant-total">${list.length}</div>${list.length ? '<ul class="assistant-list">' + list.slice(0, 20).map(a => `<li>${formatDate(a.date)} ${escapeHtml(a.time || '')} — ${escapeHtml(a.patientName)}</li>`).join('') + '</ul>' : '<div>No hay citas canceladas registradas.</div>'}`;
+      return '<div class="assistant-title">🤖 Puedo ayudarte con la agenda</div><div>Ejemplos: “¿Cuántas citas tengo esta semana?”, “¿Cuánto ingresé realmente este mes?”, “¿Cuánto tengo pendiente por cobrar?”, “¿Cuál es mi proyección de ingresos este mes?” o “¿Cuánto ingresé del 01/09/2026 al 09/09/2026?”.</div>';
     }
 
     if (intent === 'people') {
@@ -288,10 +329,47 @@
     return `<div class="assistant-title">📅 ${title}</div><div class="assistant-total">${list.length}</div>${list.length ? '<ul class="assistant-list">' + list.slice().sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time)).slice(0, 30).map(a => `<li><b>${escapeHtml(a.patientName)}</b> — ${formatDate(a.date)} ${escapeHtml(a.time || '')}</li>`).join('') + '</ul>' : '<div>No hay citas registradas para ese periodo.</div>'}`;
   }
 
+  function speakAnswer() {
+    if (!('speechSynthesis' in window)) {
+      setStatus('Tu navegador no admite lectura por voz.', 'error');
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const text = lastAnswerText || (($('assistant-answer') || {}).innerText || '');
+    if (!text.trim()) {
+      setStatus('Primero realiza una consulta.', 'info');
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(text.replace(/\s+/g, ' ').trim());
+    utterance.lang = 'es-PE';
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    window.speechSynthesis.speak(utterance);
+    setStatus('🔊 Reproduciendo la respuesta por voz.', 'ok');
+  }
+
+  function stopAnswerVoice() {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    setStatus('🔇 Lectura por voz detenida.', 'info');
+  }
+
+  function toggleAutoVoice() {
+    autoSpeak = !autoSpeak;
+    const btn = $('assistant-auto-voice-btn');
+    if (btn) {
+      btn.textContent = autoSpeak ? '🔊 Voz automática: ON' : '🔇 Voz automática: OFF';
+      btn.classList.toggle('bg-emerald-50', autoSpeak);
+      btn.classList.toggle('text-emerald-700', autoSpeak);
+    }
+    if (!autoSpeak) stopAnswerVoice();
+  }
+
   let recognition = null;
   let isListening = false;
 
   function toggleAssistantVoice() {
+    voiceQueryActive = true;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setStatus('Tu navegador no admite dictado por voz. Usa Google Chrome o Microsoft Edge.', 'error');
@@ -362,8 +440,13 @@
       } catch (e) {
         console.warn('[Asistente] Gemini no disponible; usando interpretación local.', e);
       }
-      setAnswer(answer(intent, question));
+      const answerHtml = answer(intent, question);
+      setAnswer(answerHtml);
+      const answerEl = $('assistant-answer');
+      lastAnswerText = answerEl ? answerEl.innerText : '';
       setStatus('Consulta procesada localmente. Gemini solo interpretó la pregunta.', 'ok');
+      if (autoSpeak || voiceQueryActive) setTimeout(() => speakAnswer(), 120);
+      voiceQueryActive = false;
     } catch (e) {
       console.error(e);
       setStatus('No se pudo procesar la consulta: ' + e.message, 'error');
@@ -386,5 +469,8 @@
   window.askAssistant = askAssistant;
   window.toggleAssistantVoice = toggleAssistantVoice;
   window.askAssistantExample = askAssistantExample;
+  window.speakAnswer = speakAnswer;
+  window.stopAnswerVoice = stopAnswerVoice;
+  window.toggleAutoVoice = toggleAutoVoice;
   window.addEventListener('DOMContentLoaded', updateConfigState);
 })();

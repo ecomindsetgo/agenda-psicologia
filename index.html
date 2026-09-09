@@ -476,6 +476,10 @@
                     <button onclick="askAssistantExample('¿Cuánto ingresé esta semana?')" class="assistant-chip">Ingresos semana</button>
                     <button onclick="askAssistantExample('¿Cuánto ingresé este mes?')" class="assistant-chip">Ingresos mes</button>
                     <button onclick="askAssistantExample('¿Cuánto ingresé del 01/09/2026 al 09/09/2026?')" class="assistant-chip">Rango de fechas</button>
+                    <button onclick="askAssistantExample('¿Cuánto ingresé realmente este mes?')" class="assistant-chip">Ingresos reales</button>
+                    <button onclick="askAssistantExample('¿Cuánto tengo pendiente por cobrar este mes?')" class="assistant-chip">Pendientes</button>
+                    <button onclick="askAssistantExample('¿Cuál es mi proyección de ingresos este mes?')" class="assistant-chip">Proyección</button>
+
                 </div>
                 <div>
                     <label for="assistant-question" class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Pregunta</label>
@@ -484,10 +488,15 @@
                         <button id="assistant-voice-btn" onclick="toggleAssistantVoice()" class="w-12 h-12 shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl font-bold text-xl transition" title="Hablar" aria-label="Hablar">🎙️</button>
                         <button id="assistant-send-btn" onclick="askAssistant()" class="w-12 h-12 shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition" title="Consultar">➤</button>
                     </div>
-                    <p class="text-[11px] text-slate-400 mt-1">Puedes hablar en español. Al terminar de hablar, la consulta se ejecuta automáticamente.</p>
+                    <p class="text-[11px] text-slate-400 mt-1">Puedes hablar en español. Al terminar de hablar, la consulta se ejecuta automáticamente y la respuesta puede leerse por voz.</p>
                 </div>
                 <div id="assistant-status" class="hidden text-xs rounded-xl p-3"></div>
                 <div id="assistant-answer" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm leading-6"></div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="speakAnswer()" class="px-3 py-2 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-semibold hover:bg-indigo-100">🔊 Leer respuesta</button>
+                    <button onclick="stopAnswerVoice()" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-600 border border-slate-200 text-xs font-semibold hover:bg-slate-200">⏹️ Detener voz</button>
+                    <button id="assistant-auto-voice-btn" onclick="toggleAutoVoice()" class="px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold hover:bg-emerald-100">🔊 Voz automática: ON</button>
+                </div>
                 <div class="pt-2 border-t border-slate-100">
                     <button onclick="openGeminiConfig()" class="text-xs text-slate-500 hover:text-indigo-600 underline">⚙️ Configurar API de Gemini</button>
                     <span id="assistant-config-state" class="text-[11px] text-slate-400 ml-2"></span>
