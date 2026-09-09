@@ -472,14 +472,19 @@
                     <button onclick="askAssistantExample('¿Cuántas citas tengo hoy?')" class="assistant-chip">Citas de hoy</button>
                     <button onclick="askAssistantExample('¿Quiénes tienen cita mañana?')" class="assistant-chip">Citas de mañana</button>
                     <button onclick="askAssistantExample('¿Cuántas citas tengo esta semana?')" class="assistant-chip">Esta semana</button>
-                    <button onclick="askAssistantExample('¿Cuánto ingresé este mes?')" class="assistant-chip">Ingresos del mes</button>
+                    <button onclick="askAssistantExample('¿Cuántas citas tengo este mes?')" class="assistant-chip">Este mes</button>
+                    <button onclick="askAssistantExample('¿Cuánto ingresé esta semana?')" class="assistant-chip">Ingresos semana</button>
+                    <button onclick="askAssistantExample('¿Cuánto ingresé este mes?')" class="assistant-chip">Ingresos mes</button>
+                    <button onclick="askAssistantExample('¿Cuánto ingresé del 01/09/2026 al 09/09/2026?')" class="assistant-chip">Rango de fechas</button>
                 </div>
                 <div>
                     <label for="assistant-question" class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Pregunta</label>
-                    <div class="flex gap-2">
-                        <textarea id="assistant-question" rows="2" class="flex-1 border border-slate-200 rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ej.: ¿Cuánto ingresé esta semana?"></textarea>
-                        <button id="assistant-send-btn" onclick="askAssistant()" class="self-end bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-3 rounded-xl font-bold transition" title="Consultar">➤</button>
+                    <div class="flex gap-2 items-end">
+                        <textarea id="assistant-question" rows="2" class="flex-1 border border-slate-200 rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Escribe o pulsa 🎙️ para hablar…"></textarea>
+                        <button id="assistant-voice-btn" onclick="toggleAssistantVoice()" class="w-12 h-12 shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl font-bold text-xl transition" title="Hablar" aria-label="Hablar">🎙️</button>
+                        <button id="assistant-send-btn" onclick="askAssistant()" class="w-12 h-12 shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition" title="Consultar">➤</button>
                     </div>
+                    <p class="text-[11px] text-slate-400 mt-1">Puedes hablar en español. Al terminar de hablar, la consulta se ejecuta automáticamente.</p>
                 </div>
                 <div id="assistant-status" class="hidden text-xs rounded-xl p-3"></div>
                 <div id="assistant-answer" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm leading-6"></div>

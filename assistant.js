@@ -145,22 +145,66 @@
 
   function localIntent(q) {
     const x = normalizeQuestion(q);
+    // Rangos explícitos: "del 01/09/2026 al 10/09/2026", "entre ... y ..."
+    if (parseDateRange(q)) return 'range';
+    const isIncome = /ingres|cobrad|recaud|dinero|gane|gan(e|é|e)|pago/.test(x);
+    if (isIncome) return 'income';
     if (/manana/.test(x)) return 'tomorrow';
     if (/hoy/.test(x)) return 'today';
     if (/esta semana|semana/.test(x)) return 'week';
     if (/este mes|mes/.test(x)) return 'month';
     if (/cancelad|anulad/.test(x)) return 'cancelled';
-    if (/ingres|cobrad|recaud|dinero|gan(e|é|e)|pago/.test(x)) return 'income';
     if (/a que hora|hora.*cita|cita.*hora/.test(x)) return 'patient_time';
     if (/quien|pacientes|tienen cita/.test(x)) return 'people';
     if (/cuantas|cantidad|numero|numero de|total.*cita|citas/.test(x)) return 'count';
     return 'help';
   }
 
+  function parseDateOnly(value, defaultYear) {
+    if (!value) return null;
+    const v = normalizeQuestion(value).trim();
+    let m = v.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+    if (m) return `${m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
+    m = v.match(/(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);
+    if (m) return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+    const months = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,setiembre:9,octubre:10,noviembre:11,diciembre:12};
+    m = v.match(/(\d{1,2})\s+de\s+([a-z]+)/);
+    if (m && months[m[2]]) return `${defaultYear || new Date().getFullYear()}-${String(months[m[2]]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
+    return null;
+  }
+
+  function parseDateRange(question) {
+    const q = normalizeQuestion(question);
+    const explicit = q.match(/\b\d{1,2}[\/-]\d{1,2}[\/-]\d{4}\b/g);
+    if (explicit && explicit.length >= 2) {
+      const start = parseDateOnly(explicit[0]);
+      const end = parseDateOnly(explicit[1]);
+      if (start && end) return { start, end, label: `del ${formatDate(start)} al ${formatDate(end)}` };
+    }
+    // Ejemplos: "del 1 al 9 de septiembre", "desde el 1 de septiembre hasta el 9 de septiembre"
+    const months = 'enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre';
+    let m = q.match(new RegExp('(?:del|desde)\\s+(?:el\\s+)?(\\d{1,2})\\s+(?:de\\s+)?(' + months + ')\\s+(?:de\\s+)?(\\d{4})?\\s+(?:al|hasta)\\s+(?:el\\s+)?(\\d{1,2})\\s+(?:de\\s+)?(' + months + ')(?:\\s+(?:de\\s+)?(\\d{4}))?'));
+    if (m) {
+      const year = Number(m[3] || m[6] || new Date().getFullYear());
+      const start = parseDateOnly(`${m[1]} de ${m[2]}`, year);
+      const end = parseDateOnly(`${m[4]} de ${m[5]}`, Number(m[6] || year));
+      if (start && end) return { start, end, label: `del ${formatDate(start)} al ${formatDate(end)}` };
+    }
+    // Ejemplo abreviado: "del 1 al 9 de septiembre"
+    m = q.match(new RegExp('del\\s+(\\d{1,2})\\s+al\\s+(\\d{1,2})\\s+de\\s+(' + months + ')(?:\\s+de\\s+(\\d{4}))?'));
+    if (m) {
+      const year = Number(m[4] || new Date().getFullYear());
+      const start = parseDateOnly(`${m[1]} de ${m[3]}`, year);
+      const end = parseDateOnly(`${m[2]} de ${m[3]}`, year);
+      if (start && end) return { start, end, label: `del ${formatDate(start)} al ${formatDate(end)}` };
+    }
+    return null;
+  }
+
   async function classifyWithGemini(question) {
     const key = localStorage.getItem(KEY_NAME);
     if (!key) return null;
-    const prompt = `Clasifica esta pregunta administrativa de una agenda de psicología en UNA sola categoría. NO solicites ni devuelvas datos de pacientes. Categorías permitidas: today, tomorrow, week, month, cancelled, income, patient_time, people, count, help. Responde únicamente con la categoría. Pregunta: ${question}`;
+    const prompt = `Clasifica esta pregunta administrativa de una agenda de psicología en UNA sola categoría. NO solicites ni devuelvas datos de pacientes. Categorías permitidas: today, tomorrow, week, month, cancelled, income, patient_time, people, count, range, help. Responde únicamente con la categoría. Pregunta: ${question}`;
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(key)}`;
     const response = await fetch(url, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -169,7 +213,7 @@
     if (!response.ok) throw new Error('Gemini respondió con HTTP ' + response.status);
     const data = await response.json();
     const text = (((data.candidates || [])[0] || {}).content || {}).parts?.[0]?.text || '';
-    const allowed = ['today','tomorrow','week','month','cancelled','income','patient_time','people','count','help'];
+    const allowed = ['today','tomorrow','week','month','cancelled','income','patient_time','people','count','range','help'];
     return allowed.includes(text.trim().toLowerCase()) ? text.trim().toLowerCase() : null;
   }
 
@@ -191,27 +235,46 @@
       const [start, end] = getWeekRange(today);
       list = list.filter(a => a.date >= start && a.date < end && isActiveAppointment(a));
       title = 'Citas de esta semana';
-    } else if (intent === 'month' || intent === 'income') {
+    } else if (intent === 'month') {
       const [start, end] = getMonthRange(today);
       list = list.filter(a => a.date >= start && a.date < end && isActiveAppointment(a));
       title = 'Citas de este mes';
-    } else if (intent === 'cancelled') {
-      list = list.filter(a => /cancel|anulad/i.test(String(a.status || '')));
-      title = 'Citas canceladas';
+    } else if (intent === 'income') {
+      const [start, end] = getMonthRange(today);
+      list = list.filter(a => a.date >= start && a.date < end && isActiveAppointment(a));
+      title = 'Ingresos de este mes';
+      if (/semana/.test(normalizeQuestion(question))) {
+        const [ws, we] = getWeekRange(today);
+        list = list.filter(a => a.date >= ws && a.date < we);
+        title = 'Ingresos de esta semana';
+      }
+    } else if (intent === 'range') {
+      const range = parseDateRange(question);
+      if (!range) return '<div class="assistant-title">📅 Rango no reconocido</div><div>Usa, por ejemplo: “¿Cuántas citas tuve del 01/09/2026 al 10/09/2026?”</div>';
+      list = list.filter(a => a.date >= range.start && a.date <= range.end && isActiveAppointment(a));
+      title = `Periodo ${range.label}`;
+      if (/ingres|cobrad|recaud|dinero|pago|gan(e|é|e)/.test(normalizeQuestion(question))) {
+        const byCurrency = {};
+        list.filter(a => String(a.paymentStatus || '').toLowerCase() === 'pagado' || String(a.status || '').toLowerCase() === 'completada')
+          .forEach(a => { const c = a.currency === 'USD' ? 'USD' : 'PEN'; byCurrency[c] = (byCurrency[c] || 0) + Number(a.cost || 0); });
+        const parts = Object.keys(byCurrency).map(c => money(byCurrency[c], c));
+        return `<div class="assistant-title">💰 Ingresos ${escapeHtml(title.replace('Periodo ','').toLowerCase())}</div><div class="assistant-total">${parts.length ? parts.join(' + ') : 'S/ 0.00'}</div><div class="mt-1 text-slate-500">Se consideran pagos registrados como pagados o citas completadas.</div>`;
+      }
     } else if (intent === 'patient_time') {
       const words = normalizeQuestion(question).split(/\s+/).filter(w => w.length > 2 && !['quien','tiene','cita','hora','que','a','para','el','la','de'].includes(w));
       const matches = words.length ? list.filter(a => words.some(w => normalizeQuestion(a.patientName).includes(w))) : [];
       if (!matches.length) return '<div class="assistant-title">🔎 No encontré una coincidencia.</div><div>Prueba con el nombre del paciente, por ejemplo: “¿A qué hora tiene cita María?”</div>';
       return '<div class="assistant-title">🕐 Horario encontrado</div><ul class="assistant-list">' + matches.slice(0, 10).map(a => `<li><b>${escapeHtml(a.patientName)}</b>: ${escapeHtml(a.time || 'sin hora')} — ${formatDate(a.date)}</li>`).join('') + '</ul>';
     } else if (intent === 'help') {
-      return '<div class="assistant-title">🤖 Puedo ayudarte con la agenda</div><div>Prueba: “¿Cuántas citas tengo hoy?”, “¿Quiénes tienen cita mañana?”, “¿Cuánto ingresé este mes?” o “¿Cuántas citas canceladas tuve?”</div>';
+      return '<div class="assistant-title">🤖 Puedo ayudarte con la agenda</div><div>Prueba: “¿Cuántas citas tengo esta semana?”, “¿Cuántas citas tengo este mes?”, “¿Cuánto ingresé del 01/09/2026 al 09/09/2026?” o “¿Cuántas citas canceladas tuve?”</div>';
     }
 
     if (intent === 'income') {
       const byCurrency = {};
-      list.forEach(a => { const c = a.currency === 'USD' ? 'USD' : 'PEN'; byCurrency[c] = (byCurrency[c] || 0) + Number(a.cost || 0); });
+      list.filter(a => String(a.paymentStatus || '').toLowerCase() === 'pagado' || String(a.status || '').toLowerCase() === 'completada')
+        .forEach(a => { const c = a.currency === 'USD' ? 'USD' : 'PEN'; byCurrency[c] = (byCurrency[c] || 0) + Number(a.cost || 0); });
       const parts = Object.keys(byCurrency).map(c => money(byCurrency[c], c));
-      return `<div class="assistant-title">💰 ${title}</div><div class="assistant-total">${parts.length ? parts.join(' + ') : 'S/ 0.00'}</div><div class="mt-1 text-slate-500">Basado en las citas no canceladas del periodo.</div>`;
+      return `<div class="assistant-title">💰 ${title}</div><div class="assistant-total">${parts.length ? parts.join(' + ') : 'S/ 0.00'}</div><div class="mt-1 text-slate-500">Basado en pagos registrados como pagados o citas completadas.</div>`;
     }
 
     if (intent === 'cancelled') {
@@ -223,6 +286,65 @@
     }
 
     return `<div class="assistant-title">📅 ${title}</div><div class="assistant-total">${list.length}</div>${list.length ? '<ul class="assistant-list">' + list.slice().sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time)).slice(0, 30).map(a => `<li><b>${escapeHtml(a.patientName)}</b> — ${formatDate(a.date)} ${escapeHtml(a.time || '')}</li>`).join('') + '</ul>' : '<div>No hay citas registradas para ese periodo.</div>'}`;
+  }
+
+  let recognition = null;
+  let isListening = false;
+
+  function toggleAssistantVoice() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setStatus('Tu navegador no admite dictado por voz. Usa Google Chrome o Microsoft Edge.', 'error');
+      return;
+    }
+    if (isListening && recognition) { recognition.stop(); return; }
+
+    recognition = new SpeechRecognition();
+    recognition.lang = 'es-PE';
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    isListening = true;
+    updateVoiceButton();
+    setStatus('🎙️ Escuchando… habla ahora.', 'info');
+
+    let finalText = '';
+    recognition.onresult = (event) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const text = event.results[i][0].transcript;
+        if (event.results[i].isFinal) finalText += text; else interim += text;
+      }
+      const input = $('assistant-question');
+      if (input) input.value = (finalText + interim).trim();
+    };
+    recognition.onend = () => {
+      isListening = false;
+      updateVoiceButton();
+      if (finalText.trim()) {
+        const input = $('assistant-question');
+        if (input) input.value = finalText.trim();
+        setTimeout(() => askAssistant(), 250);
+      } else {
+        setStatus('No pude captar la pregunta. Inténtalo nuevamente.', 'info');
+      }
+    };
+    recognition.onerror = (event) => {
+      isListening = false;
+      updateVoiceButton();
+      const msg = event.error === 'not-allowed' ? 'Debes permitir el acceso al micrófono en el navegador.' : 'No se pudo usar el micrófono: ' + event.error;
+      setStatus(msg, 'error');
+    };
+    recognition.start();
+  }
+
+  function updateVoiceButton() {
+    const btn = $('assistant-voice-btn');
+    if (!btn) return;
+    btn.textContent = isListening ? '⏹️' : '🎙️';
+    btn.title = isListening ? 'Detener dictado' : 'Hablar';
+    btn.setAttribute('aria-label', isListening ? 'Detener dictado' : 'Hablar');
+    btn.classList.toggle('bg-rose-100', isListening);
+    btn.classList.toggle('text-rose-700', isListening);
   }
 
   async function askAssistant() {
@@ -262,6 +384,7 @@
   window.saveGeminiKey = saveGeminiKey;
   window.clearGeminiKey = clearGeminiKey;
   window.askAssistant = askAssistant;
+  window.toggleAssistantVoice = toggleAssistantVoice;
   window.askAssistantExample = askAssistantExample;
   window.addEventListener('DOMContentLoaded', updateConfigState);
 })();
