@@ -79,6 +79,26 @@ try {
 
         window._profileState = state;
 
+        // ─── PUENTE SEGURO PARA EL ASISTENTE IA ───────────────────────────────
+        // IMPORTANTE: solo expone datos administrativos de citas. Nunca historias,
+        // notas clínicas, diagnósticos, motivos de consulta ni campos clínicos.
+        // Gemini NO recibe este objeto; el asistente calcula las respuestas localmente.
+        window.getAgendaAdminSnapshot = function () {
+            return {
+                appointments: (state.appointments || []).map(a => ({
+                    id: a.id,
+                    date: a.date || '',
+                    time: a.time || '',
+                    patientName: a.patientName || 'Paciente',
+                    status: a.status || 'pendiente',
+                    cost: Number(a.cost || 0),
+                    currency: a.currency === 'USD' ? 'USD' : 'PEN',
+                    paymentStatus: a.paymentStatus || 'pendiente',
+                    modality: a.modality || ''
+                }))
+            };
+        };
+
         // ── Hora actual de Perú (GMT-5). Se usa para deshabilitar horas ya
         // pasadas al agendar una cita para el día de hoy.
         function getLimaNow() {
@@ -428,8 +448,6 @@ function calculatePatientAge(birth){
 }
 
 window.closeClinicalHistory=function(){
-    // Cerrar Historia Clínica debe detener SIEMPRE el dictado y liberar el micrófono.
-    if (typeof stopVoiceDictation === 'function') stopVoiceDictation();
     const modal=document.getElementById("clinical-history-modal");
     if (!modal) return;
     modal.classList.remove("flex");
@@ -497,7 +515,7 @@ window.newClinicalNote = function(note = {}) {
             <div><label class="font-semibold">Fecha</label><input type="date" class="note-date w-full border rounded-lg p-2" value="${note.fecha || new Date().toISOString().split("T")[0]}"></div>
             <div><label class="font-semibold">Sesión</label><input type="text" class="note-session w-full border rounded-lg p-2" value="${note.sesion || ""}" placeholder="Sesión 1"></div>
         </div>
-        <div class="mt-3"><label class="font-semibold">Evolución Clínica</label><div class="hc-voice-field mt-2"><textarea class="note-text w-full border rounded-xl p-3" rows="5">${note.evolucion || ""}</textarea><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation(this.closest('[data-id]').querySelector('.note-text'), this)" title="Dictar evolución" aria-label="Dictar evolución clínica">🎙️</button></div></div>
+        <div class="mt-3"><label class="font-semibold">Evolución Clínica</label><textarea class="note-text w-full border rounded-xl p-3 mt-2" rows="5">${note.evolucion || ""}</textarea></div>
         <div class="text-right mt-3"><button type="button" onclick="deleteClinicalNoteCard('${id}', this)" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg">Eliminar</button></div>`;
     document.getElementById("clinical-notes-container").appendChild(div);
 };
@@ -510,305 +528,6 @@ window.deleteClinicalNoteCard = async function(noteId, btnEl) {
     } catch(error){ console.error('[Error eliminando evolución]',error); alert("❌ No se pudo eliminar la evolución."); return; }
     btnEl.closest('[data-id]').remove();
 };
-
-// ─── DICTADO POR VOZ (sin IA, sin guardar audio) ─────────────────────────
-// Usa la Web Speech API del navegador. El texto reconocido se escribe directamente
-// en el campo seleccionado. No se almacena audio en Firebase ni en la aplicación.
-let activeVoiceRecognition = null;
-let activeVoiceTarget = null;
-let activeVoiceButton = null;
-let activeVoiceBaseText = '';
-let voiceDictationActive = false;
-let voiceSessionId = 0;
-
-function getSpeechRecognitionConstructor(){
-    return window.SpeechRecognition || window.webkitSpeechRecognition || null;
-}
-
-function stopVoiceDictation(){
-    // Invalidamos cualquier promesa pendiente de permiso/inicio.
-    voiceDictationActive = false;
-    voiceSessionId++;
-
-    const recognition = activeVoiceRecognition;
-    const button = activeVoiceButton;
-    const target = activeVoiceTarget;
-
-    // Quitar el estado visual ANTES de detener para que onend nunca lo reinicie.
-    if (button) {
-        button.classList.remove('is-listening','is-requesting');
-        button.textContent = '🎙️';
-        button.title = 'Dictar por voz';
-        button.setAttribute('aria-label','Dictar por voz');
-    }
-    if (target) delete target.dataset.voiceInterim;
-
-    activeVoiceRecognition = null;
-    activeVoiceTarget = null;
-    activeVoiceButton = null;
-    activeVoiceBaseText = '';
-
-    if (recognition) {
-        try { recognition.abort(); } catch(e) {}
-        try { recognition.stop(); } catch(e) {}
-    }
-}
-
-window.stopVoiceDictation = stopVoiceDictation;
-
-window.toggleVoiceDictation = function(targetOrId, button){
-    const target = typeof targetOrId === 'string' ? document.getElementById(targetOrId) : targetOrId;
-    if (!target || !button) return;
-
-    // Si este botón es el que está grabando, el segundo toque SIEMPRE detiene.
-    if (voiceDictationActive && activeVoiceButton === button) {
-        stopVoiceDictation();
-        return;
-    }
-
-    // Solo puede existir una sesión de dictado a la vez.
-    if (voiceDictationActive || activeVoiceRecognition) stopVoiceDictation();
-
-    const session = ++voiceSessionId;
-    voiceDictationActive = true;
-
-    button.classList.add('is-requesting');
-    button.textContent = '…';
-
-    if (!window.isSecureContext) {
-        stopVoiceDictation();
-        alert('El dictado por voz requiere una conexión segura (https://).');
-        return;
-    }
-
-    const Recognition = getSpeechRecognitionConstructor();
-    if (!Recognition) {
-        stopVoiceDictation();
-        button.classList.add('is-unsupported');
-        alert('El dictado por voz no está disponible en este navegador. Prueba con Google Chrome o Microsoft Edge actualizado.');
-        return;
-    }
-
-    const startRecognition = function(){
-        // El usuario pudo haber cerrado la ventana mientras se pedía el permiso.
-        if (!voiceDictationActive || session !== voiceSessionId) return;
-
-        let recognition;
-        try {
-            recognition = new Recognition();
-        } catch (error) {
-            console.error('[Dictado por voz] No se pudo crear el reconocedor', error);
-            stopVoiceDictation();
-            alert('No se pudo iniciar el dictado por voz. Revisa los permisos de micrófono.');
-            return;
-        }
-
-        recognition.lang = 'es-PE';
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        // Mejora la tolerancia a frases cortas y voz de volumen normal.
-        // La ganancia real del micrófono la controla Chrome/Windows; la Web Speech API
-        // no expone un control de volumen directo al JavaScript.
-        recognition.grammars = recognition.grammars || undefined;
-        recognition.maxAlternatives = 1;
-
-        activeVoiceRecognition = recognition;
-        activeVoiceTarget = target;
-        activeVoiceButton = button;
-        activeVoiceBaseText = String(target.value || '');
-
-        button.classList.remove('is-requesting');
-        button.classList.add('is-listening');
-        button.textContent = '⏹️';
-        button.title = 'Detener dictado';
-        button.setAttribute('aria-label','Detener dictado');
-        target.focus();
-
-        attachRecognitionHandlers(recognition, target, button, session);
-
-        try {
-            recognition.start();
-        } catch(error) {
-            console.error('[Error iniciando dictado]', error);
-            stopVoiceDictation();
-            alert('No se pudo iniciar el dictado por voz. Revisa el permiso del micrófono.');
-        }
-    };
-
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ audio: {
-                autoGainControl: true,
-                noiseSuppression: true,
-                echoCancellation: true,
-                channelCount: 1
-            } })
-            .then(function(stream){
-                // getUserMedia solo se usa para solicitar/verificar el permiso.
-                // SpeechRecognition administra su propio acceso al micrófono.
-                stream.getTracks().forEach(function(track){ track.stop(); });
-                if (voiceDictationActive && session === voiceSessionId) {
-                    startRecognition();
-                }
-            })
-            .catch(function(error){
-                console.warn('[Dictado por voz] getUserMedia rechazado', error);
-                if (session !== voiceSessionId || !voiceDictationActive) return;
-                stopVoiceDictation();
-                if (error && (error.name === 'NotAllowedError' || error.name === 'SecurityError')) {
-                    alert('El micrófono está bloqueado para esta página. Permite el acceso al micrófono en los permisos del sitio y vuelve a intentarlo.');
-                } else if (error && error.name === 'NotFoundError') {
-                    alert('No se encontró un micrófono disponible en este dispositivo.');
-                } else {
-                    alert('No se pudo acceder al micrófono. Revisa los permisos de Chrome/Edge.');
-                }
-            });
-    } else {
-        startRecognition();
-    }
-};
-
-function startVoiceRecognitionAgain(target, button, session){
-    if (!voiceDictationActive || session !== voiceSessionId) return;
-    const Recognition = getSpeechRecognitionConstructor();
-    if (!Recognition) { stopVoiceDictation(); return; }
-    const recognition = new Recognition();
-    recognition.lang = 'es-PE';
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 1;
-    activeVoiceRecognition = recognition;
-    attachRecognitionHandlers(recognition, target, button, session);
-    try { recognition.start(); } catch(e) { stopVoiceDictation(); }
-}
-
-function attachRecognitionHandlers(recognition, target, button, session){
-    let recognitionHadFinalResult = false;
-    let lastFinalText = '';
-    recognition.onresult = function(event){
-        if (!voiceDictationActive || session !== voiceSessionId) return;
-
-        let finalText = '';
-        let interimText = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-            const piece = event.results[i][0].transcript;
-            if (event.results[i].isFinal) finalText += piece;
-            else interimText += piece;
-        }
-
-        if (finalText) {
-            recognitionHadFinalResult = true;
-            const cleanedFinal = normalizeVoicePunctuation(finalText.trim());
-            const normalizedFinal = cleanedFinal.toLowerCase().replace(/\s+/g, ' ').trim();
-
-            // Chrome puede entregar nuevamente el último resultado cuando una sesión
-            // termina/reinicia. No volver a insertar exactamente la misma frase.
-            if (normalizedFinal && normalizedFinal !== lastFinalText) {
-                const current = String(target.value || '').trimEnd();
-                const normalizedCurrent = current.toLowerCase().replace(/\s+/g, ' ').trim();
-                const alreadyAtEnd = normalizedCurrent.endsWith(normalizedFinal);
-                if (!alreadyAtEnd) {
-                    const separator = current ? ' ' : '';
-                    target.value = current + separator + cleanedFinal;
-                    target.dispatchEvent(new Event('input', {bubbles:true}));
-                }
-                lastFinalText = normalizedFinal;
-            }
-        }
-
-        if (interimText) {
-            target.dataset.voiceInterim = interimText;
-            button.title = 'Escuchando… ' + interimText;
-        } else {
-            delete target.dataset.voiceInterim;
-            button.title = 'Escuchando… habla con normalidad';
-        }
-    };
-
-    recognition.onerror = function(event){
-        console.warn('[Dictado por voz]', event.error);
-
-        if (session !== voiceSessionId || !voiceDictationActive) return;
-
-        // Estos errores terminan la sesión; NO se intenta reiniciar.
-        // Especialmente importante para evitar bucles donde el micrófono queda abierto.
-        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-            stopVoiceDictation();
-            alert('El navegador bloqueó el micrófono. Revisa los permisos del sitio y vuelve a intentarlo.');
-        } else if (event.error === 'audio-capture') {
-            stopVoiceDictation();
-            alert('No se encontró un micrófono disponible. Revisa el micrófono del equipo.');
-        } else if (event.error === 'network') {
-            stopVoiceDictation();
-            alert('El dictado por voz necesita conexión a internet. Revisa tu conexión e intenta de nuevo.');
-        } else if (event.error === 'aborted') {
-            // Es normal cuando el usuario pulsa Detener o se cierra la Historia Clínica.
-        } else if (event.error === 'no-speech') {
-            // No detenemos por silencio; Chrome puede terminar y onend decidirá.
-        }
-    };
-
-    recognition.onend = function(){
-        // Si el usuario pulsó Detener/cerró la ventana, no hacemos absolutamente nada.
-        if (session !== voiceSessionId || !voiceDictationActive || activeVoiceRecognition !== recognition) {
-            return;
-        }
-
-        // IMPORTANTE: no reiniciar automáticamente una sesión que ya entregó resultados.
-        // Chrome puede repetir el último resultado al volver a iniciar el reconocedor,
-        // provocando frases duplicadas. Si terminó sin reconocer nada, permitimos un
-        // único reinicio para recuperar una interrupción silenciosa.
-        if (recognitionHadFinalResult) {
-            stopVoiceDictation();
-            return;
-        }
-
-        try {
-            activeVoiceRecognition = null;
-            startVoiceRecognitionAgain(target, button, session);
-        } catch(e) {
-            stopVoiceDictation();
-        }
-    };
-}
-
-// Seguridad adicional: al ocultar la pestaña, detener el reconocimiento.
-document.addEventListener('visibilitychange', function(){
-    if (document.hidden && voiceDictationActive) stopVoiceDictation();
-});
-
-window.addEventListener('pagehide', function(){
-    if (voiceDictationActive) stopVoiceDictation();
-});
-
-window.addEventListener('beforeunload', function(){
-    if (voiceDictationActive) stopVoiceDictation();
-});
-
-function normalizeVoicePunctuation(text){
-    return text
-        .replace(/\\bpunto y aparte\\b/gi, '\\n\\n')
-        .replace(/\\bnuevo párrafo\\b/gi, '\\n\\n')
-        .replace(/\\bpunto\\b/gi, '.')
-        .replace(/\\bcoma\\b/gi, ',')
-        .replace(/\\bdos puntos\\b/gi, ':')
-        .replace(/\\bpunto y coma\\b/gi, ';')
-        .replace(/\\binterrogación\\b/gi, '?')
-        .replace(/\\bexclamación\\b/gi, '!');
-}
-
-function resetVoiceUI(){
-    if (activeVoiceButton) {
-        activeVoiceButton.classList.remove('is-listening','is-requesting');
-        activeVoiceButton.textContent = '🎙️';
-        activeVoiceButton.title = 'Dictar por voz';
-        activeVoiceButton.setAttribute('aria-label','Dictar por voz');
-    }
-    if (activeVoiceTarget) delete activeVoiceTarget.dataset.voiceInterim;
-    activeVoiceRecognition = null;
-    activeVoiceTarget = null;
-    activeVoiceButton = null;
-    activeVoiceBaseText = '';
-}
 
 function hideAllPrintSections(){
     ['print-section','print-section-finance','print-section-reception','print-patient-card','print-clinical-history'].forEach(id=>{

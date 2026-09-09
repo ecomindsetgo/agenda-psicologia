@@ -8,20 +8,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-
-<style>
-.hc-voice-field{position:relative;display:flex;align-items:stretch;gap:.5rem}
-.hc-voice-field .hc-input,.hc-voice-field .hc-textarea{flex:1;min-width:0}
-.hc-mic-btn{flex:0 0 auto;min-width:44px;border:1px solid #cbd5e1;background:#fff;border-radius:.75rem;padding:0 .7rem;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;justify-content:center;font-size:1.05rem}
-.hc-mic-btn:hover{background:#f1f5f9;transform:translateY(-1px)}
-.hc-mic-btn.is-listening{background:#fee2e2;border-color:#f87171;color:#b91c1c;animation:hcMicPulse 1.2s infinite}
-.hc-mic-btn.is-unsupported{opacity:.55;cursor:not-allowed}
-.hc-mic-btn.is-requesting{opacity:.7;cursor:wait}
-.hc-mic-btn.is-listening{min-width:48px}
-.hc-voice-field{position:relative}
-.hc-voice-field .hc-mic-btn.is-listening::after{content:"";position:absolute;right:2px;bottom:2px;width:6px;height:6px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,.12)}
-@keyframes hcMicPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.25)}50%{box-shadow:0 0 0 7px rgba(239,68,68,0)}}
-</style>
 </head>
 <body class="text-slate-800 min-h-screen flex flex-col pb-20 md:pb-6">
 
@@ -217,6 +203,9 @@
                     <span id="current-date-lbl" class="text-sm bg-indigo-950/40 px-3.5 py-1.5 rounded-lg border border-indigo-800 font-medium"></span>
                     <button onclick="openPrintModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-3.5 py-1.5 rounded-lg shadow-sm transition flex items-center gap-2 text-sm" title="Imprimir Reporte">
                         <span>🖨️</span><span class="hidden md:inline">Imprimir</span>
+                    </button>
+                    <button onclick="openAssistantModal()" class="bg-slate-700 hover:bg-slate-600 border border-slate-600 p-2 rounded-lg transition flex items-center gap-2 text-sm font-medium" title="Asistente IA">
+                        <span>🤖</span><span class="hidden md:inline text-xs">Asistente</span>
                     </button>
                     <button onclick="openProfileModal()" class="bg-indigo-700 hover:bg-indigo-600 border border-indigo-500/50 p-2 rounded-lg transition flex items-center gap-2 text-sm font-medium" title="Mi Perfil">
                         <span>👤</span><span id="header-user-name" class="hidden md:inline max-w-[120px] truncate text-xs"></span>
@@ -464,6 +453,52 @@
     </div>
 
     <!-- ================= MODALES ================= -->
+    <!-- ================= ASISTENTE IA ADMINISTRATIVO ================= -->
+    <div id="assistant-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center z-[60] p-4 no-print">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-base flex items-center gap-2">🤖 Asistente IA</h3>
+                    <p class="text-[11px] text-slate-300 mt-0.5">Solo consultas administrativas · Sin historias clínicas</p>
+                </div>
+                <button onclick="closeAssistantModal()" class="text-slate-300 hover:text-white transition text-xl">&times;</button>
+            </div>
+            <div class="p-5 overflow-y-auto space-y-4">
+                <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-800">
+                    <b>Protección de datos:</b> Gemini recibe únicamente tu pregunta para identificar qué consulta administrativa deseas realizar.
+                    Los datos de citas y finanzas se procesan localmente en esta agenda y <b>no se envían a Gemini</b>.
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="askAssistantExample('¿Cuántas citas tengo hoy?')" class="assistant-chip">Citas de hoy</button>
+                    <button onclick="askAssistantExample('¿Quiénes tienen cita mañana?')" class="assistant-chip">Citas de mañana</button>
+                    <button onclick="askAssistantExample('¿Cuántas citas tengo esta semana?')" class="assistant-chip">Esta semana</button>
+                    <button onclick="askAssistantExample('¿Cuánto ingresé este mes?')" class="assistant-chip">Ingresos del mes</button>
+                </div>
+                <div>
+                    <label for="assistant-question" class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Pregunta</label>
+                    <div class="flex gap-2">
+                        <textarea id="assistant-question" rows="2" class="flex-1 border border-slate-200 rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ej.: ¿Cuánto ingresé esta semana?"></textarea>
+                        <button id="assistant-send-btn" onclick="askAssistant()" class="self-end bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-3 rounded-xl font-bold transition" title="Consultar">➤</button>
+                    </div>
+                </div>
+                <div id="assistant-status" class="hidden text-xs rounded-xl p-3"></div>
+                <div id="assistant-answer" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm leading-6"></div>
+                <div class="pt-2 border-t border-slate-100">
+                    <button onclick="openGeminiConfig()" class="text-xs text-slate-500 hover:text-indigo-600 underline">⚙️ Configurar API de Gemini</button>
+                    <span id="assistant-config-state" class="text-[11px] text-slate-400 ml-2"></span>
+                </div>
+                <div id="gemini-config-box" class="hidden bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                    <p class="text-xs text-slate-600">Pega tu clave de Gemini API. Se guarda solamente en este navegador. Para mayor seguridad, restringe la clave por dominio desde Google AI Studio/Google Cloud.</p>
+                    <input id="gemini-api-key" type="password" autocomplete="off" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm" placeholder="AIza...">
+                    <div class="flex gap-2 justify-end">
+                        <button onclick="clearGeminiKey()" class="px-3 py-2 text-xs font-semibold text-red-600">Borrar clave</button>
+                        <button onclick="saveGeminiKey()" class="bg-slate-800 text-white px-3 py-2 rounded-lg text-xs font-semibold">Guardar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL CITA -->
     <div id="appointment-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4 no-print">
         <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -815,30 +850,30 @@
                             <option value="">Seleccionar</option><option>Soltera(o)</option><option>Casada(o)</option><option>Viuda(o)</option><option>Separada(o)</option><option>Conviviente</option>
                         </select>
                     </div>
-                    <div><label class="hc-label">Ocupación</label><div class="hc-voice-field"><input id="hc-occupation" class="hc-input" placeholder="Ocupación actual"><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-occupation', this)" title="Dictar por voz" aria-label="Dictar ocupación">🎙️</button></div></div>
+                    <div><label class="hc-label">Ocupación</label><input id="hc-occupation" class="hc-input" placeholder="Ocupación actual"></div>
                     <div><label class="hc-label">Número de contacto</label><input id="hc-patient-phone" class="hc-input bg-slate-100" readonly></div>
                     <div><label class="hc-label">DNI</label><input id="hc-patient-dni" class="hc-input bg-slate-100" readonly></div>
                 </div>
             </div>
 
-            <div class="hc-form-section"><div class="hc-section-title">MOTIVO DE CONSULTA</div><p class="hc-question">¿Por qué decide venir a consulta? ¿Qué le está afectando actualmente?</p><div class="hc-voice-field"><textarea id="hc-motivo" rows="4" class="hc-textarea"></textarea><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-motivo', this)" title="Dictar por voz" aria-label="Dictar motivo de consulta">🎙️</button></div></div>
-            <div class="hc-form-section"><div class="hc-section-title">PROBLEMA ACTUAL</div><p class="hc-question">¿Desde cuándo ocurre? ¿En qué situaciones se presenta? ¿Cómo reacciona? ¿Qué emociones predominan? ¿Qué pensamientos aparecen?</p><div class="hc-voice-field"><textarea id="hc-problema" rows="5" class="hc-textarea"></textarea><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-problema', this)" title="Dictar por voz" aria-label="Dictar problema actual">🎙️</button></div></div>
-            <div class="hc-form-section"><div class="hc-section-title">IMPACTO EN SU VIDA</div><p class="hc-question">Área personal / Área de pareja / Área familiar / Área laboral</p><div class="hc-voice-field"><textarea id="hc-impacto" rows="5" class="hc-textarea"></textarea><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-impacto', this)" title="Dictar por voz" aria-label="Dictar impacto en su vida">🎙️</button></div></div>
-            <div class="hc-form-section"><div class="hc-section-title">HISTORIA PERSONAL RELEVANTE</div><p class="hc-question">Relación con padres / cuidadores · Experiencias significativas en infancia · Eventos importantes (duelos, rupturas, cambios)</p><div class="hc-voice-field"><textarea id="hc-historia-personal" rows="6" class="hc-textarea"></textarea><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-historia-personal', this)" title="Dictar por voz" aria-label="Dictar historia personal">🎙️</button></div></div>
-            <div class="hc-form-section"><div class="hc-section-title">VÍNCULOS Y RELACIONES</div><p class="hc-question">¿Cómo son sus relaciones actualmente? ¿Qué patrones se repiten? ¿Qué suele necesitar emocionalmente?</p><div class="hc-voice-field"><textarea id="hc-vinculos" rows="5" class="hc-textarea"></textarea><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-vinculos', this)" title="Dictar por voz" aria-label="Dictar vínculos y relaciones">🎙️</button></div></div>
-            <div class="hc-form-section"><div class="hc-section-title">TÉCNICAS E INSTRUMENTOS APLICADOS</div><div class="hc-voice-field"><textarea id="hc-tecnicas" rows="5" class="hc-textarea" placeholder="Entrevista, observación, pruebas o instrumentos aplicados..."></textarea><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-tecnicas', this)" title="Dictar por voz" aria-label="Dictar técnicas e instrumentos">🎙️</button></div></div>
-            <div class="hc-form-section"><div class="hc-section-title">OBSERVACIÓN DE CONDUCTA</div><p class="hc-question">Actitud en sesión / Nivel de apertura · Resistencias / Insight</p><div class="hc-voice-field"><textarea id="hc-conducta" rows="5" class="hc-textarea"></textarea><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-conducta', this)" title="Dictar por voz" aria-label="Dictar observación de conducta">🎙️</button></div></div>
-            <div class="hc-form-section"><div class="hc-section-title">HIPÓTESIS / CONCLUSIONES</div><div class="hc-voice-field"><textarea id="hc-hipotesis" rows="5" class="hc-textarea"></textarea><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-hipotesis', this)" title="Dictar por voz" aria-label="Dictar hipótesis y conclusiones">🎙️</button></div></div>
-            <div class="hc-form-section"><div class="hc-section-title">RECOMENDACIONES</div><div class="hc-voice-field"><textarea id="hc-recomendaciones" rows="5" class="hc-textarea"></textarea><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-recomendaciones', this)" title="Dictar por voz" aria-label="Dictar recomendaciones">🎙️</button></div></div>
+            <div class="hc-form-section"><div class="hc-section-title">MOTIVO DE CONSULTA</div><p class="hc-question">¿Por qué decide venir a consulta? ¿Qué le está afectando actualmente?</p><textarea id="hc-motivo" rows="4" class="hc-textarea"></textarea></div>
+            <div class="hc-form-section"><div class="hc-section-title">PROBLEMA ACTUAL</div><p class="hc-question">¿Desde cuándo ocurre? ¿En qué situaciones se presenta? ¿Cómo reacciona? ¿Qué emociones predominan? ¿Qué pensamientos aparecen?</p><textarea id="hc-problema" rows="5" class="hc-textarea"></textarea></div>
+            <div class="hc-form-section"><div class="hc-section-title">IMPACTO EN SU VIDA</div><p class="hc-question">Área personal / Área de pareja / Área familiar / Área laboral</p><textarea id="hc-impacto" rows="5" class="hc-textarea"></textarea></div>
+            <div class="hc-form-section"><div class="hc-section-title">HISTORIA PERSONAL RELEVANTE</div><p class="hc-question">Relación con padres / cuidadores · Experiencias significativas en infancia · Eventos importantes (duelos, rupturas, cambios)</p><textarea id="hc-historia-personal" rows="6" class="hc-textarea"></textarea></div>
+            <div class="hc-form-section"><div class="hc-section-title">VÍNCULOS Y RELACIONES</div><p class="hc-question">¿Cómo son sus relaciones actualmente? ¿Qué patrones se repiten? ¿Qué suele necesitar emocionalmente?</p><textarea id="hc-vinculos" rows="5" class="hc-textarea"></textarea></div>
+            <div class="hc-form-section"><div class="hc-section-title">TÉCNICAS E INSTRUMENTOS APLICADOS</div><textarea id="hc-tecnicas" rows="5" class="hc-textarea" placeholder="Entrevista, observación, pruebas o instrumentos aplicados..."></textarea></div>
+            <div class="hc-form-section"><div class="hc-section-title">OBSERVACIÓN DE CONDUCTA</div><p class="hc-question">Actitud en sesión / Nivel de apertura · Resistencias / Insight</p><textarea id="hc-conducta" rows="5" class="hc-textarea"></textarea></div>
+            <div class="hc-form-section"><div class="hc-section-title">HIPÓTESIS / CONCLUSIONES</div><textarea id="hc-hipotesis" rows="5" class="hc-textarea"></textarea></div>
+            <div class="hc-form-section"><div class="hc-section-title">RECOMENDACIONES</div><textarea id="hc-recomendaciones" rows="5" class="hc-textarea"></textarea></div>
             <div class="hc-form-section">
                 <div class="hc-section-title">PLAN DE INTERVENCIÓN</div>
                 <div class="grid md:grid-cols-3 gap-4">
-                    <div><label class="hc-label">Frecuencia</label><div class="hc-voice-field"><input id="hc-frecuencia" class="hc-input"><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-frecuencia', this)" title="Dictar por voz" aria-label="Dictar frecuencia">🎙️</button></div></div>
-                    <div><label class="hc-label">Enfoque</label><div class="hc-voice-field"><input id="hc-enfoque" class="hc-input"><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-enfoque', this)" title="Dictar por voz" aria-label="Dictar enfoque">🎙️</button></div></div>
-                    <div><label class="hc-label">Duración sugerida</label><div class="hc-voice-field"><input id="hc-duracion" class="hc-input"><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-duracion', this)" title="Dictar por voz" aria-label="Dictar duración sugerida">🎙️</button></div></div>
+                    <div><label class="hc-label">Frecuencia</label><input id="hc-frecuencia" class="hc-input"></div>
+                    <div><label class="hc-label">Enfoque</label><input id="hc-enfoque" class="hc-input"></div>
+                    <div><label class="hc-label">Duración sugerida</label><input id="hc-duracion" class="hc-input"></div>
                 </div>
             </div>
-            <div class="hc-form-section"><div class="hc-section-title">TAREAS / ACUERDOS</div><p class="hc-question">Ejercicio asignado / Reflexión / Compromisos</p><div class="hc-voice-field"><textarea id="hc-tareas" rows="5" class="hc-textarea"></textarea><button type="button" class="hc-mic-btn" onclick="toggleVoiceDictation('hc-tareas', this)" title="Dictar por voz" aria-label="Dictar tareas y acuerdos">🎙️</button></div></div>
+            <div class="hc-form-section"><div class="hc-section-title">TAREAS / ACUERDOS</div><p class="hc-question">Ejercicio asignado / Reflexión / Compromisos</p><textarea id="hc-tareas" rows="5" class="hc-textarea"></textarea></div>
 
             <div class="hc-form-section mt-8">
                 <div class="flex justify-between items-center gap-3 flex-wrap">
@@ -1169,6 +1204,7 @@
     </div>
 </div>
 
+    <script src="assistant.js"></script>
     <script type="module" src="app.js"></script>
     <script src="ui.js"></script>
 </body>
