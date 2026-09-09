@@ -17,7 +17,7 @@
   'use strict';
 
   const KEY_NAME = 'agenda_pro_gemini_api_key';
-  const APP_VERSION = '2026.09.09.5';
+  const APP_VERSION = '2026.09.09.6';
   const MODEL = 'gemini-2.0-flash';
   const HORARIO_SLOTS = ['10:00','11:00','12:00','16:00','17:00','18:00','19:00'];
   const HORARIO_DAYS = ['lunes','martes','miercoles','jueves','viernes','sabado'];
@@ -192,19 +192,32 @@
       if (start && end) return {start,end,label:`del ${formatDate(start)} al ${formatDate(end)}`};
     }
     const months = 'enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre';
-    let m = q.match(new RegExp('(?:del|desde)\\s+(?:el\\s+)?(\\d{1,2})\\s+(?:de\\s+)?(' + months + ')\\s+(?:de\\s+)?(\\d{4})?\\s+(?:al|hasta)\\s+(?:el\\s+)?(\\d{1,2})\\s+(?:de\\s+)?(' + months + ')(?:\\s+(?:de\\s+)?(\\d{4}))?'));
+    let m = q.match(new RegExp('(?:del|desde|entre)\\s+(?:el\\s+)?(\\d{1,2})\\s+(?:de\\s+)?(' + months + ')(?:\\s+de\\s+(\\d{4}))?\\s+(?:al|hasta|y)\\s+(?:el\\s+)?(\\d{1,2})\\s+(?:de\\s+)?(' + months + ')(?:\\s+de\\s+(\\d{4}))?'));
     if (m) {
       const year = Number(m[3] || m[6] || new Date().getFullYear());
       const start = parseDateOnly(`${m[1]} de ${m[2]}`,year);
       const end = parseDateOnly(`${m[4]} de ${m[5]}`,Number(m[6] || year));
       if (start && end) return {start,end,label:`del ${formatDate(start)} al ${formatDate(end)}`};
     }
-    m = q.match(new RegExp('del\\s+(\\d{1,2})\\s+al\\s+(\\d{1,2})\\s+de\\s+(' + months + ')(?:\\s+de\\s+(\\d{4}))?'));
+    m = q.match(new RegExp('(?:del|entre)\\s+(\\d{1,2})\\s+(?:al|y)\\s+(\\d{1,2})\\s+de\\s+(' + months + ')(?:\\s+de\\s+(\\d{4}))?'));
     if (m) {
       const year = Number(m[4] || new Date().getFullYear());
       const start = parseDateOnly(`${m[1]} de ${m[3]}`,year);
       const end = parseDateOnly(`${m[2]} de ${m[3]}`,year);
       if (start && end) return {start,end,label:`del ${formatDate(start)} al ${formatDate(end)}`};
+    }
+    // Formato mixto: una fecha con barras/guiones y otra en palabras (p.ej. "del 07/09/2026 al 3 de octubre").
+    if (explicit && explicit.length === 1) {
+      const slashDate = parseDateOnly(explicit[0]);
+      const year = slashDate ? Number(slashDate.slice(0,4)) : new Date().getFullYear();
+      const wm = q.match(new RegExp('(?:al|hasta|y)\\s+(?:el\\s+)?(\\d{1,2})\\s+(?:de\\s+)?(' + months + ')(?:\\s+(?:de\\s+)?(\\d{4}))?'));
+      if (wm && slashDate) {
+        const otherDate = parseDateOnly(`${wm[1]} de ${wm[2]}`, Number(wm[3] || year));
+        if (otherDate) {
+          const [start,end] = slashDate <= otherDate ? [slashDate,otherDate] : [otherDate,slashDate];
+          return {start,end,label:`del ${formatDate(start)} al ${formatDate(end)}`};
+        }
+      }
     }
     return null;
   }
@@ -246,7 +259,7 @@
     if (/demanda|mayor demanda|dia.*mas.*cita|horario.*mas.*cita|horarios.*mayor/.test(x)) return 'demand';
     if (/mas rentable|mas ingresos|rentable/.test(x)) return 'profitability';
     if (/proxima cita|siguiente cita|a que hora.*proxima/.test(x)) return 'next';
-    if (/proyecc|proyectad|esperad|estimad/.test(x)) return 'projection';
+    if (/proyec|esperad|estimad|previs|voy a (ganar|cobrar|recibir)|puedo (ganar|cobrar)/.test(x)) return 'projection';
     if (/pendient|por cobrar|sin pagar|no pagad|debo cobrar|falta cobrar/.test(x)) return 'pending';
     if (/ingres|dinero|gane|cuanto.*cobre|cuanto.*recibi|cuanto.*me.*pagaron|recaudad|cobrad|efectiv/.test(x)) return 'real_income';
     if (/mana/.test(x)) return 'tomorrow';
@@ -277,6 +290,61 @@
     const text = (((data.candidates || [])[0] || {}).content || {}).parts?.[0]?.text || '';
     const allowed = ['today','tomorrow','week','previous_week','month','previous_month','cancelled','real_income','pending','projection','next','patient_time','people','count','availability','patient_history','new_patients','attendance','demand','profitability','range','help'];
     return allowed.includes(text.trim().toLowerCase()) ? text.trim().toLowerCase() : null;
+  }
+
+  // Cuando la pregunta no calza en ninguna categoría fija, se envía a Gemini
+  // un snapshot administrativo ANONIMIZADO (sin nombres, sin patientId) junto
+  // con la pregunta real, para que Gemini calcule la respuesta él mismo sobre
+  // datos reales en vez de limitarse a clasificar la pregunta.
+  function buildAnonymizedSnapshot(data, today) {
+    const windowStart = addDays(today, -185); // ~6 meses atrás
+    const windowEnd = addDays(today, 95);      // ~3 meses adelante
+    const appts = (data.appointments || [])
+      .filter(a => a && a.date && a.date >= windowStart && a.date <= windowEnd)
+      .map(a => ({
+        date: a.date, time: a.time || '', status: a.status || 'pendiente',
+        cost: Number(a.cost || 0), currency: a.currency === 'USD' ? 'USD' : 'PEN',
+        paymentStatus: a.paymentStatus || 'pendiente', modality: a.modality || ''
+      }));
+    const patientCounts = { total: (data.patients || []).length };
+    return { appts, patientCounts, windowStart, windowEnd };
+  }
+
+  async function answerWithGeminiData(question, data, today) {
+    const key = localStorage.getItem(KEY_NAME);
+    if (!key) return null;
+    const snap = buildAnonymizedSnapshot(data, today);
+    const prompt = `Eres el asistente administrativo de un consultorio de psicología en Perú. Responde SOLO con JSON válido, sin markdown ni backticks, con este formato exacto:
+{"titulo":"...", "total":"...", "detalle":"..."}
+Reglas:
+- "titulo": encabezado corto de 3-6 palabras con un emoji relevante al inicio.
+- "total": el número o cifra principal que responde la pregunta (si es dinero, usa "S/" para PEN y "$" para USD; si hay ambas monedas, sepáralas con " + "). Si la pregunta no pide una cifra, deja "total" vacío.
+- "detalle": explicación breve (máx. 2 frases) de cómo se calculó, en español, sin inventar datos que no estén en la lista de citas.
+- Nunca inventes nombres de pacientes, diagnósticos, historias clínicas ni datos que no aparezcan aquí; si la pregunta pide algo así, dilo en "detalle" y deja "total" vacío.
+- Los campos de cada cita son: date (YYYY-MM-DD), time (HH:MM), status (pendiente/confirmada/completada/atendida/cancelada/reprogramada), cost (número), currency (PEN o USD), paymentStatus (pagado/pendiente), modality (presencial/virtual).
+- Las citas con status cancelada NO deben contarse como ingresos reales ni como ingresos proyectados, salvo que la pregunta pida explícitamente algo sobre cancelaciones.
+- "Ingresos reales" = suma de cost donde paymentStatus es pagado. "Proyección/ingresos esperados" = suma de cost de citas futuras (date >= hoy) que no estén canceladas, sin importar si ya están pagadas.
+- Hoy es ${today}. Solo tienes datos de citas entre ${snap.windowStart} y ${snap.windowEnd}; si la pregunta necesita fechas fuera de ese rango, dilo en "detalle".
+- Total de pacientes registrados (sin nombres): ${snap.patientCounts.total}.
+Lista de citas (JSON): ${JSON.stringify(snap.appts)}
+Pregunta del usuario: ${question}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(key)}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0, maxOutputTokens: 400 } })
+    });
+    if (!response.ok) throw new Error('Gemini respondió con HTTP ' + response.status);
+    const data2 = await response.json();
+    let text = (((data2.candidates || [])[0] || {}).content || {}).parts?.[0]?.text || '';
+    text = text.trim().replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
+    let parsed;
+    try { parsed = JSON.parse(text); } catch (e) { throw new Error('Respuesta de Gemini no fue JSON válido'); }
+    if (!parsed || typeof parsed !== 'object') throw new Error('Respuesta de Gemini vacía');
+    const titulo = escapeHtml(parsed.titulo || '🤖 Respuesta');
+    const total = parsed.total ? `<div class="assistant-total">${escapeHtml(parsed.total)}</div>` : '';
+    const detalle = parsed.detalle ? `<div class="mt-1">${escapeHtml(parsed.detalle)}</div>` : '';
+    return `<div class="assistant-title">${titulo}</div>${total}${detalle}<div class="mt-2 text-xs text-slate-500">Calculado por IA sobre tus citas (sin nombres de pacientes ni datos clínicos).</div>`;
   }
 
   function getPeriod(question,today) {
@@ -386,7 +454,7 @@
       if (!range) return '<div class="assistant-title">📅 Rango no reconocido</div><div>Usa, por ejemplo: “¿Cuánto ingresé del 01/09/2026 al 15/09/2026?”</div>';
       const list=valid.filter(a=>a.date>=range.start && a.date<=range.end && isActiveAppointment(a));
       const qn=normalizeQuestion(question);
-      if (/proyecc|proyectad|esperad|estimad/.test(qn)) {
+      if (/proyec|esperad|estimad|previs|voy a (ganar|cobrar|recibir)|puedo (ganar|cobrar)/.test(qn)) {
         const projection=list.filter(a=>!isCompleted(a) && a.date>=today);
         return `<div class="assistant-title">📈 Proyección ${escapeHtml(range.label)}</div><div class="assistant-total">${formatTotals(sumByCurrency(projection))}</div><div>${projection.length} cita(s) futuras consideradas.</div>${renderAppointmentList(projection,true)}`;
       }
@@ -463,7 +531,11 @@
     }
 
     if (intent === 'help') {
-      return `<div class="assistant-title">🤖 Asistente IA administrativo</div><div>Puedo consultar agenda, disponibilidad, pacientes, ingresos y estadísticas.</div><ul class="assistant-list"><li>“¿Cuáles son mis citas de hoy?”</li><li>“¿Qué pacientes tengo esta semana?”</li><li>“¿Tengo un espacio libre esta tarde?”</li><li>“¿A qué hora es mi próxima cita y con quién?”</li><li>“¿Qué días tiene cita María esta semana?”</li><li>“¿Cuál es el historial de citas de María?”</li><li>“¿Cuánto ingresé del 1 al 15 de septiembre?”</li><li>“¿Qué pacientes tienen pagos pendientes?”</li><li>“¿Cuál fue el día más rentable este mes?”</li><li>“¿Qué horario tiene mayor demanda?”</li><li>“¿Cuántos pacientes nuevos tengo este mes comparado con el anterior?”</li><li>“¿Cuál es mi porcentaje de asistencia y cancelaciones?”</li></ul>`;
+      const configured = !!localStorage.getItem(KEY_NAME);
+      const extra = configured
+        ? '<div class="mt-2 text-slate-500">No reconocí esta pregunta con mis categorías fijas y tampoco pude calcularla con IA en este momento. Intenta reformularla o usa una de estas:</div>'
+        : '<div class="mt-2 text-slate-500">Configura tu API de Gemini (⚙️) para que también pueda responder preguntas libres (comparaciones, proyecciones personalizadas, etc.) además de estas:</div>';
+      return `<div class="assistant-title">🤖 Asistente IA administrativo</div><div>Puedo consultar agenda, disponibilidad, pacientes, ingresos y estadísticas.</div><ul class="assistant-list"><li>“¿Cuáles son mis citas de hoy?”</li><li>“¿Qué pacientes tengo esta semana?”</li><li>“¿Tengo un espacio libre esta tarde?”</li><li>“¿A qué hora es mi próxima cita y con quién?”</li><li>“¿Qué días tiene cita María esta semana?”</li><li>“¿Cuál es el historial de citas de María?”</li><li>“¿Cuánto ingresé del 1 al 15 de septiembre?”</li><li>“¿Qué pacientes tienen pagos pendientes?”</li><li>“¿Cuál fue el día más rentable este mes?”</li><li>“¿Qué horario tiene mayor demanda?”</li><li>“¿Cuántos pacientes nuevos tengo este mes comparado con el anterior?”</li><li>“¿Cuál es mi porcentaje de asistencia y cancelaciones?”</li></ul>${extra}`;
     }
 
     return '<div class="assistant-title">ℹ️ Consulta no disponible</div><div>Prueba una de las preguntas sugeridas.</div>';
@@ -548,10 +620,21 @@
           if(aiIntent && !parseDateRange(question)) intent=aiIntent;
         } catch(e){console.warn('[Asistente] Gemini no disponible; usando interpretación local.',e);}
       }
-      const answerHtml=answer(intent,question);
+      let answerHtml=answer(intent,question);
+      let usedGeminiData=false;
+      // Si ninguna categoría fija reconoció la pregunta, y no identifica a un
+      // paciente, se intenta calcular la respuesta con Gemini sobre datos
+      // administrativos anonimizados en vez de mostrar "consulta no disponible".
+      if (intent === 'help' && !patientSpecific && localStorage.getItem(KEY_NAME)) {
+        try {
+          const today=todayLima();
+          const aiAnswer=await answerWithGeminiData(question,data,today);
+          if (aiAnswer) { answerHtml=aiAnswer; usedGeminiData=true; }
+        } catch(e){ console.warn('[Asistente] No se pudo calcular con Gemini sobre datos; se muestra ayuda local.',e); }
+      }
       setAnswer(answerHtml);
       const answerEl=$('assistant-answer');lastAnswerText=answerEl?answerEl.innerText:'';
-      setStatus(patientSpecific?'Consulta procesada localmente para proteger datos del paciente.':'Consulta procesada. Los datos de agenda se procesan localmente.','ok');
+      setStatus(patientSpecific?'Consulta procesada localmente para proteger datos del paciente.':(usedGeminiData?'Consulta calculada con IA sobre datos administrativos anonimizados (sin nombres).':'Consulta procesada. Los datos de agenda se procesan localmente.'),'ok');
       const wasVoiceQuery=voiceQueryActive;
       if(autoSpeak)setTimeout(()=>speakAnswer(),80);
       if(wasVoiceQuery)setStatus('✅ Consulta por voz procesada. Reproduciendo respuesta… si el navegador la bloquea, toca “Leer respuesta”.','ok');
