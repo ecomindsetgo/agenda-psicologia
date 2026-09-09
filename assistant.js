@@ -7,6 +7,7 @@
   'use strict';
 
   const KEY_NAME = 'agenda_pro_gemini_api_key';
+  const APP_VERSION = '2026.09.09.2';
   const MODEL = 'gemini-2.0-flash';
   let lastAnswerText = '';
   let voiceQueryActive = false;
@@ -278,8 +279,15 @@
       title = `Periodo ${range.label}`;
       const qn = normalizeQuestion(question);
       if (/proyecc|proyectad|esperad|estimad/.test(qn)) {
-        const future = list.filter(a => a.date >= today);
-        return `<div class="assistant-title">📈 Proyección ${escapeHtml(range.label)}</div><div class="assistant-total">${formatTotals(sumByCurrency(future))}</div><div class="mt-1 text-slate-500">${future.length} cita(s) futuras/no canceladas.</div>`;
+        // IMPORTANTE: cuando el usuario proporciona un rango explícito, se respeta
+        // TODO el rango. No se vuelve a aplicar 'hoy' como límite inferior.
+        // Esto evita perder citas de los primeros días del rango (p.ej. 07/09).
+        const projection = list.filter(isActiveAppointment);
+        const totals = sumByCurrency(projection);
+        const detail = projection.slice().sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time))
+          .slice(0, 80)
+          .map(a => `<li>${formatDate(a.date)} ${escapeHtml(a.time || '')} — <b>${escapeHtml(a.patientName)}</b>: ${money(a.cost || 0, a.currency === 'USD' ? 'USD' : 'PEN')}</li>`).join('');
+        return `<div class="assistant-title">📈 Proyección ${escapeHtml(range.label)}</div><div class="assistant-total">${formatTotals(totals)}</div><div class="mt-1 text-slate-500">${projection.length} cita(s) consideradas en todo el rango indicado.</div>${detail ? `<details class="mt-2"><summary class="cursor-pointer font-semibold">Ver detalle</summary><ul class="assistant-list mt-2">${detail}</ul></details>` : ''}`;
       }
       if (/pendient|por cobrar|sin pagar|no pagad|falta cobrar/.test(qn)) {
         const pending = list.filter(isPendingPayment);
@@ -330,23 +338,36 @@
   }
 
   function speakAnswer() {
-    if (!('speechSynthesis' in window)) {
-      setStatus('Tu navegador no admite lectura por voz.', 'error');
-      return;
+    if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
+      setStatus('Este navegador no admite lectura por voz. Prueba Chrome o Edge.', 'error');
+      return false;
     }
-    window.speechSynthesis.cancel();
     const text = lastAnswerText || (($('assistant-answer') || {}).innerText || '');
     if (!text.trim()) {
       setStatus('Primero realiza una consulta.', 'info');
-      return;
+      return false;
     }
-    const utterance = new SpeechSynthesisUtterance(text.replace(/\s+/g, ' ').trim());
-    utterance.lang = 'es-PE';
-    utterance.rate = 1;
-    utterance.pitch = 1;
-    utterance.volume = 1;
-    window.speechSynthesis.speak(utterance);
-    setStatus('🔊 Reproduciendo la respuesta por voz.', 'ok');
+    try {
+      const synth = window.speechSynthesis;
+      synth.cancel();
+      // En móviles, especialmente iPhone/iPad, es más fiable crear la voz
+      // inmediatamente dentro de la interacción del usuario.
+      const utterance = new SpeechSynthesisUtterance(text.replace(/\s+/g, ' ').trim());
+      utterance.lang = 'es-PE';
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+      utterance.onstart = () => setStatus('🔊 Reproduciendo la respuesta por voz.', 'ok');
+      utterance.onend = () => setStatus('✅ Respuesta terminada.', 'ok');
+      utterance.onerror = (e) => setStatus('No se pudo reproducir la voz (' + (e.error || 'error') + '). Toca “Leer respuesta” nuevamente.', 'error');
+      synth.speak(utterance);
+      // Algunos navegadores móviles pausan la síntesis recién iniciada.
+      setTimeout(() => { try { if (synth.paused) synth.resume(); } catch (_) {} }, 120);
+      return true;
+    } catch (e) {
+      setStatus('No se pudo iniciar la lectura por voz. Toca “Leer respuesta” nuevamente.', 'error');
+      return false;
+    }
   }
 
   function stopAnswerVoice() {
@@ -433,10 +454,12 @@
     if (btn) { btn.disabled = true; btn.textContent = '…'; }
     setStatus('Consultando…', 'info');
     try {
-      let intent = localIntent(question);
+      // Un rango explícito siempre tiene prioridad sobre la clasificación IA.
+      // Así Gemini no puede convertir '07/09 al 03/10' en una consulta genérica de mes.
+      let intent = parseDateRange(question) ? 'range' : localIntent(question);
       try {
         const aiIntent = await classifyWithGemini(question);
-        if (aiIntent) intent = aiIntent;
+        if (aiIntent && !parseDateRange(question)) intent = aiIntent;
       } catch (e) {
         console.warn('[Asistente] Gemini no disponible; usando interpretación local.', e);
       }
@@ -445,7 +468,8 @@
       const answerEl = $('assistant-answer');
       lastAnswerText = answerEl ? answerEl.innerText : '';
       setStatus('Consulta procesada localmente. Gemini solo interpretó la pregunta.', 'ok');
-      if (autoSpeak || voiceQueryActive) setTimeout(() => speakAnswer(), 120);
+      if (autoSpeak && !voiceQueryActive) setTimeout(() => speakAnswer(), 120);
+      if (voiceQueryActive) setStatus('✅ Consulta por voz procesada. Toca “Leer respuesta” si el celular bloqueó la reproducción automática.', 'ok');
       voiceQueryActive = false;
     } catch (e) {
       console.error(e);
@@ -461,6 +485,7 @@
     askAssistant();
   }
 
+  console.info('[Asistente IA] versión', APP_VERSION);
   window.openAssistantModal = openAssistantModal;
   window.closeAssistantModal = closeAssistantModal;
   window.openGeminiConfig = openGeminiConfig;
