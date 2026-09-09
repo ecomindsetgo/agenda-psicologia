@@ -28,3 +28,19 @@ La llamada a Gemini se hace desde el navegador porque esta versión está pensad
 El asistente nunca consulta ni transmite `state.histories` o `state.notes`. El puente solo devuelve:
 `date`, `time`, `patientName`, `status`, `cost`, `currency`, `paymentStatus`, `modality` e `id` de las citas.
 Gemini no recibe ni siquiera ese snapshot: recibe solo la pregunta y la fecha actual para clasificarla.
+
+
+## Funciones ampliadas — versión 2026.09.09.5
+El asistente ahora entiende consultas administrativas sobre:
+- agenda de hoy, mañana, semana actual, semana pasada, mes actual y mes pasado;
+- próxima cita y paciente;
+- huecos disponibles de esta tarde según los slots operativos 16:00–19:00;
+- citas de un paciente, próxima cita e historial administrativo de citas;
+- ingresos cobrados, pagos pendientes y proyección;
+- rangos de fechas;
+- día más rentable y mayor demanda por día/horario;
+- pacientes nuevos del mes frente al mes anterior;
+- porcentaje de asistencia, cancelaciones y reprogramaciones cuando esos estados existen.
+
+### Privacidad mejorada
+Las preguntas que contienen o identifican un paciente se procesan localmente y no se envían a Gemini. El puente administrativo expone solamente nombre, identificador y fecha de alta del paciente, además de los campos administrativos de las citas. No expone DNI, teléfono, fecha de nacimiento, historias clínicas ni notas clínicas.
