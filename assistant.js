@@ -7,7 +7,7 @@
   'use strict';
 
   const KEY_NAME = 'agenda_pro_gemini_api_key';
-  const APP_VERSION = '2026.09.09.2';
+  const APP_VERSION = '2026.09.09.4';
   const MODEL = 'gemini-2.0-flash';
   let lastAnswerText = '';
   let voiceQueryActive = false;
@@ -282,7 +282,11 @@
         // IMPORTANTE: cuando el usuario proporciona un rango explícito, se respeta
         // TODO el rango. No se vuelve a aplicar 'hoy' como límite inferior.
         // Esto evita perder citas de los primeros días del rango (p.ej. 07/09).
-        const projection = list.filter(isActiveAppointment);
+        // PROYECCIÓN = cobro esperado de citas aún pendientes de atención.
+        // Se excluyen las ya completadas, aunque estén dentro de un rango
+        // que empiece en una fecha pasada. Esto debe coincidir con
+        // Finanzas > Cobro futuro de la agenda.
+        const projection = list.filter(a => isActiveAppointment(a) && String(a.status || '').toLowerCase() === 'pendiente');
         const totals = sumByCurrency(projection);
         const detail = projection.slice().sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time))
           .slice(0, 80)
@@ -316,8 +320,8 @@
         const pending = list.filter(isPendingPayment);
         return `<div class="assistant-title">⏳ Pendiente por cobrar ${title}</div><div class="assistant-total">${formatTotals(sumByCurrency(pending))}</div><div class="mt-1 text-slate-500">${pending.length} cita(s) con pago pendiente.</div>`;
       }
-      const future = list.filter(a => a.date >= today);
-      return `<div class="assistant-title">📈 Proyección de ingresos ${title}</div><div class="assistant-total">${formatTotals(sumByCurrency(future))}</div><div class="mt-1 text-slate-500">${future.length} cita(s) futuras/no canceladas consideradas.</div>`;
+      const future = list.filter(a => a.date >= today && String(a.status || '').toLowerCase() === 'pendiente');
+      return `<div class="assistant-title">📈 Proyección de ingresos ${title}</div><div class="assistant-total">${formatTotals(sumByCurrency(future))}</div><div class="mt-1 text-slate-500">${future.length} cita(s) pendientes/futuras consideradas.</div>`;
     } else if (intent === 'patient_time') {
       const words = normalizeQuestion(question).split(/\s+/).filter(w => w.length > 2 && !['quien','tiene','cita','hora','que','a','para','el','la','de'].includes(w));
       const matches = words.length ? list.filter(a => words.some(w => normalizeQuestion(a.patientName).includes(w))) : [];
@@ -468,8 +472,9 @@
       const answerEl = $('assistant-answer');
       lastAnswerText = answerEl ? answerEl.innerText : '';
       setStatus('Consulta procesada localmente. Gemini solo interpretó la pregunta.', 'ok');
-      if (autoSpeak && !voiceQueryActive) setTimeout(() => speakAnswer(), 120);
-      if (voiceQueryActive) setStatus('✅ Consulta por voz procesada. Toca “Leer respuesta” si el celular bloqueó la reproducción automática.', 'ok');
+      const wasVoiceQuery = voiceQueryActive;
+      if (autoSpeak) setTimeout(() => speakAnswer(), 80);
+      if (wasVoiceQuery) setStatus('✅ Consulta por voz procesada. Reproduciendo respuesta… si el navegador la bloquea, toca “Leer respuesta”.', 'ok');
       voiceQueryActive = false;
     } catch (e) {
       console.error(e);
