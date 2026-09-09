@@ -85,12 +85,8 @@ try {
         // Gemini NO recibe este objeto; el asistente calcula las respuestas localmente.
         window.getAgendaAdminSnapshot = function () {
             return {
-                // Datos exclusivamente administrativos para el asistente.
-                // No se exponen DNI, teléfono, fecha de nacimiento, historias,
-                // notas clínicas, diagnósticos ni motivos de consulta.
                 appointments: (state.appointments || []).map(a => ({
                     id: a.id,
-                    patientId: a.patientId || '',
                     date: a.date || '',
                     time: a.time || '',
                     patientName: a.patientName || 'Paciente',
@@ -99,11 +95,6 @@ try {
                     currency: a.currency === 'USD' ? 'USD' : 'PEN',
                     paymentStatus: a.paymentStatus || 'pendiente',
                     modality: a.modality || ''
-                })),
-                patients: (state.patients || []).map(p => ({
-                    id: p.id,
-                    name: p.name || 'Paciente',
-                    createdAt: p.createdAt || p.updatedAt || ''
                 }))
             };
         };
@@ -356,14 +347,8 @@ id:doc.id,
                 canal:      document.getElementById('pat-canal').value,
                 leadStatus: document.getElementById('pat-lead-status').value,
                 currency:   document.getElementById('pat-currency') ? document.getElementById('pat-currency').value : 'PEN',
-                // createdAt se conserva para poder distinguir pacientes nuevos
-                // en los reportes administrativos mensuales.
-                createdAt:  document.getElementById('patient-id').value
-                    ? undefined
-                    : new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
-            if (!payload.createdAt) delete payload.createdAt;
             const ref = doc(db, 'artifacts', appId, 'users', state.currentUser.uid, 'patients', pid);
             await setDoc(ref, payload, { merge: true });
             closePatientModal();
