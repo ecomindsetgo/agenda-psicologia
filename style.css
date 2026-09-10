@@ -56,3 +56,21 @@
 #assistant-answer .assistant-title{font-weight:800;color:#0f172a;margin-bottom:.4rem}
 #assistant-answer .assistant-list{margin:.35rem 0 0 1.1rem;list-style:disc}
 #assistant-answer .assistant-total{font-size:1.05rem;font-weight:800;color:#4f46e5}
+
+/* Burbuja del asistente personal */
+#assistant-floating-bubble::after{
+  content:"";
+  position:absolute;
+  right:0;
+  top:-7px;
+  width:10px;
+  height:10px;
+  border-radius:999px;
+  background:#22c55e;
+  border:2px solid #fff;
+  box-shadow:0 1px 4px rgba(15,23,42,.18);
+}
+@media (max-width:640px){
+  #assistant-floating-bubble{bottom:5.75rem;right:1rem;padding:.55rem .65rem}
+  #assistant-floating-bubble .w-9{width:2.5rem;height:2.5rem}
+}

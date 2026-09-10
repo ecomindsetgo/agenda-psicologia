@@ -38,3 +38,22 @@ La llamada a Gemini se hace desde el navegador porque esta versión está pensad
 El asistente nunca consulta ni transmite `state.histories` o `state.notes`. El puente solo devuelve:
 `date`, `time`, `patientName`, `status`, `cost`, `currency`, `paymentStatus`, `modality` e `id` de las citas.
 Gemini no recibe ni siquiera ese snapshot: recibe solo la pregunta y la fecha actual para clasificarla.
+
+
+## Versión ampliada 2026.09.10.10
+El asistente ahora funciona como un asistente personal administrativo de acceso rápido:
+- Burbuja flotante permanente tipo mensajería: **🤖 Mi asistente**.
+- Saludo: **“Hola Lisbeth, soy tu asistente personal 👋”**.
+- Consulta por texto o voz y lectura automática de respuestas.
+- Cuenta citas activas (pendientes + completadas) y excluye canceladas/anuladas/no asistidas.
+- Rangos inclusivos: por ejemplo, “del 1 al 10 de septiembre” incluye ambos días.
+- Próximo/siguiente turno, primera y última cita.
+- Citas por día, semana, mes o rango.
+- Paciente por nombre y hora de su cita.
+- Espacios libres según la grilla configurada.
+- Citas sin confirmar, canceladas, presenciales y virtuales.
+- Ingresos reales, pagos pendientes, pacientes que deben, proyección de ingresos y comparación con periodo anterior.
+- Promedio por cita y día más ocupado.
+- Menú de preguntas rápidas para las consultas más frecuentes.
+
+La lógica de respuesta se mantiene local; Gemini sigue siendo opcional y solo clasifica la pregunta.
