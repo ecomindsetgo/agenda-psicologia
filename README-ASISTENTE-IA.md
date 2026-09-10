@@ -1,16 +1,23 @@
 # Agenda de Psicología Pro+ — Asistente IA administrativo
 
-## Qué se agregó
-- Botón y modal `🤖 Asistente IA`.
+## Qué se agregó (2026.09.10.3)
+- Burbuja flotante estilo "widget de WhatsApp" (esquina inferior izquierda) que a los pocos segundos de cargar la agenda invita a abrir el chat, con un mensaje que saluda por el nombre configurado en el perfil (ej. "Hola Lisbeth, soy tu asistente personal...").
+- El modal ahora es un chat de verdad: cada pregunta y respuesta queda como una burbuja en el hilo (como WhatsApp), con un indicador de "escribiendo…" mientras se procesa, en vez de un cuadro de respuesta que se reemplazaba.
+- El botón `🤖 Asistente` de la cabecera se mantiene como acceso alternativo; ambos abren el mismo chat.
+- Más preguntas reconocidas: "¿qué paciente sigue?"/"¿próximo turno?" (sinónimos de próxima cita), "¿cuál fue mi última cita?", "¿cuántos pacientes distintos atendí este mes?", saludos ("hola", "gracias") con respuesta conversacional.
+- Rango de fechas sin mes explícito (ej. "¿cuántas citas tuve del 1 al 10?") ahora se interpreta automáticamente como el mes en curso.
 - Consultas de citas, horarios, cancelaciones e ingresos.
 - Gemini se usa únicamente para clasificar la pregunta.
 - Firestore se procesa localmente en el navegador.
 - No se envían a Gemini historias clínicas, diagnósticos, motivos de consulta, tratamientos, notas clínicas ni datos de `clinicalHistories`/`clinicalNotes`.
 - Si Gemini no está disponible, existe un clasificador local de respaldo.
 
-## Intents que reconoce (2026.09.10.1)
+## Intents que reconoce (2026.09.10.3)
 - **Citas por periodo:** hoy, ayer, mañana, esta semana, semana pasada, este mes, mes pasado, o un rango explícito de fechas ("del 1 al 15 de septiembre", "01/09/2026 al 15/09/2026").
-- **Próxima cita:** "¿a qué hora es mi próxima cita?", "¿a qué hora empieza la primera cita de mañana?".
+- **Próxima cita / turno:** "¿a qué hora es mi próxima cita?", "¿qué paciente sigue?", "¿quién es el siguiente?", "¿a qué hora empieza la primera cita de mañana?".
+- **Última cita atendida:** "¿cuál fue mi última cita?", "¿quién fue mi último paciente?".
+- **Pacientes distintos:** "¿cuántos pacientes distintos atendí este mes?".
+- **Saludos:** "hola", "buenos días", "gracias" — respuestas conversacionales, sin buscar datos.
 - **Espacios libres:** "¿tengo citas libres hoy?", "¿tengo espacios libres esta semana?" — compara contra la grilla de horarios (`SLOT_TIMES` en `assistant.js`, debe coincidir con `HORARIO_SLOTS` de `app.js`), respetando que el domingo está cerrado y el sábado solo atiende en la mañana.
 - **Día más ocupado:** "¿qué día tengo más citas esta semana/este mes?".
 - **Finanzas:** ingresos reales (solo `paymentStatus: pagado`), pendiente por cobrar (con lista de pacientes que deben, no solo el total), proyección (cobrado + pendiente), y comparación de ingresos reales vs. el periodo anterior ("¿cómo van mis ingresos comparado con el mes pasado?").
@@ -29,31 +36,12 @@
 La llamada a Gemini se hace desde el navegador porque esta versión está pensada para empezar sin backend de pago. Por eso la API key no es un secreto fuerte: puede quedar expuesta al cliente. Para reducir riesgo, restringe la clave por dominio HTTP referrer en Google Cloud/AI Studio y aplica límites de uso.
 
 ## Archivos modificados
-- `index.html`: interfaz del asistente y carga de `assistant.js`.
-- `app.js`: puente seguro que expone exclusivamente un snapshot administrativo de citas.
-- `style.css`: estilos del asistente.
-- `assistant.js`: integración Gemini + cálculos locales + fallback.
+- `index.html`: burbuja flotante, chat del asistente y carga de `assistant.js`.
+- `app.js`: puente seguro que expone exclusivamente un snapshot administrativo de citas (`getAgendaAdminSnapshot`) y el nombre para el saludo (`getAgendaSpecialistFirstName`, solo el nombre del perfil, nada clínico).
+- `style.css`: estilos del asistente, la burbuja flotante y el hilo de chat.
+- `assistant.js`: integración Gemini + cálculos locales + fallback + lógica de conversación (saludo, burbujas, indicador de escritura).
 
 ## Nota de privacidad
 El asistente nunca consulta ni transmite `state.histories` o `state.notes`. El puente solo devuelve:
 `date`, `time`, `patientName`, `status`, `cost`, `currency`, `paymentStatus`, `modality` e `id` de las citas.
 Gemini no recibe ni siquiera ese snapshot: recibe solo la pregunta y la fecha actual para clasificarla.
-
-
-## Versión ampliada 2026.09.10.10
-El asistente ahora funciona como un asistente personal administrativo de acceso rápido:
-- Burbuja flotante permanente tipo mensajería: **🤖 Mi asistente**.
-- Saludo: **“Hola Lisbeth, soy tu asistente personal 👋”**.
-- Consulta por texto o voz y lectura automática de respuestas.
-- Cuenta citas activas (pendientes + completadas) y excluye canceladas/anuladas/no asistidas.
-- Rangos inclusivos: por ejemplo, “del 1 al 10 de septiembre” incluye ambos días.
-- Próximo/siguiente turno, primera y última cita.
-- Citas por día, semana, mes o rango.
-- Paciente por nombre y hora de su cita.
-- Espacios libres según la grilla configurada.
-- Citas sin confirmar, canceladas, presenciales y virtuales.
-- Ingresos reales, pagos pendientes, pacientes que deben, proyección de ingresos y comparación con periodo anterior.
-- Promedio por cita y día más ocupado.
-- Menú de preguntas rápidas para las consultas más frecuentes.
-
-La lógica de respuesta se mantiene local; Gemini sigue siendo opcional y solo clasifica la pregunta.

@@ -51,26 +51,28 @@
 }
 
 /* ─── Asistente IA ─────────────────────────────────────────────────────── */
-.assistant-chip{padding:.4rem .65rem;border-radius:.75rem;background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;font-size:.72rem;font-weight:700;transition:.15s}
-.assistant-chip:hover{background:#e0e7ff}
-#assistant-answer .assistant-title{font-weight:800;color:#0f172a;margin-bottom:.4rem}
-#assistant-answer .assistant-list{margin:.35rem 0 0 1.1rem;list-style:disc}
-#assistant-answer .assistant-total{font-size:1.05rem;font-weight:800;color:#4f46e5}
+.assistant-chip{padding:.4rem .65rem;border-radius:.75rem;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;font-size:.72rem;font-weight:700;transition:.15s;white-space:nowrap}
+.assistant-chip:hover{background:#d1fae5}
+.assistant-title{font-weight:800;color:#0f172a;margin-bottom:.3rem}
+.assistant-list{margin:.35rem 0 0 1.1rem;list-style:disc}
+.assistant-total{font-size:1.05rem;font-weight:800;color:#047857}
 
-/* Burbuja del asistente personal */
-#assistant-floating-bubble::after{
-  content:"";
-  position:absolute;
-  right:0;
-  top:-7px;
-  width:10px;
-  height:10px;
-  border-radius:999px;
-  background:#22c55e;
-  border:2px solid #fff;
-  box-shadow:0 1px 4px rgba(15,23,42,.18);
-}
-@media (max-width:640px){
-  #assistant-floating-bubble{bottom:5.75rem;right:1rem;padding:.55rem .65rem}
-  #assistant-floating-bubble .w-9{width:2.5rem;height:2.5rem}
-}
+/* Burbuja flotante estilo widget de WhatsApp */
+.assistant-fab-btn{background:#25d366;color:#fff;border:none}
+.assistant-fab-btn:hover{background:#20bd5a}
+.assistant-fab-ring{position:absolute;inset:0;border-radius:9999px;background:#25d366;opacity:.55;animation:assistant-pulse 2.2s ease-out infinite}
+@keyframes assistant-pulse{0%{transform:scale(1);opacity:.55}100%{transform:scale(1.55);opacity:0}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Hilo de conversación */
+.chat-row{display:flex;align-items:flex-end;gap:.5rem}
+.chat-row-user{justify-content:flex-end}
+.chat-avatar{width:1.75rem;height:1.75rem;border-radius:9999px;background:#d1fae5;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
+.chat-bubble{max-width:82%;padding:.6rem .85rem;border-radius:1rem;font-size:.85rem;line-height:1.45;box-shadow:0 1px 1px rgba(15,23,42,.05)}
+.chat-bubble-bot{background:#fff;color:#1e293b;border-bottom-left-radius:.3rem}
+.chat-bubble-user{background:#25d366;color:#fff;border-bottom-right-radius:.3rem}
+.chat-typing{display:flex;align-items:center;gap:.25rem;padding:.75rem .9rem}
+.chat-typing span{width:.4rem;height:.4rem;border-radius:9999px;background:#94a3b8;display:inline-block;animation:chat-typing-bounce 1.1s infinite ease-in-out}
+.chat-typing span:nth-child(2){animation-delay:.15s}
+.chat-typing span:nth-child(3){animation-delay:.3s}
+@keyframes chat-typing-bounce{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-3px);opacity:1}}

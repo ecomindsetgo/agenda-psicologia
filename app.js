@@ -99,6 +99,22 @@ try {
             };
         };
 
+        // Nombre a mostrar en el saludo del asistente IA (solo el nombre, nada
+        // clínico ni sensible). Reutiliza el mismo perfil que ya se usa en el
+        // encabezado y en la impresión de fichas.
+        window.getAgendaSpecialistFirstName = function () {
+            try {
+                const user = state.currentUser;
+                if (!user) return '';
+                const saved = JSON.parse(localStorage.getItem('userProfile_' + user.uid) || '{}');
+                const full = (saved.displayName || (user.email ? user.email.split('@')[0] : '') || '').trim();
+                if (!full) return '';
+                // Si guardó "Dra. Lisbeth Méndez" nos quedamos solo con "Lisbeth".
+                const parts = full.replace(/^(dra?\.?|lic\.?|psic\.?)\s+/i, '').split(/\s+/);
+                return parts[0] || full;
+            } catch (e) { return ''; }
+        };
+
         // ── Hora actual de Perú (GMT-5). Se usa para deshabilitar horas ya
         // pasadas al agendar una cita para el día de hoy.
         function getLimaNow() {

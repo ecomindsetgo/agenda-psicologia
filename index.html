@@ -442,91 +442,72 @@
             </section>
         </main>
 
-        <!-- ASISTENTE PERSONAL: acceso permanente tipo burbuja -->
-        <button onclick="openAssistantGreeting()" id="assistant-floating-bubble"
-            class="fixed bottom-24 right-5 md:right-6 z-40 no-print flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white pl-3 pr-4 py-3 rounded-full shadow-xl shadow-emerald-200/50 transition-all duration-200 hover:scale-105"
-            title="Abrir mi asistente personal" aria-label="Abrir mi asistente personal">
-            <span class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-xl">🤖</span>
-            <span class="hidden sm:block text-sm font-bold">Mi asistente</span>
-        </button>
-
         <!-- FLOATING ACTIONS -->
         <div class="fixed bottom-6 right-6 flex flex-col items-end gap-3 z-40 no-print">
             <button onclick="toggleFloatingMenu()" id="btn-fab-main" class="w-14 h-14 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full text-2xl flex items-center justify-center shadow-lg transition-all duration-300 transform">➕</button>
             <div id="fab-menu" class="hidden flex-col items-end gap-2.5 mb-2 transform scale-95 opacity-0 transition-all duration-200">
-                <button onclick="openAssistantGreeting(); toggleFloatingMenu();" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-md text-sm font-semibold hover:bg-emerald-500 transition-all">🤖 Abrir asistente</button>
                 <button onclick="openPatientModal(); toggleFloatingMenu();" class="flex items-center gap-2 bg-white px-4 py-2 border border-slate-200 text-slate-700 rounded-xl shadow-md text-sm font-semibold hover:bg-slate-50 transition-all">👤 Nuevo Paciente</button>
                 <button onclick="openAppointmentModal(); toggleFloatingMenu();" class="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 text-sm rounded-xl shadow-md font-semibold hover:bg-indigo-500 transition-all">🗓️ Programar Cita</button>
             </div>
+        </div>
+
+        <!-- BURBUJA DEL ASISTENTE IA (estilo widget de WhatsApp) -->
+        <div class="fixed bottom-6 left-6 z-40 no-print flex flex-col items-start gap-2">
+            <div id="assistant-fab-greet" onclick="openAssistantModal()" class="hidden max-w-[240px] bg-white text-slate-700 text-sm rounded-2xl rounded-bl-sm shadow-xl border border-slate-200 px-4 py-3 cursor-pointer relative animate-[fadeInUp_.25s_ease-out]">
+                <button onclick="event.stopPropagation(); hideFabGreetBubble();" class="absolute -top-2 -right-2 w-5 h-5 bg-slate-200 hover:bg-slate-300 rounded-full text-[11px] text-slate-600 flex items-center justify-center">&times;</button>
+                <span>Hola, soy tu asistente personal. ¿En qué puedo ayudarte hoy?</span>
+            </div>
+            <button onclick="openAssistantModal()" class="assistant-fab-btn w-16 h-16 rounded-full flex items-center justify-center shadow-xl text-3xl relative" title="Asistente IA" aria-label="Abrir asistente IA">
+                <span class="assistant-fab-ring"></span>
+                🤖
+                <span id="assistant-fab-badge" class="hidden absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full border-2 border-white"></span>
+            </button>
         </div>
     </div>
 
     <!-- ================= MODALES ================= -->
     <!-- ================= ASISTENTE IA ADMINISTRATIVO ================= -->
-    <div id="assistant-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center z-[60] p-4 no-print">
-        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center">
-                <div>
-                    <h3 class="font-bold text-base flex items-center gap-2">🤖 Asistente IA</h3>
-                    <p class="text-[11px] text-slate-300 mt-0.5">Solo consultas administrativas · Sin historias clínicas</p>
+    <div id="assistant-modal" class="fixed inset-0 bg-slate-950/50 backdrop-blur-sm hidden items-center justify-center z-[60] p-0 sm:p-4 no-print">
+        <div class="bg-white w-full h-full sm:h-auto sm:max-w-md rounded-none sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col sm:max-h-[85vh]">
+            <!-- Encabezado tipo chat -->
+            <div class="bg-emerald-600 text-white px-4 py-3 flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center text-lg">🤖</div>
+                    <div>
+                        <h3 class="font-bold text-sm leading-tight">Asistente personal</h3>
+                        <p class="text-[11px] text-emerald-100 flex items-center gap-1 mt-0.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-300 inline-block"></span> En línea · solo datos administrativos</p>
+                    </div>
                 </div>
-                <button onclick="closeAssistantModal()" class="text-slate-300 hover:text-white transition text-xl">&times;</button>
+                <button onclick="closeAssistantModal()" class="text-emerald-100 hover:text-white transition text-xl leading-none">&times;</button>
             </div>
-            <div class="p-5 overflow-y-auto space-y-4">
-                <div id="assistant-welcome" class="bg-gradient-to-r from-indigo-50 to-emerald-50 border border-indigo-100 rounded-2xl p-4">
-                    <div class="flex items-start gap-3">
-                        <div class="w-11 h-11 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xl shadow-sm">🤖</div>
-                        <div>
-                            <div class="font-bold text-slate-800">Hola Lisbeth, soy tu asistente personal 👋</div>
-                            <div class="text-xs text-slate-600 mt-1">Puedo consultar rápidamente tu agenda, turnos, citas, horarios e información financiera administrativa.</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-800">
-                    <b>Protección de datos:</b> Gemini recibe únicamente tu pregunta para identificar qué consulta administrativa deseas realizar.
-                    Los datos de citas y finanzas se procesan localmente en esta agenda y <b>no se envían a Gemini</b>.
-                </div>
-                <div class="flex flex-wrap gap-2">
+
+            <!-- Hilo de conversación -->
+            <div id="assistant-chat" class="flex-1 overflow-y-auto px-3 py-4 space-y-3 bg-[#eef2f5]"></div>
+
+            <div class="border-t border-slate-100 bg-white">
+                <div class="flex flex-wrap gap-1.5 px-3 pt-2.5">
+                    <button onclick="askAssistantExample('¿Qué paciente sigue?')" class="assistant-chip">Próximo paciente</button>
+                    <button onclick="askAssistantExample('¿Cuántas citas tuve del 1 al 10?')" class="assistant-chip">Citas del 1 al 10</button>
                     <button onclick="askAssistantExample('¿Cuántas citas tengo hoy?')" class="assistant-chip">Citas de hoy</button>
-                    <button onclick="askAssistantExample('¿Quiénes tienen cita mañana?')" class="assistant-chip">Citas de mañana</button>
-                    <button onclick="askAssistantExample('¿Cuántas citas tengo esta semana?')" class="assistant-chip">Esta semana</button>
-                    <button onclick="askAssistantExample('¿Cuántas citas tengo este mes?')" class="assistant-chip">Este mes</button>
-                    <button onclick="askAssistantExample('¿Cuánto ingresé esta semana?')" class="assistant-chip">Ingresos semana</button>
-                    <button onclick="askAssistantExample('¿Cuánto ingresé este mes?')" class="assistant-chip">Ingresos mes</button>
-                    <button onclick="askAssistantExample('¿Cuánto ingresé del 01/09/2026 al 09/09/2026?')" class="assistant-chip">Rango de fechas</button>
-                    <button onclick="askAssistantExample('¿Cuánto ingresé realmente este mes?')" class="assistant-chip">Ingresos reales</button>
-                    <button onclick="askAssistantExample('¿Cuánto tengo pendiente por cobrar este mes?')" class="assistant-chip">Pendientes</button>
-                    <button onclick="askAssistantExample('¿Cuál es mi proyección de ingresos este mes?')" class="assistant-chip">Proyección</button>
-                    <button onclick="askAssistantExample('¿Quién es mi siguiente paciente?')" class="assistant-chip">Siguiente turno</button>
-                    <button onclick="askAssistantExample('¿Cuál es la primera cita de hoy?')" class="assistant-chip">Primera cita</button>
-                    <button onclick="askAssistantExample('¿Qué horarios libres tengo mañana?')" class="assistant-chip">Horarios libres</button>
-                    <button onclick="askAssistantExample('¿Quiénes tienen pago pendiente?')" class="assistant-chip">Quiénes deben</button>
-                    <button onclick="askAssistantExample('¿Qué día tuve más citas este mes?')" class="assistant-chip">Día más ocupado</button>
-                    <button onclick="askAssistantExample('¿Cuántas citas virtuales tuve este mes?')" class="assistant-chip">Virtuales</button>
-                    <button onclick="askAssistantExample('¿Cuál fue mi promedio por cita este mes?')" class="assistant-chip">Promedio</button>
-                    <button onclick="askAssistantExample('¿Tengo citas sin confirmar hoy?')" class="assistant-chip">Sin confirmar</button>
+                    <button onclick="askAssistantExample('¿Tengo espacios libres hoy?')" class="assistant-chip">Espacios libres</button>
+                    <button onclick="askAssistantExample('¿Cuánto ingresé realmente este mes?')" class="assistant-chip">Ingresos del mes</button>
+                    <button onclick="askAssistantExample('¿Qué clientes me deben?')" class="assistant-chip">Quién me debe</button>
+                    <button onclick="askAssistantExample('¿Tengo citas sin confirmar?')" class="assistant-chip">Sin confirmar</button>
                 </div>
-                <div>
-                    <label for="assistant-question" class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Pregunta</label>
-                    <div class="flex gap-2 items-end">
-                        <textarea id="assistant-question" rows="2" class="flex-1 border border-slate-200 rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Escribe o pulsa 🎙️ para hablar…"></textarea>
-                        <button id="assistant-voice-btn" onclick="toggleAssistantVoice()" class="w-12 h-12 shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl font-bold text-xl transition" title="Hablar" aria-label="Hablar">🎙️</button>
-                        <button id="assistant-send-btn" onclick="askAssistant()" class="w-12 h-12 shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition" title="Consultar">➤</button>
-                    </div>
-                    <p class="text-[11px] text-slate-400 mt-1">Puedes hablar en español. Al terminar de hablar, la consulta se ejecuta automáticamente y la respuesta puede leerse por voz.</p>
+                <div id="assistant-status" class="hidden text-xs rounded-xl mx-3 mt-2 p-2.5"></div>
+                <div class="p-3 flex gap-2 items-end">
+                    <textarea id="assistant-question" rows="1" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); askAssistant();}" class="flex-1 border border-slate-200 rounded-full px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 max-h-24" placeholder="Escribe tu pregunta…"></textarea>
+                    <button id="assistant-voice-btn" onclick="toggleAssistantVoice()" class="w-10 h-10 shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full font-bold text-lg transition" title="Hablar" aria-label="Hablar">🎙️</button>
+                    <button id="assistant-send-btn" onclick="askAssistant()" class="w-10 h-10 shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full font-bold transition" title="Enviar">➤</button>
                 </div>
-                <div id="assistant-status" class="hidden text-xs rounded-xl p-3"></div>
-                <div id="assistant-answer" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm leading-6"></div>
-                <div class="flex flex-wrap gap-2">
-                    <button onclick="speakAnswer()" class="px-3 py-2 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-semibold hover:bg-indigo-100">🔊 Leer respuesta</button>
-                    <button onclick="stopAnswerVoice()" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-600 border border-slate-200 text-xs font-semibold hover:bg-slate-200">⏹️ Detener voz</button>
-                    <button id="assistant-auto-voice-btn" onclick="toggleAutoVoice()" class="px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold hover:bg-emerald-100">🔊 Voz automática: ON</button>
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 pb-2.5 text-[11px] text-slate-400">
+                    <button onclick="speakAnswer()" class="hover:text-emerald-700">🔊 Leer</button>
+                    <button onclick="stopAnswerVoice()" class="hover:text-slate-700">⏹️ Detener voz</button>
+                    <button id="assistant-auto-voice-btn" onclick="toggleAutoVoice()" class="hover:text-emerald-700">🔊 Voz automática: ON</button>
+                    <button onclick="openGeminiConfig()" class="hover:text-emerald-700 ml-auto">⚙️ Gemini</button>
+                    <span id="assistant-config-state"></span>
                 </div>
-                <div class="pt-2 border-t border-slate-100">
-                    <button onclick="openGeminiConfig()" class="text-xs text-slate-500 hover:text-indigo-600 underline">⚙️ Configurar API de Gemini</button>
-                    <span id="assistant-config-state" class="text-[11px] text-slate-400 ml-2"></span>
-                </div>
-                <div id="gemini-config-box" class="hidden bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div id="gemini-config-box" class="hidden bg-slate-50 border-t border-slate-200 p-4 space-y-3">
                     <p class="text-xs text-slate-600">Pega tu clave de Gemini API. Se guarda solamente en este navegador. Para mayor seguridad, restringe la clave por dominio desde Google AI Studio/Google Cloud.</p>
                     <input id="gemini-api-key" type="password" autocomplete="off" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm" placeholder="AIza...">
                     <div class="flex gap-2 justify-end">
@@ -1243,7 +1224,7 @@
     </div>
 </div>
 
-    <script src="assistant.js?v=20260909-4"></script>
+    <script src="assistant.js?v=20260910-1"></script>
     <script type="module" src="app.js?v=20260909-4"></script>
     <script src="ui.js"></script>
 </body>
