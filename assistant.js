@@ -7,7 +7,7 @@
   'use strict';
 
   const KEY_NAME = 'agenda_pro_gemini_api_key';
-  const APP_VERSION = '2026.09.10.1';
+  const APP_VERSION = '2026.09.10.2';
   const MODEL = 'gemini-2.0-flash';
   let lastAnswerText = '';
   let voiceQueryActive = false;
@@ -112,6 +112,43 @@
     if (!dateStr) return '';
     const d = new Date(dateStr + 'T12:00:00');
     return d.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  // Convierte "HH:MM" (24h) a un formato hablado tipo "10:00 a. m.", más
+  // natural tanto para leer en pantalla como para la lectura por voz.
+  function formatTime12(time) {
+    if (!time) return 'sin hora';
+    const parts = String(time).split(':');
+    const h = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10) || 0;
+    if (Number.isNaN(h)) return String(time);
+    const d = new Date(2000, 0, 1, h, m);
+    return new Intl.DateTimeFormat('es-PE', { hour: 'numeric', minute: '2-digit', hour12: true }).format(d);
+  }
+
+  // Renderiza una lista de citas evitando repetir la fecha en cada línea
+  // cuando todas las citas del resultado caen en el mismo día: la fecha se
+  // muestra una sola vez en el título y cada ítem queda solo con nombre y
+  // hora. Si el resultado abarca varias fechas (p. ej. un rango de días),
+  // sí se conserva la fecha por ítem porque ahí es información necesaria.
+  function apptListHtml(list, opts) {
+    opts = opts || {};
+    const emoji = opts.emoji || '📅';
+    const emptyMsg = opts.emptyMsg || 'No hay citas registradas para ese periodo.';
+    const limit = opts.limit || 30;
+    const sorted = (list || []).slice().sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+    if (!sorted.length) {
+      return `<div class="assistant-title">${emoji} ${escapeHtml(opts.title || '')}</div><div>${escapeHtml(emptyMsg)}</div>`;
+    }
+    const dates = Array.from(new Set(sorted.map(a => a.date)));
+    const sameDate = dates.length === 1;
+    const fullTitle = sameDate ? `${opts.title} ${formatDate(dates[0])}` : opts.title;
+    const shown = sorted.slice(0, limit);
+    const items = shown.map(a => sameDate
+      ? `<li><b>${escapeHtml(a.patientName)}</b> — ${escapeHtml(formatTime12(a.time))}</li>`
+      : `<li><b>${escapeHtml(a.patientName)}</b> — ${formatDate(a.date)}, ${escapeHtml(formatTime12(a.time))}</li>`
+    ).join('');
+    return `<div class="assistant-title">${emoji} ${escapeHtml(fullTitle)}</div><div class="assistant-total">${sorted.length} cita(s)</div><ul class="assistant-list">${items}</ul>`;
   }
 
   function getMonthRange(dateStr) {
@@ -437,7 +474,7 @@
         const paid = list.filter(isPaid);
         return `<div class="assistant-title">💰 Ingresos reales ${escapeHtml(range.label)}</div><div class="assistant-total">${formatTotals(sumByCurrency(paid))}</div><div class="mt-1 text-slate-500">${paid.length} pago(s) registrado(s) como pagado.</div>`;
       }
-      return `<div class="assistant-title">📅 ${escapeHtml(title)}</div><div class="assistant-total">${list.length}</div>${list.length ? '<ul class="assistant-list">' + list.slice().sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time)).slice(0, 30).map(a => `<li><b>${escapeHtml(a.patientName)}</b> — ${formatDate(a.date)} ${escapeHtml(a.time || '')}</li>`).join('') + '</ul>' : '<div>No hay citas registradas para ese periodo.</div>'}`;
+      return apptListHtml(list, { title });
     } else if (intent === 'real_income' || intent === 'pending' || intent === 'projection') {
       const scope = resolveScope(question, 'month');
       title = scope.label;
@@ -538,8 +575,12 @@
       } else {
         scoped = scoped.filter(a => a.date >= today);
       }
-      scoped = scoped.slice().sort((a, b) => String(a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
-      return `<div class="assistant-title">📝 Citas sin confirmar (${escapeHtml(label)})</div><div class="assistant-total">${scoped.length}</div>${scoped.length ? '<ul class="assistant-list">' + scoped.slice(0, 20).map(a => `<li>${formatDate(a.date)} ${escapeHtml(a.time || '')} — <b>${escapeHtml(a.patientName)}</b></li>`).join('') + '</ul>' : '<div>No hay citas pendientes de confirmar/atender en ese periodo.</div>'}`;
+      return apptListHtml(scoped, {
+        emoji: '📝',
+        title: `Citas sin confirmar (${label})`,
+        emptyMsg: 'No hay citas pendientes de confirmar/atender en ese periodo.',
+        limit: 20
+      });
     } else if (intent === 'pending_tasks') {
       const scope = resolveScope(question, 'today');
       const scoped = all.filter(a => a && a.date && a.date >= scope.start && a.date < scope.end && isActiveAppointment(a));
@@ -558,16 +599,21 @@
       return '<div class="assistant-title">🕐 Horario encontrado</div><ul class="assistant-list">' + matches.slice(0, 10).map(a => `<li><b>${escapeHtml(a.patientName)}</b>: ${escapeHtml(a.time || 'sin hora')} — ${formatDate(a.date)}</li>`).join('') + '</ul>';
     } else if (intent === 'cancelled') {
       list = all.filter(a => a && a.date && String(a.status || '').toLowerCase() === 'cancelada');
-      return `<div class="assistant-title">❌ Citas canceladas</div><div class="assistant-total">${list.length}</div>${list.length ? '<ul class="assistant-list">' + list.slice(0, 20).map(a => `<li>${formatDate(a.date)} ${escapeHtml(a.time || '')} — ${escapeHtml(a.patientName)}</li>`).join('') + '</ul>' : '<div>No hay citas canceladas registradas.</div>'}`;
+      return apptListHtml(list, {
+        emoji: '❌',
+        title: 'Citas canceladas',
+        emptyMsg: 'No hay citas canceladas registradas.',
+        limit: 20
+      });
     } else if (intent === 'help') {
       return '<div class="assistant-title">🤖 Puedo ayudarte con la agenda</div><div>Ejemplos: “¿Cuántas citas tengo esta semana?”, “¿Tengo espacios libres hoy?”, “¿A qué hora es mi próxima cita?”, “¿Qué día tengo más citas este mes?”, “¿Cuánto ingresé realmente este mes?”, “¿Cuánto tengo pendiente por cobrar?”, “¿Qué clientes me deben?”, “¿Tengo citas sin confirmar?”, “¿Cómo van mis ingresos comparado con el mes pasado?”, “¿Cuál es mi proyección de ingresos este mes?” o “¿Cuánto ingresé del 01/09/2026 al 09/09/2026?”.</div>';
     }
 
     if (intent === 'people') {
-      return `<div class="assistant-title">👥 ${title}</div><div class="assistant-total">${list.length} cita(s)</div>${list.length ? '<ul class="assistant-list">' + list.slice().sort((a,b) => String(a.time).localeCompare(String(b.time))).map(a => `<li><b>${escapeHtml(a.patientName)}</b> — ${escapeHtml(a.time || 'sin hora')}</li>`).join('') + '</ul>' : '<div>No hay citas registradas.</div>'}`;
+      return apptListHtml(list, { emoji: '👥', title, emptyMsg: 'No hay citas registradas.' });
     }
 
-    return `<div class="assistant-title">📅 ${title}</div><div class="assistant-total">${list.length}</div>${list.length ? '<ul class="assistant-list">' + list.slice().sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time)).slice(0, 30).map(a => `<li><b>${escapeHtml(a.patientName)}</b> — ${formatDate(a.date)} ${escapeHtml(a.time || '')}</li>`).join('') + '</ul>' : '<div>No hay citas registradas para ese periodo.</div>'}`;
+    return apptListHtml(list, { emoji: '📅', title });
   }
 
   function speakAnswer() {
@@ -583,9 +629,23 @@
     try {
       const synth = window.speechSynthesis;
       synth.cancel();
+      // Antes, los saltos de línea entre cada cita (uno por <li>/<div>) se
+      // borraban al colapsar todos los espacios en uno solo, así que la voz
+      // leía todo seguido sin pausas. Ahora cada salto de línea se convierte
+      // en un punto para que el lector de voz haga una pausa natural entre
+      // cada cita, fecha u otro dato de la lista.
+      const paused = text
+        .replace(/\r\n?/g, '\n')
+        .split('\n')
+        .map(line => line.trim())
+        .filter(Boolean)
+        .join('. ')
+        .replace(/([.:,;])\s*\./g, '$1')
+        .replace(/\s+/g, ' ')
+        .trim();
       // En móviles, especialmente iPhone/iPad, es más fiable crear la voz
       // inmediatamente dentro de la interacción del usuario.
-      const utterance = new SpeechSynthesisUtterance(text.replace(/\s+/g, ' ').trim());
+      const utterance = new SpeechSynthesisUtterance(paused);
       utterance.lang = 'es-PE';
       utterance.rate = 1;
       utterance.pitch = 1;
