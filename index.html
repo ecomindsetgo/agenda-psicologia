@@ -1271,76 +1271,6 @@
             </table>
         </div>
 
-        <!-- ═══ CUENTAS POR COBRAR ═══ -->
-        <div class="space-y-2">
-            <h2 class="text-sm font-extrabold border-b pb-1.5 uppercase">Cuentas por Cobrar — Detalle por Paciente</h2>
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="border-b bg-slate-100 text-[10px] font-extrabold uppercase">
-                        <th class="py-2 px-2 w-[40%]">Paciente</th>
-                        <th class="py-2 px-2 w-[14%] text-center">Sesiones impagas</th>
-                        <th class="py-2 px-2 w-[16%] text-center">Deuda desde</th>
-                        <th class="py-2 px-2 w-[10%] text-center">Días</th>
-                        <th class="py-2 px-2 w-[20%] text-right">Monto adeudado</th>
-                    </tr>
-                </thead>
-                <tbody id="pf-receivables-rows" class="divide-y text-[11px]"></tbody>
-                <tfoot>
-                    <tr class="border-t-2 border-slate-950 font-extrabold text-[11px] bg-amber-50">
-                        <td class="py-2.5 px-2" colspan="4">TOTAL POR COBRAR (sesiones ya realizadas)</td>
-                        <td class="py-2.5 px-2 text-right text-amber-800" id="pf-receivables-total">S/ 0.00</td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-
-        <!-- ═══ DESGLOSES ═══ -->
-        <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-2">
-                <h2 class="text-sm font-extrabold border-b pb-1.5 uppercase">Por Modalidad y Tipo</h2>
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="border-b bg-slate-100 text-[10px] font-extrabold uppercase">
-                            <th class="py-1.5 px-2">Concepto</th>
-                            <th class="py-1.5 px-2 text-center">Citas</th>
-                            <th class="py-1.5 px-2 text-right">Facturado</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pf-modality-rows" class="divide-y text-[11px]"></tbody>
-                </table>
-            </div>
-            <div class="space-y-2">
-                <h2 class="text-sm font-extrabold border-b pb-1.5 uppercase">Por Origen del Paciente</h2>
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="border-b bg-slate-100 text-[10px] font-extrabold uppercase">
-                            <th class="py-1.5 px-2">Origen</th>
-                            <th class="py-1.5 px-2 text-center">Citas</th>
-                            <th class="py-1.5 px-2 text-right">Facturado</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pf-origin-rows" class="divide-y text-[11px]"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ═══ POR MONEDA ═══ -->
-        <div class="space-y-2">
-            <h2 class="text-sm font-extrabold border-b pb-1.5 uppercase">Cierre por Moneda</h2>
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="border-b bg-slate-100 text-[10px] font-extrabold uppercase">
-                        <th class="py-1.5 px-2 w-[25%]">Moneda</th>
-                        <th class="py-1.5 px-2 w-[25%] text-right">Facturado</th>
-                        <th class="py-1.5 px-2 w-[25%] text-right">Cobrado</th>
-                        <th class="py-1.5 px-2 w-[25%] text-right">Pendiente de Cobro</th>
-                    </tr>
-                </thead>
-                <tbody id="pf-currency-rows" class="divide-y text-[11px]"></tbody>
-            </table>
-            <p class="text-[9px] text-slate-500">Los importes en soles y dólares se reportan por separado; no se consolidan en un único total.</p>
-        </div>
-
         <div class="pt-20 flex justify-center">
             <div class="w-[50%] text-center">
                 <div class="border-t border-slate-400 w-full pt-2"></div>
@@ -1363,32 +1293,20 @@
                 <span id="pr-head-date" class="text-sm font-semibold border px-3 py-1 bg-slate-100 rounded inline-block mt-1"></span>
             </div>
         </div>
-        <div class="grid grid-cols-4 gap-4 border p-4 bg-slate-50 rounded">
+        <div class="grid grid-cols-1 gap-4 border p-4 bg-slate-50 rounded w-max">
             <div><span class="text-xs uppercase text-slate-500 font-bold block">Total de Citas</span><span id="pr-stat-total" class="text-xl font-bold">0</span></div>
-            <div><span class="text-xs uppercase text-slate-500 font-bold block">Presencial / Virtual</span><span id="pr-stat-modality" class="text-xl font-bold">0 / 0</span></div>
-            <div><span class="text-xs uppercase text-slate-500 font-bold block">Total a Cobrar</span><span id="pr-stat-tocharge" class="text-xl font-bold text-amber-700">S/ 0.00</span></div>
-            <div><span class="text-xs uppercase text-slate-500 font-bold block">Ya Cobrado</span><span id="pr-stat-charged" class="text-xl font-bold text-emerald-700">S/ 0.00</span></div>
         </div>
         <div class="space-y-3">
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="border-b bg-slate-100 text-xs font-extrabold uppercase">
-                        <th id="pr-date-column-header" class="py-2.5 px-2 w-[13%] hidden">Fecha</th>
-                        <th class="py-2.5 px-2 w-[12%]">Hora</th>
-                        <th class="py-2.5 px-2 w-[37%]">Paciente</th>
-                        <th class="py-2.5 px-2 w-[16%]">Modalidad</th>
-                        <th class="py-2.5 px-2 w-[14%] text-right">Monto</th>
-                        <th class="py-2.5 px-2 w-[21%] text-center">Estado de Pago</th>
+                        <th id="pr-date-column-header" class="py-2.5 px-2 w-[15%] hidden">Fecha</th>
+                        <th class="py-2.5 px-2 w-[20%]">Hora</th>
+                        <th class="py-2.5 px-2 w-[55%]">Paciente</th>
+                        <th class="py-2.5 px-2 w-[25%]">Modalidad</th>
                     </tr>
                 </thead>
                 <tbody id="pr-table-rows" class="divide-y text-sm"></tbody>
-                <tfoot>
-                    <tr class="border-t-2 border-slate-950 text-xs font-extrabold bg-slate-50">
-                        <td class="py-2.5 px-2" id="pr-foot-label" colspan="3">TOTAL PENDIENTE DE COBRO</td>
-                        <td class="py-2.5 px-2 text-right text-amber-800" id="pr-foot-pendiente" colspan="2">S/ 0.00</td>
-                        <td class="py-2.5 px-2"></td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
         <div class="pt-16 flex justify-center">

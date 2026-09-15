@@ -1539,6 +1539,13 @@ window.printClinicalHistory = function() {
                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                     : 'bg-amber-50 text-amber-700 border-amber-200';
                 const payBadgeLbl = a.paymentStatus === 'pagado' ? '💳 Pagado' : '⏳ Pendiente';
+                // Mismo patrón de color que el botón de estado de pago:
+                // completada = verde, pendiente = ámbar, cancelada = rojo.
+                const statusSelectCls = a.status === 'completada'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                    : a.status === 'cancelada'
+                    ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                    : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100';
                 const modalityBadge = a.modality === 'virtual'
                     ? '<span class="text-xs font-semibold px-2 py-0.5 rounded-xl border bg-sky-50 text-sky-700 border-sky-200">💻 Virtual</span>'
                     : '<span class="text-xs font-semibold px-2 py-0.5 rounded-xl border bg-graphite-50 text-graphite-600 border-graphite-200">🏢 Presencial</span>';
@@ -1555,7 +1562,7 @@ window.printClinicalHistory = function() {
                     </div>
                     <div class="flex items-center gap-2 flex-wrap self-end sm:self-center">
                         <button onclick="enviarRecordatorioWhatsapp('${a.id}')" title="Enviar recordatorio por WhatsApp" class="bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-700 text-xs px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1">📲 WhatsApp</button>
-                        <select onchange="updateAppointmentStatus('${a.id}', this.value, this)" title="Cambiar estado de la cita" class="bg-graphite-50 border hover:bg-graphite-100 text-graphite-600 text-xs px-2 py-1.5 rounded-xl font-semibold cursor-pointer">
+                        <select onchange="updateAppointmentStatus('${a.id}', this.value, this)" title="Cambiar estado de la cita" class="border text-xs px-2 py-1.5 rounded-xl font-semibold cursor-pointer transition ${statusSelectCls}">
                             <option value="pendiente" ${a.status === 'pendiente' ? 'selected' : ''}>Pendiente</option>
                             <option value="completada" ${a.status === 'completada' ? 'selected' : ''}>Completado</option>
                             <option value="cancelada" ${a.status === 'cancelada' ? 'selected' : ''}>Cancelado</option>
@@ -2545,95 +2552,6 @@ window.printClinicalHistory = function() {
             setF('pf-total-recaudado',   dualMoney(fmF.PEN.cobrado,   fmF.USD.cobrado));
             setF('pf-total-pendiente',   dualMoney(fmF.PEN.porCobrar, fmF.USD.porCobrar));
 
-            // ── Cuentas por cobrar por paciente ──
-            const recRows  = computeReceivables(reportApps);
-            const recTbody = document.getElementById('pf-receivables-rows');
-            if (recTbody) {
-                recTbody.innerHTML = recRows.length
-                    ? recRows.map(r => `<tr class="border-b">
-                        <td class="py-2 px-2 font-semibold">${r.nombre}</td>
-                        <td class="py-2 px-2 text-center">${r.sesiones}</td>
-                        <td class="py-2 px-2 text-center">${r.masAntigua}</td>
-                        <td class="py-2 px-2 text-center font-bold ${r.diasDeuda > 30 ? 'text-rose-700' : ''}">${r.diasDeuda}</td>
-                        <td class="py-2 px-2 text-right font-bold">${dualMoney(r.pen, r.usd)}</td>
-                    </tr>`).join('')
-                    : `<tr><td colspan="5" class="py-3 text-center text-slate-400">Sin deudas pendientes: todas las sesiones realizadas en este periodo están pagadas.</td></tr>`;
-                setF('pf-receivables-total', dualMoney(
-                    recRows.reduce((s, r) => s + r.pen, 0),
-                    recRows.reduce((s, r) => s + r.usd, 0)
-                ));
-            }
-
-            // ── Desglose por modalidad y tipo de atención ──
-            const modTbody = document.getElementById('pf-modality-rows');
-            if (modTbody) {
-                const activas = reportApps.filter(a => a.status !== 'cancelada');
-                const grupo = (label, pred) => {
-                    const sub = activas.filter(pred);
-                    return {
-                        label,
-                        citas: sub.length,
-                        pen: sub.reduce((s, a) => s + (isPenAppt(a) ? Number(a.cost || 0) : 0), 0),
-                        usd: sub.reduce((s, a) => s + (isUsdAppt(a) ? Number(a.cost || 0) : 0), 0)
-                    };
-                };
-                const grupos = [
-                    grupo('Presencial',           a => a.modality !== 'virtual'),
-                    grupo('Virtual',              a => a.modality === 'virtual'),
-                    grupo('Atención individual',  a => a.attentionType !== 'pareja'),
-                    grupo('Atención de pareja',   a => a.attentionType === 'pareja'),
-                    grupo('Sesión suelta',        a => !a.packageId),
-                    grupo('Sesión de paquete',    a => !!a.packageId)
-                ].filter(g => g.citas > 0);
-
-                modTbody.innerHTML = grupos.length
-                    ? grupos.map(g => `<tr class="border-b">
-                        <td class="py-1.5 px-2 font-semibold">${g.label}</td>
-                        <td class="py-1.5 px-2 text-center">${g.citas}</td>
-                        <td class="py-1.5 px-2 text-right">${dualMoney(g.pen, g.usd)}</td>
-                    </tr>`).join('')
-                    : `<tr><td colspan="3" class="py-3 text-center text-slate-400">Sin datos.</td></tr>`;
-            }
-
-            // ── Desglose por origen del paciente ──
-            const oriTbody = document.getElementById('pf-origin-rows');
-            if (oriTbody) {
-                const byOrigen = {};
-                reportApps.filter(a => a.status !== 'cancelada').forEach(a => {
-                    const pat = state.patients.find(pp => pp.id === a.patientId);
-                    const key = pat && ORIGEN_LABELS[pat.origen] ? pat.origen : 'otro';
-                    if (!byOrigen[key]) byOrigen[key] = { citas: 0, pen: 0, usd: 0 };
-                    byOrigen[key].citas++;
-                    if (isUsdAppt(a)) byOrigen[key].usd += Number(a.cost || 0);
-                    else              byOrigen[key].pen += Number(a.cost || 0);
-                });
-                const oriRows = Object.entries(byOrigen).sort((x, y) => y[1].pen - x[1].pen);
-                oriTbody.innerHTML = oriRows.length
-                    ? oriRows.map(([k, v]) => `<tr class="border-b">
-                        <td class="py-1.5 px-2 font-semibold">${(ORIGEN_LABELS[k] || ORIGEN_LABELS.otro).label}</td>
-                        <td class="py-1.5 px-2 text-center">${v.citas}</td>
-                        <td class="py-1.5 px-2 text-right">${dualMoney(v.pen, v.usd)}</td>
-                    </tr>`).join('')
-                    : `<tr><td colspan="3" class="py-3 text-center text-slate-400">Sin datos.</td></tr>`;
-            }
-
-            // ── Cierre por moneda ──
-            const curTbody = document.getElementById('pf-currency-rows');
-            if (curTbody) {
-                const curRows = [
-                    { lbl: 'Soles (S/)',  sym: 'S/', b: fmF.PEN },
-                    { lbl: 'Dólares ($)', sym: '$',  b: fmF.USD }
-                ].filter(r => r.b.facturado > 0 || r.b.cobrado > 0 || r.b.porCobrar > 0);
-                curTbody.innerHTML = curRows.length
-                    ? curRows.map(r => `<tr class="border-b">
-                        <td class="py-1.5 px-2 font-semibold">${r.lbl}</td>
-                        <td class="py-1.5 px-2 text-right">${r.sym} ${r.b.facturado.toFixed(2)}</td>
-                        <td class="py-1.5 px-2 text-right font-semibold text-emerald-800">${r.sym} ${r.b.cobrado.toFixed(2)}</td>
-                        <td class="py-1.5 px-2 text-right font-semibold text-amber-800">${r.sym} ${r.b.porCobrar.toFixed(2)}</td>
-                    </tr>`).join('')
-                    : `<tr><td colspan="4" class="py-3 text-center text-slate-400">Sin montos registrados.</td></tr>`;
-            }
-
             hideAllPrintSections();
             document.getElementById('print-section-finance').classList.remove('hidden');
 
@@ -2689,33 +2607,9 @@ window.printClinicalHistory = function() {
             document.getElementById('pr-head-date').innerText = periodLabel;
             document.getElementById('pr-stat-total').innerText = reportApps.length;
 
-            // Montos: le sirven a recepción para saber a quién cobrar al llegar.
-            const fmR = computeFinanceMetrics(reportApps);
-            const setR = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
-            setR('pr-stat-modality', `${fmR.presencial} / ${fmR.virtual}`);
-            setR('pr-stat-tocharge', dualMoney(fmR.PEN.porCobrar, fmR.USD.porCobrar));
-            setR('pr-stat-charged',  dualMoney(fmR.PEN.cobrado,   fmR.USD.cobrado));
-            setR('pr-foot-pendiente', dualMoney(fmR.PEN.porCobrar, fmR.USD.porCobrar));
-            const prFootLabel = document.getElementById('pr-foot-label');
-            if (prFootLabel) prFootLabel.colSpan = (isMonth || isWeek) ? 4 : 3;
-
             const dateHeader = document.getElementById('pr-date-column-header');
             const tbody = document.getElementById('pr-table-rows');
             const modalityLabel = (a) => a.modality === 'virtual' ? '💻 Virtual' : 'Presencial';
-
-            // Etiqueta de cobro pensada para el mostrador: qué monto corresponde
-            // y si el paciente ya pagó o hay que cobrarle al llegar.
-            const payCell = (a) => {
-                if (a.status === 'cancelada') return '<span class="text-slate-400">Cancelada</span>';
-                if (a.paymentStatus === 'pagado') return '<span class="font-semibold text-emerald-700">✓ Pagado</span>';
-                if (Number(a.cost || 0) === 0)  return '<span class="text-slate-500">Incluida en paquete</span>';
-                return '<span class="font-bold text-amber-800">⚠ COBRAR</span>';
-            };
-            const amountCell = (a) => {
-                const cost = Number(a.cost || 0);
-                if (cost === 0) return '<span class="text-slate-400">—</span>';
-                return `${currencySymbol(a.currency)} ${cost.toFixed(2)}`;
-            };
 
             if (isMonth || isWeek) {
                 dateHeader.classList.remove('hidden');
@@ -2726,10 +2620,8 @@ window.printClinicalHistory = function() {
                             <td class="py-2.5 px-2 font-bold">${a.time}</td>
                             <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
                             <td class="py-2.5 px-2">${modalityLabel(a)}</td>
-                            <td class="py-2.5 px-2 text-right">${amountCell(a)}</td>
-                            <td class="py-2.5 px-2 text-center">${payCell(a)}</td>
                         </tr>`).join('')
-                    : `<tr><td colspan="6" class="py-4 text-center text-graphite-400">No hay consultas agendadas para este periodo.</td></tr>`;
+                    : `<tr><td colspan="4" class="py-4 text-center text-graphite-400">No hay consultas agendadas para este periodo.</td></tr>`;
             } else {
                 dateHeader.classList.add('hidden');
                 tbody.innerHTML = reportApps.length
@@ -2738,10 +2630,8 @@ window.printClinicalHistory = function() {
                             <td class="py-2.5 px-2 font-bold">${a.time}</td>
                             <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
                             <td class="py-2.5 px-2">${modalityLabel(a)}</td>
-                            <td class="py-2.5 px-2 text-right">${amountCell(a)}</td>
-                            <td class="py-2.5 px-2 text-center">${payCell(a)}</td>
                         </tr>`).join('')
-                    : `<tr><td colspan="5" class="py-4 text-center text-graphite-400">No hay consultas agendadas para esta fecha.</td></tr>`;
+                    : `<tr><td colspan="3" class="py-4 text-center text-graphite-400">No hay consultas agendadas para esta fecha.</td></tr>`;
             }
 
             hideAllPrintSections();
