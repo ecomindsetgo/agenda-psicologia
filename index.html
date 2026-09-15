@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda de Psicología Pro+</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col pb-20 md:pb-6">
+
+    <!-- ================= PANTALLA DE AUTENTICACIÓN ================= -->
+    <div id="auth-screen" class="fixed inset-0 bg-slate-900 flex items-center justify-center z-50 p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 space-y-6 relative overflow-hidden">
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-indigo-50 rounded-full -z-10"></div>
+            <div class="text-center space-y-2">
+                <div class="inline-flex bg-indigo-100 p-3.5 rounded-2xl text-indigo-600 mb-2">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-black text-slate-800">Iniciar Sesión</h2>
+                <p class="text-sm text-slate-500">Ingresa tus credenciales para acceder de forma segura a tu agenda médica.</p>
+            </div>
+
+            <!-- FORMULARIO LOGIN — el reset() se llama DESPUÉS de leer los valores -->
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Correo Electrónico</label>
+                    <input type="email" id="auth-email" placeholder="ejemplo@consultorio.com"
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Contraseña</label>
+                    <input type="password" id="auth-password" placeholder="••••••••"
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+                <div id="auth-error-msg" class="text-xs text-red-500 hidden font-semibold bg-red-50 p-3 rounded-lg border border-red-200"></div>
+                <button id="auth-submit-btn" onclick="handleLogin()"
+                    class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-md shadow-indigo-100 transition flex items-center justify-center gap-2">
+                    <span>Entrar al Consultorio</span><span>➔</span>
+                </button>
+            </div>
+
+            <div class="text-center space-y-3 pt-4 border-t border-slate-100">
+                <button type="button" onclick="recuperarContrasena()"
+                    class="text-xs text-slate-500 hover:text-indigo-600 transition underline">
+                    ¿Olvidaste tu contraseña?
+                </button>
+            </div>
+            <div class="text-center pt-2 border-t border-slate-100">
+                <p class="text-xs text-slate-400">¿No tienes una licencia activa o perdiste tu acceso?</p>
+                <a href="https://wa.me/51912352126" target="_blank"
+                    class="inline-block text-xs font-medium text-indigo-600 hover:underline mt-1">Contactar a Soporte</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: CAMBIAR CONTRASEÑA TEMPORAL ================= -->
+    <!--
+        Se muestra cuando el usuario ingresa con una contraseña que empieza con "temp_".
+        No se puede cerrar sin completar el cambio.
+    -->
+    <div id="change-password-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center z-[60] p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 space-y-5 relative overflow-hidden">
+            <div class="absolute -top-10 -left-10 w-32 h-32 bg-amber-50 rounded-full -z-10"></div>
+            <div class="text-center space-y-2">
+                <div class="inline-flex bg-amber-100 p-3.5 rounded-2xl text-amber-600 mb-2">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-black text-slate-800">Configura tu Contraseña</h2>
+                <p class="text-sm text-slate-500">
+                    Es tu primer ingreso. Por seguridad debes establecer una contraseña personal antes de continuar.
+                </p>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Nueva Contraseña</label>
+                    <input type="password" id="new-password-input" placeholder="Mínimo 8 caracteres"
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Confirmar Nueva Contraseña</label>
+                    <input type="password" id="confirm-password-input" placeholder="Repite tu nueva contraseña"
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+                <div id="change-pwd-error" class="text-xs text-red-500 hidden font-semibold bg-red-50 p-3 rounded-lg border border-red-200"></div>
+                <div id="change-pwd-success" class="text-xs text-emerald-600 hidden font-semibold bg-emerald-50 p-3 rounded-lg border border-emerald-200"></div>
+                <button onclick="handleChangePassword()"
+                    class="w-full bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-white font-bold py-3.5 rounded-xl shadow-md transition flex items-center justify-center gap-2">
+                    <span>Guardar y Continuar</span><span>🔐</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PANTALLA: RESTABLECER CONTRASEÑA (enlace de Firebase) ================= -->
+    <!--
+        Se muestra cuando el usuario llega desde el correo de recuperación
+        (enlace con ?mode=resetPassword&oobCode=...). Antes esta pantalla no
+        existía y Firebase mostraba su página genérica de error.
+    -->
+    <div id="reset-password-screen" class="fixed inset-0 bg-slate-900 hidden items-center justify-center z-[70] p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 space-y-6 relative overflow-hidden">
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-indigo-50 rounded-full -z-10"></div>
+
+            <!-- Paso 1: verificando el enlace -->
+            <div id="rp-loading" class="text-center space-y-3 py-6">
+                <div class="inline-flex bg-indigo-100 p-3.5 rounded-2xl text-indigo-600 mb-2">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-black text-slate-800">Verificando enlace…</h2>
+                <p class="text-sm text-slate-500">Espera un momento mientras confirmamos tu solicitud.</p>
+            </div>
+
+            <!-- Paso 2a: enlace inválido / vencido / ya usado -->
+            <div id="rp-invalid" class="hidden text-center space-y-4">
+                <div class="inline-flex bg-red-100 p-3.5 rounded-2xl text-red-600 mb-2">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-black text-slate-800">Enlace no válido</h2>
+                <p id="rp-invalid-msg" class="text-sm text-red-600 font-semibold bg-red-50 p-3 rounded-lg border border-red-200"></p>
+                <button onclick="goToLoginFromReset()"
+                    class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-xl shadow-md transition">
+                    Volver al inicio de sesión
+                </button>
+            </div>
+
+            <!-- Paso 2b: formulario de nueva contraseña -->
+            <div id="rp-form" class="hidden space-y-5">
+                <div class="text-center space-y-2">
+                    <div class="inline-flex bg-indigo-100 p-3.5 rounded-2xl text-indigo-600 mb-2">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                        </svg>
+                    </div>
+                    <h2 class="text-xl font-black text-slate-800">Restablecer Contraseña</h2>
+                    <p class="text-sm text-slate-500">Cuenta: <span id="rp-email-label" class="font-semibold text-slate-700"></span></p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Nueva Contraseña</label>
+                    <input type="password" id="rp-new-password" placeholder="Mínimo 8 caracteres"
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Confirmar Nueva Contraseña</label>
+                    <input type="password" id="rp-confirm-password" placeholder="Repite tu nueva contraseña"
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+                <div id="rp-form-error" class="text-xs text-red-500 hidden font-semibold bg-red-50 p-3 rounded-lg border border-red-200"></div>
+                <button onclick="handleConfirmPasswordReset()"
+                    class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-md transition flex items-center justify-center gap-2">
+                    <span>Cambiar Contraseña</span><span>🔐</span>
+                </button>
+            </div>
+
+            <!-- Paso 3: éxito -->
+            <div id="rp-success" class="hidden text-center space-y-4">
+                <div class="inline-flex bg-emerald-100 p-3.5 rounded-2xl text-emerald-600 mb-2">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-black text-slate-800">🟢 Contraseña actualizada correctamente</h2>
+                <p class="text-sm text-slate-500">Ya puedes ingresar a tu agenda con tu nueva contraseña.</p>
+                <button onclick="goToLoginFromReset()"
+                    class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl shadow-md transition">
+                    Ir al inicio de sesión
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= CONTENEDOR PRINCIPAL ================= -->
+    <div id="app-container" class="hidden flex-col flex-grow">
+        <!-- HEADER -->
+        <header class="bg-indigo-900 text-white shadow-md sticky top-0 z-40 no-print">
+            <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="bg-indigo-600 p-2.5 rounded-xl shadow-inner">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="font-extrabold text-xl tracking-tight">Agenda Psicológica <span class="text-indigo-400 text-xs font-semibold px-2 py-0.5 bg-indigo-950/50 rounded-full border border-indigo-800 ml-1">Pro+</span></h1>
+                        <p class="text-xs text-indigo-200 flex items-center gap-1.5 mt-0.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block animate-pulse" id="sync-indicator-dot"></span>
+                            <span id="sync-indicator-text" class="truncate max-w-[180px]">Conectado a la Nube</span>
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                    <span id="current-date-lbl" class="text-sm bg-indigo-950/40 px-3.5 py-1.5 rounded-lg border border-indigo-800 font-medium"></span>
+                    <button onclick="openPrintModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-3.5 py-1.5 rounded-lg shadow-sm transition flex items-center gap-2 text-sm" title="Imprimir Reporte">
+                        <span>🖨️</span><span class="hidden md:inline">Imprimir</span>
+                    </button>
+                    <button onclick="openAssistantModal()" class="bg-slate-700 hover:bg-slate-600 border border-slate-600 p-2 rounded-lg transition flex items-center gap-2 text-sm font-medium" title="Asistente IA">
+                        <span>🤖</span><span class="hidden md:inline text-xs">Asistente</span>
+                    </button>
+                    <button onclick="openProfileModal()" class="bg-indigo-700 hover:bg-indigo-600 border border-indigo-500/50 p-2 rounded-lg transition flex items-center gap-2 text-sm font-medium" title="Mi Perfil">
+                        <span>👤</span><span id="header-user-name" class="hidden md:inline max-w-[120px] truncate text-xs"></span>
+                    </button>
+                    <button id="logout-btn" class="bg-red-950/50 hover:bg-red-900 border border-red-800/60 p-2 rounded-lg transition" title="Cerrar Sesión">🚪</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- NAVIGATION TABS -->
+        <nav class="bg-white border-b border-slate-200 sticky top-[72px] sm:top-[76px] z-30 no-print shadow-sm">
+            <div class="max-w-5xl mx-auto px-4 flex justify-around sm:justify-start sm:gap-6">
+                <button id="tab-citas" onclick="switchTab('citas')" class="py-3.5 px-3 border-b-2 border-indigo-600 text-indigo-600 font-semibold text-sm flex items-center gap-2 tab-transition">
+                    🗓️ <span>Citas de Hoy</span>
+                </button>
+                <button id="tab-pacientes" onclick="switchTab('pacientes')" class="py-3.5 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-sm flex items-center gap-2 tab-transition">
+                    👥 <span>Directorio de Pacientes</span>
+                </button>
+                <button id="tab-finanzas" onclick="switchTab('finanzas')" class="py-3.5 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-sm flex items-center gap-2 tab-transition">
+                    📊 <span>Estadísticas y Finanzas</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="flex-grow max-w-5xl w-full mx-auto p-4 md:p-6 space-y-6 no-print">
+
+            <!-- SECCIÓN: CITAS -->
+            <section id="sec-citas" class="space-y-4">
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Citas Hoy</span>
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span id="stat-citas-hoy" class="text-3xl font-extrabold text-indigo-600">0</span>
+                            <span id="stat-citas-hoy-label" class="text-xs text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded-md font-medium">Hoy</span>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pendientes</span>
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span id="stat-citas-pendientes" class="text-3xl font-extrabold text-amber-500">0</span>
+                            <span class="text-xs text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-md font-medium">Por Atender</span>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Completadas</span>
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span id="stat-citas-completas" class="text-3xl font-extrabold text-emerald-500">0</span>
+                            <span class="text-xs text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md font-medium">Asistidas</span>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Recaudación Estimada</span>
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span id="stat-citas-ingresos" class="text-2xl font-extrabold text-slate-800">S/ 0.00</span>
+                            <span id="stat-citas-ingresos-label" class="text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md font-medium">Hoy</span>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Recaudación Real</span>
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span id="stat-citas-ingresos-real" class="text-2xl font-extrabold text-emerald-600">S/ 0.00</span>
+                            <span id="stat-citas-ingresos-real-label" class="text-xs text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md font-medium">Hoy</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Toggle Vista Día / Vista Mes -->
+                <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-2 flex-wrap">
+                    <span class="text-xs font-bold text-slate-400 uppercase mr-1">Vista:</span>
+                    <button onclick="setCitasView('dia')" id="btn-view-dia" class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">📅 Día</button>
+                    <button onclick="setCitasView('mes')" id="btn-view-mes" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">🗓️ Mes</button>
+                    <button onclick="openHorarioModal()" id="btn-revisar-horario" class="ml-auto px-3 py-1.5 bg-orange-100 hover:bg-orange-200 text-orange-700 text-xs font-bold rounded-lg transition flex items-center gap-1.5">
+                        🔍 Revisar Horario
+                    </button>
+                </div>
+
+                <!-- VISTA DIARIA -->
+                <div id="citas-day-view" class="space-y-4">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+                        <div class="flex flex-col md:flex-row gap-3">
+                            <div class="relative flex-grow">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none">🔍</span>
+                                <input type="text" id="appointment-search" oninput="renderAppointments()" placeholder="Buscar paciente por nombre o notas..."
+                                    class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <div class="flex items-center bg-slate-50 border border-slate-200 rounded-xl p-1">
+                                    <button onclick="shiftDate(-1)" class="px-2.5 py-1.5 text-slate-600 hover:bg-white rounded-lg transition-all text-xs font-semibold">◀ Anterior</button>
+                                    <input type="date" id="date-filter" onchange="renderAppointments(); window.updateStatsDashboard && window.updateStatsDashboard();" class="bg-transparent border-none text-sm font-semibold text-slate-700 focus:outline-none px-2 py-1">
+                                    <button onclick="shiftDate(1)" class="px-2.5 py-1.5 text-slate-600 hover:bg-white rounded-lg transition-all text-xs font-semibold">Siguiente ▶</button>
+                                </div>
+                                <button onclick="goToToday()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3.5 py-2.5 rounded-xl text-xs transition">Hoy</button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 border-t border-slate-100 pt-3 flex-wrap">
+                            <span class="text-xs font-bold text-slate-400 uppercase mr-2">Filtrar Estado:</span>
+                            <button onclick="setFilterStatus('todas')" id="btn-f-todas" class="px-3 py-1 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">Todas</button>
+                            <button onclick="setFilterStatus('pendiente')" id="btn-f-pendiente" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Pendientes</button>
+                            <button onclick="setFilterStatus('completada')" id="btn-f-completada" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Completadas</button>
+                            <button onclick="setFilterStatus('cancelada')" id="btn-f-cancelada" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Canceladas</button>
+                        </div>
+                    </div>
+
+                    <div id="appointments-list" class="space-y-3"></div>
+                </div>
+
+                <!-- VISTA MENSUAL -->
+                <div id="citas-month-view" class="space-y-4 hidden">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-3">
+                        <div class="flex items-center gap-2">
+                            <button onclick="shiftMonth(-1)" class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold transition">◀ Mes Anterior</button>
+                            <span id="month-view-label" class="text-sm font-bold text-slate-700 px-2 min-w-[140px] text-center"></span>
+                            <button onclick="shiftMonth(1)" class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold transition">Mes Siguiente ▶</button>
+                        </div>
+                        <div class="flex items-center gap-3 text-xs font-semibold text-slate-500 flex-wrap justify-center">
+                            <span>Total: <span id="month-view-total" class="text-indigo-600 font-bold">0</span></span>
+                            <span>Completadas: <span id="month-view-completed" class="text-emerald-600 font-bold">0</span></span>
+                            <span>Recaudado: <span id="month-view-revenue" class="text-slate-800 font-bold">S/ 0.00</span></span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-400 px-1">Toca cualquier día para ver el detalle en la vista diaria.</p>
+                    <div id="month-view-list" class="space-y-3"></div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN: PACIENTES -->
+            <section id="sec-pacientes" class="space-y-4 hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">Directorio Clínico de Pacientes</h2>
+                        <p class="text-xs text-slate-500">Registra pacientes, revisa datos de contacto e historial clínico.</p>
+                    </div>
+                    <button onclick="openPatientModal()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                        ➕ Nuevo Paciente
+                    </button>
+                </div>
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none">🔍</span>
+                        <input type="text" id="patient-search-input" oninput="renderPatients()" placeholder="Buscar paciente por nombre o teléfono..."
+                            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
+                    </div>
+                </div>
+                <div id="patients-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </section>
+
+            <!-- SECCIÓN: FINANZAS -->
+            <section id="sec-finanzas" class="space-y-6 hidden">
+                <!-- Selector de Periodo + Impresión -->
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-3">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-xs font-bold text-slate-400 uppercase mr-1">Periodo:</span>
+                        <button onclick="setFinancePeriod('todo')" id="btn-fp-todo" class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">Todo el Tiempo</button>
+                        <button onclick="setFinancePeriod('mes')" id="btn-fp-mes" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Este Mes</button>
+                        <button onclick="setFinancePeriod('semana')" id="btn-fp-semana" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Esta Semana</button>
+                        <button onclick="setFinancePeriod('dia')" id="btn-fp-dia" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">Hoy</button>
+                    </div>
+                    <button onclick="openPrintModal(window._profileState && window._profileState.financePeriod === 'mes' ? 'mes' : (window._profileState && window._profileState.financePeriod === 'semana' ? 'semana' : 'dia'), 'finanzas')" class="w-full sm:w-auto bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-4 py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+                        🖨️ Imprimir Reporte (Día, Semana o Mes)
+                    </button>
+                </div>
+
+                <!-- ═══ BLOQUE 1: CAJA — Facturado / Cobrado / Por cobrar ═══ -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-5">
+                    <div class="flex items-center justify-between flex-wrap gap-1">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800">💰 Estado de Caja</h2>
+                            <p class="text-xs text-slate-400">Cuánto generaste, cuánto entró y cuánto te deben.</p>
+                        </div>
+                        <p id="finance-period-label" class="text-xs font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg">Mostrando datos de: Todo el tiempo</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-slate-50 border border-slate-200 p-5 rounded-2xl">
+                            <span class="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">Monto Total Facturado</span>
+                            <span id="fin-facturado" class="text-2xl font-extrabold text-slate-800 block">S/ 0.00</span>
+                            <span id="fin-facturado-usd" class="text-xs font-bold text-slate-400 block">$ 0.00 USD</span>
+                            <span id="fin-facturado-var" class="text-[11px] font-semibold block mt-1.5 text-slate-400">—</span>
+                        </div>
+                        <div class="bg-emerald-50 border border-emerald-200 p-5 rounded-2xl">
+                            <span class="text-xs font-bold text-emerald-600 uppercase tracking-wide block mb-1">✅ Cobrado (en caja)</span>
+                            <span id="fin-cobrado" class="text-2xl font-extrabold text-emerald-800 block">S/ 0.00</span>
+                            <span id="fin-cobrado-usd" class="text-xs font-bold text-emerald-500 block">$ 0.00 USD</span>
+                            <span id="fin-cobrado-var" class="text-[11px] font-semibold block mt-1.5 text-slate-400">—</span>
+                        </div>
+                        <div class="bg-amber-50 border border-amber-200 p-5 rounded-2xl">
+                            <span class="text-xs font-bold text-amber-600 uppercase tracking-wide block mb-1">⏳ Pendiente de Cobro</span>
+                            <span id="fin-porcobrar" class="text-2xl font-extrabold text-amber-800 block">S/ 0.00</span>
+                            <span id="fin-porcobrar-usd" class="text-xs font-bold text-amber-500 block">$ 0.00 USD</span>
+                            <span id="fin-porcobrar-detalle" class="text-[11px] font-semibold block mt-1.5 text-amber-700">0 citas por cobrar</span>
+                        </div>
+                        <div class="bg-indigo-50 border border-indigo-200 p-5 rounded-2xl">
+                            <span class="text-xs font-bold text-indigo-600 uppercase tracking-wide block mb-1">📈 Tasa de Cobranza</span>
+                            <span id="fin-tasa-cobranza" class="text-2xl font-extrabold text-indigo-800 block">0%</span>
+                            <span id="fin-tasa-cobranza-sub" class="text-xs font-bold text-indigo-400 block">de lo facturado ya está cobrado</span>
+                            <span id="fin-tasa-cobranza-var" class="text-[11px] font-semibold block mt-1.5 text-slate-400">—</span>
+                        </div>
+                    </div>
+
+                    <!-- Barra visual cobrado vs por cobrar -->
+                    <div class="space-y-1.5">
+                        <div class="w-full h-4 bg-amber-100 rounded-full overflow-hidden flex">
+                            <div id="fin-bar-cobrado" class="h-full bg-emerald-500 transition-all duration-500" style="width:0%"></div>
+                        </div>
+                        <div class="flex justify-between text-[11px] text-slate-500 font-medium">
+                            <span id="fin-bar-left">Cobrado S/ 0.00</span>
+                            <span id="fin-bar-right">Por cobrar S/ 0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Desglose fino de la deuda -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                        <div class="border border-rose-100 bg-rose-50/60 p-3.5 rounded-xl">
+                            <span class="text-[11px] font-bold text-rose-500 uppercase block">Deuda vencida (sesión ya dada)</span>
+                            <span id="fin-vencido" class="text-lg font-extrabold text-rose-700">S/ 0.00</span>
+                        </div>
+                        <div class="border border-sky-100 bg-sky-50/60 p-3.5 rounded-xl">
+                            <span class="text-[11px] font-bold text-sky-500 uppercase block">Por cobrar a futuro (cita programada)</span>
+                            <span id="fin-futuro" class="text-lg font-extrabold text-sky-700">S/ 0.00</span>
+                        </div>
+                        <div class="border border-slate-200 bg-slate-50 p-3.5 rounded-xl">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase block">No facturado por cancelaciones</span>
+                            <span id="fin-perdido" class="text-lg font-extrabold text-slate-600">S/ 0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══ BLOQUE 2: Actividad del consultorio ═══ -->
+                <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 text-center">
+                        <span class="text-[11px] font-semibold text-slate-400 uppercase block mb-1">Pacientes Únicos</span>
+                        <span id="stats-total-patients" class="text-3xl font-extrabold text-indigo-900">0</span>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 text-center">
+                        <span class="text-[11px] font-semibold text-slate-400 uppercase block mb-1">Citas Registradas</span>
+                        <span id="stats-total-appointments" class="text-3xl font-extrabold text-violet-900">0</span>
+                        <span id="fin-citas-desglose" class="text-[11px] text-slate-400 block mt-1">0 hechas · 0 por dar</span>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 text-center">
+                        <span class="text-[11px] font-semibold text-slate-400 uppercase block mb-1">Ingreso Devengado</span>
+                        <span id="stats-revenue-total" class="text-2xl font-extrabold text-emerald-900">S/ 0.00</span>
+                        <span id="stats-revenue-total-usd" class="text-[11px] font-bold text-emerald-500 block">$ 0.00 USD</span>
+                        <span class="text-[10px] text-slate-300 block">(citas completadas)</span>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 text-center">
+                        <span class="text-[11px] font-semibold text-slate-400 uppercase block mb-1">Ticket Promedio</span>
+                        <span id="fin-ticket" class="text-2xl font-extrabold text-slate-800">S/ 0.00</span>
+                        <span id="fin-ticket-usd" class="text-[11px] font-bold text-slate-400 block">$ 0.00 USD</span>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 text-center col-span-2 lg:col-span-1">
+                        <span class="text-[11px] font-semibold text-slate-400 uppercase block mb-1">Tasa de Asistencia</span>
+                        <span id="finance-attendance-rate" class="text-3xl font-extrabold text-emerald-600">0%</span>
+                        <span id="finance-attendance-sub" class="text-[11px] text-slate-400 block">0 asistidas / 0 canceladas</span>
+                    </div>
+                </div>
+
+                <!-- ═══ BLOQUE 3: Cuentas por cobrar (deudores) ═══ -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+                    <div class="flex items-center justify-between flex-wrap gap-1">
+                        <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">🧾 Cuentas por Cobrar — ¿Quién te debe?</h3>
+                        <span id="receivables-total" class="text-xs font-bold text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg">S/ 0.00</span>
+                    </div>
+                    <p class="text-xs text-slate-400">Sesiones ya realizadas cuyo pago sigue pendiente, dentro del periodo seleccionado. Ordenadas de mayor a menor deuda.</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs">
+                            <thead>
+                                <tr class="text-left text-slate-400 uppercase border-b border-slate-100">
+                                    <th class="py-2 pr-2">Paciente</th>
+                                    <th class="py-2 pr-2 text-center">Sesiones impagas</th>
+                                    <th class="py-2 pr-2 text-center">Deuda más antigua</th>
+                                    <th class="py-2 pr-2 text-center">Antigüedad</th>
+                                    <th class="py-2 pr-2 text-right">Monto adeudado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="receivables-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ═══ BLOQUE 4: Tendencia mensual ═══ -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+                    <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">📈 Tendencia de los Últimos 6 Meses</h3>
+                    <p class="text-xs text-slate-400">Facturado vs. cobrado por mes (en soles). Independiente del periodo seleccionado arriba.</p>
+                    <div id="monthly-trend-wrap" class="pt-1 overflow-x-auto"></div>
+                    <div class="flex items-center gap-4 text-xs text-slate-500 pt-1 flex-wrap">
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block"></span> Cobrado</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-amber-300 inline-block"></span> Pendiente de cobro</span>
+                    </div>
+                    <div class="overflow-x-auto pt-2">
+                        <table class="w-full text-xs">
+                            <thead>
+                                <tr class="text-left text-slate-400 uppercase border-b border-slate-100">
+                                    <th class="py-2 pr-2">Mes</th>
+                                    <th class="py-2 pr-2 text-center">Citas</th>
+                                    <th class="py-2 pr-2 text-center">Completadas</th>
+                                    <th class="py-2 pr-2 text-right">Facturado</th>
+                                    <th class="py-2 pr-2 text-right">Cobrado</th>
+                                    <th class="py-2 pr-2 text-right">Por cobrar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="monthly-trend-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ═══ BLOQUE 5: Semana + Top pacientes ═══ -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-2">
+                        <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">📅 Citas por Día de la Semana</h3>
+                        <p id="weekly-chart-range-label" class="text-xs text-slate-400">Cargando semana actual...</p>
+                        <div id="weekly-chart-svg-wrap" class="pt-2"></div>
+                        <div class="flex items-center gap-4 text-xs text-slate-500 pt-1">
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-indigo-600 inline-block"></span> Completadas</span>
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-slate-300 inline-block"></span> Total programadas</span>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+                        <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">🏆 Pacientes que Más Aportan</h3>
+                        <p class="text-xs text-slate-400">Ordenados por monto efectivamente cobrado en el periodo.</p>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs">
+                                <thead>
+                                    <tr class="text-left text-slate-400 uppercase border-b border-slate-100">
+                                        <th class="py-2 pr-2">Paciente</th>
+                                        <th class="py-2 pr-2 text-center">Sesiones</th>
+                                        <th class="py-2 pr-2 text-right">Cobrado</th>
+                                        <th class="py-2 pr-2 text-right">Pendiente</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="top-patients-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══ BLOQUE 6: Modalidad / franja horaria / moneda ═══ -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+                        <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">🖥️ Presencial vs. Virtual</h3>
+                        <div id="modality-breakdown" class="space-y-3"></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+                        <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">🕐 Franjas Horarias</h3>
+                        <p class="text-xs text-slate-400">En qué horario se concentra tu demanda.</p>
+                        <div id="timeslot-breakdown" class="space-y-3"></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+                        <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">💱 Detalle por Moneda</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs">
+                                <thead>
+                                    <tr class="text-left text-slate-400 uppercase border-b border-slate-100">
+                                        <th class="py-2 pr-2">Moneda</th>
+                                        <th class="py-2 pr-2 text-right">Facturado</th>
+                                        <th class="py-2 pr-2 text-right">Cobrado</th>
+                                        <th class="py-2 pr-2 text-right">Por cobrar</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="currency-breakdown-body"></tbody>
+                            </table>
+                        </div>
+                        <p class="text-[11px] text-slate-300">Los montos en soles y dólares nunca se suman entre sí.</p>
+                    </div>
+                </div>
+
+                <!-- ═══ BLOQUE 7: Leads por origen ═══ -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+                    <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">📊 Leads por Origen</h3>
+                    <p class="text-xs text-slate-400">De dónde vienen tus pacientes y cuánto están generando (según el periodo seleccionado arriba).</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs">
+                            <thead>
+                                <tr class="text-left text-slate-400 uppercase border-b border-slate-100">
+                                    <th class="py-2 pr-2">Origen</th>
+                                    <th class="py-2 pr-2 text-center">Leads</th>
+                                    <th class="py-2 pr-2 text-center">Citas</th>
+                                    <th class="py-2 pr-2 text-center">Atendidos</th>
+                                    <th class="py-2 pr-2 text-center">Conversión</th>
+                                    <th class="py-2 pr-2 text-right">Ingresos</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leads-by-source-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ═══ BLOQUE 8: Control financiero de sesiones ═══ -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                    <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">Control Financiero de Sesiones</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8">
+                        <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                            <span class="text-sm text-slate-500">Monto promedio por sesión:</span>
+                            <span id="finance-average-cost" class="text-sm font-bold text-slate-700">S/ 0.00</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                            <span class="text-sm text-slate-500">Monto pendiente de cobro:</span>
+                            <span id="finance-pending-cobro" class="text-sm font-bold text-amber-600">S/ 0.00</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                            <span class="text-sm text-slate-500">Estimación de ingresos futuros:</span>
+                            <span id="finance-future-cobro" class="text-sm font-bold text-indigo-600">S/ 0.00</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                            <span class="text-sm text-slate-500">Sesiones sueltas vs. de paquete:</span>
+                            <span id="finance-package-split" class="text-sm font-bold text-slate-700">0 / 0</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                            <span class="text-sm text-slate-500">Atenciones individuales vs. pareja:</span>
+                            <span id="finance-attention-split" class="text-sm font-bold text-slate-700">0 / 0</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                            <span class="text-sm text-slate-500">Citas con pago pendiente:</span>
+                            <span id="finance-unpaid-count" class="text-sm font-bold text-amber-600">0</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- FLOATING ACTIONS -->
+        <div class="fixed bottom-6 right-6 flex flex-col items-end gap-3 z-40 no-print">
+            <button onclick="toggleFloatingMenu()" id="btn-fab-main" class="w-14 h-14 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full text-2xl flex items-center justify-center shadow-lg transition-all duration-300 transform">➕</button>
+            <div id="fab-menu" class="hidden flex-col items-end gap-2.5 mb-2 transform scale-95 opacity-0 transition-all duration-200">
+                <button onclick="openPatientModal(); toggleFloatingMenu();" class="flex items-center gap-2 bg-white px-4 py-2 border border-slate-200 text-slate-700 rounded-xl shadow-md text-sm font-semibold hover:bg-slate-50 transition-all">👤 Nuevo Paciente</button>
+                <button onclick="openAppointmentModal(); toggleFloatingMenu();" class="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 text-sm rounded-xl shadow-md font-semibold hover:bg-indigo-500 transition-all">🗓️ Programar Cita</button>
+            </div>
+        </div>
+
+        <!-- BURBUJA DEL ASISTENTE IA (estilo widget de WhatsApp) -->
+        <div class="fixed bottom-6 left-6 z-40 no-print flex flex-col items-start gap-2">
+            <div id="assistant-fab-greet" onclick="openAssistantModal()" class="hidden max-w-[240px] bg-white text-slate-700 text-sm rounded-2xl rounded-bl-sm shadow-xl border border-slate-200 px-4 py-3 cursor-pointer relative animate-[fadeInUp_.25s_ease-out]">
+                <button onclick="event.stopPropagation(); hideFabGreetBubble();" class="absolute -top-2 -right-2 w-5 h-5 bg-slate-200 hover:bg-slate-300 rounded-full text-[11px] text-slate-600 flex items-center justify-center">&times;</button>
+                <span>Hola, soy tu asistente personal. ¿En qué puedo ayudarte hoy?</span>
+            </div>
+            <button onclick="openAssistantModal()" class="assistant-fab-btn w-16 h-16 rounded-full flex items-center justify-center shadow-xl text-3xl relative" title="Asistente IA" aria-label="Abrir asistente IA">
+                <span class="assistant-fab-ring"></span>
+                🤖
+                <span id="assistant-fab-badge" class="hidden absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full border-2 border-white"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= MODALES ================= -->
+    <!-- ================= ASISTENTE IA ADMINISTRATIVO ================= -->
+    <div id="assistant-modal" class="fixed inset-0 bg-slate-950/50 backdrop-blur-sm hidden items-center justify-center z-[60] p-0 sm:p-4 no-print">
+        <div class="bg-white w-full h-full sm:h-auto sm:max-w-md rounded-none sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col sm:max-h-[85vh]">
+            <!-- Encabezado tipo chat -->
+            <div class="bg-emerald-600 text-white px-4 py-3 flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center text-lg">🤖</div>
+                    <div>
+                        <h3 class="font-bold text-sm leading-tight">Asistente personal</h3>
+                        <p class="text-[11px] text-emerald-100 flex items-center gap-1 mt-0.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-300 inline-block"></span> En línea · solo datos administrativos</p>
+                    </div>
+                </div>
+                <button onclick="closeAssistantModal()" class="text-emerald-100 hover:text-white transition text-xl leading-none">&times;</button>
+            </div>
+
+            <!-- Hilo de conversación -->
+            <div id="assistant-chat" class="flex-1 overflow-y-auto px-3 py-4 space-y-3 bg-[#eef2f5]"></div>
+
+            <div class="border-t border-slate-100 bg-white">
+                <div class="flex flex-wrap gap-1.5 px-3 pt-2.5">
+                    <button onclick="askAssistantExample('¿Qué paciente sigue?')" class="assistant-chip">Próximo paciente</button>
+                    <button onclick="askAssistantExample('¿Cuántas citas tuve del 1 al 10?')" class="assistant-chip">Citas del 1 al 10</button>
+                    <button onclick="askAssistantExample('¿Cuántas citas tengo hoy?')" class="assistant-chip">Citas de hoy</button>
+                    <button onclick="askAssistantExample('¿Tengo espacios libres hoy?')" class="assistant-chip">Espacios libres</button>
+                    <button onclick="askAssistantExample('¿Cuánto ingresé realmente este mes?')" class="assistant-chip">Ingresos del mes</button>
+                    <button onclick="askAssistantExample('¿Qué clientes me deben?')" class="assistant-chip">Quién me debe</button>
+                    <button onclick="askAssistantExample('¿Tengo citas sin confirmar?')" class="assistant-chip">Sin confirmar</button>
+                </div>
+                <div id="assistant-status" class="hidden text-xs rounded-xl mx-3 mt-2 p-2.5"></div>
+                <div class="p-3 flex gap-2 items-end">
+                    <textarea id="assistant-question" rows="1" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); askAssistant();}" class="flex-1 border border-slate-200 rounded-full px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 max-h-24" placeholder="Escribe tu pregunta…"></textarea>
+                    <button id="assistant-voice-btn" onclick="toggleAssistantVoice()" class="w-10 h-10 shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full font-bold text-lg transition" title="Hablar" aria-label="Hablar">🎙️</button>
+                    <button id="assistant-send-btn" onclick="askAssistant()" class="w-10 h-10 shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full font-bold transition" title="Enviar">➤</button>
+                </div>
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 pb-2.5 text-[11px] text-slate-400">
+                    <button onclick="speakAnswer()" class="hover:text-emerald-700">🔊 Leer</button>
+                    <button onclick="stopAnswerVoice()" class="hover:text-slate-700">⏹️ Detener voz</button>
+                    <button id="assistant-auto-voice-btn" onclick="toggleAutoVoice()" class="hover:text-emerald-700">🔊 Voz automática: ON</button>
+                    <button onclick="openGeminiConfig()" class="hover:text-emerald-700 ml-auto">⚙️ Gemini</button>
+                    <span id="assistant-config-state"></span>
+                </div>
+                <div id="gemini-config-box" class="hidden bg-slate-50 border-t border-slate-200 p-4 space-y-3">
+                    <p class="text-xs text-slate-600">Pega tu clave de Gemini API. Se guarda solamente en este navegador. Para mayor seguridad, restringe la clave por dominio desde Google AI Studio/Google Cloud.</p>
+                    <input id="gemini-api-key" type="password" autocomplete="off" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm" placeholder="AIza...">
+                    <div class="flex gap-2 justify-end">
+                        <button onclick="clearGeminiKey()" class="px-3 py-2 text-xs font-semibold text-red-600">Borrar clave</button>
+                        <button onclick="saveGeminiKey()" class="bg-slate-800 text-white px-3 py-2 rounded-lg text-xs font-semibold">Guardar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CITA -->
+    <div id="appointment-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4 no-print">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center">
+                <h3 id="app-modal-title" class="font-bold text-base flex items-center gap-2">🗓️ Programar Nueva Cita</h3>
+                <button onclick="closeAppointmentModal()" class="text-indigo-200 hover:text-white transition text-lg">&times;</button>
+            </div>
+            <form id="appointment-form" class="p-6 space-y-4 overflow-y-auto flex-grow">
+                <input type="hidden" id="app-id">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Paciente Clínico *</label>
+                    <div class="flex gap-2">
+                        <select id="app-patient-select" required onchange="autoSelectPatientPackage(); updateAppointmentPricing()" class="flex-grow p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                        <button type="button" onclick="switchToNewPatientFromAppoint()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 rounded-xl text-xs font-semibold border border-indigo-200 transition">➕ Nuevo</button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Fecha *</label>
+                        <input type="date" id="app-date" required class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Hora *</label>
+                        <input type="time" id="app-time" required class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Tipo de Atención *</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 has-[:checked]:text-indigo-700 has-[:checked]:font-semibold transition">
+                            <input type="radio" name="app-attention-type" id="app-attention-individual" value="individual" class="accent-indigo-600" checked onchange="autoSelectPatientPackage(); updateAppointmentPricing()">
+                            👤 Individual
+                        </label>
+                        <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 has-[:checked]:text-indigo-700 has-[:checked]:font-semibold transition">
+                            <input type="radio" name="app-attention-type" id="app-attention-pareja" value="pareja" class="accent-indigo-600" onchange="autoSelectPatientPackage(); updateAppointmentPricing()">
+                            👥 Pareja
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Modalidad de la Cita *</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 has-[:checked]:text-indigo-700 has-[:checked]:font-semibold transition">
+                            <input type="radio" name="app-modality" id="app-modality-presencial" value="presencial" class="accent-indigo-600" checked onchange="updateAppointmentPricing()">
+                            🏢 Presencial
+                        </label>
+                        <label class="flex items-center justify-center gap-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm cursor-pointer has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 has-[:checked]:text-indigo-700 has-[:checked]:font-semibold transition">
+                            <input type="radio" name="app-modality" id="app-modality-virtual" value="virtual" class="accent-indigo-600" onchange="updateAppointmentPricing()">
+                            💻 Virtual
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Forma de Pago / Tarifa *</label>
+                    <select id="app-rate-type" onchange="updateAppointmentPricing()" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
+                        <option value="sesion">💵 Sesión individual</option>
+                        <option value="paquete6">📦 Paquete de 6 sesiones</option>
+                        <option value="paquete8">📦 Paquete de 8 sesiones</option>
+                    </select>
+                </div>
+                <div id="app-package-info" class="hidden text-xs rounded-xl p-3 border space-y-1"></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label id="app-cost-label" class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Precio (S/) *</label>
+                        <input type="number" id="app-cost" min="0" step="0.50" value="50.00" required class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold">
+                        <p class="text-[11px] text-slate-400 mt-1">Se autocompleta según la tarifa, pero puedes editarlo manualmente.</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Estado de Pago *</label>
+                        <select id="app-payment" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
+                            <option value="pendiente">Pendiente de Cobro</option>
+                            <option value="pagado">Pagado</option>
+                        </select>
+                    </div>
+                </div>
+                <input type="hidden" id="app-package-id">
+                <input type="hidden" id="app-package-type">
+                <input type="hidden" id="app-session-value">
+                <input type="hidden" id="app-package-consumed">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Estado de la Cita</label>
+                    <select id="app-status" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
+                        <option value="pendiente">Pendiente de Atención</option>
+                        <option value="completada">Completada (Asistió)</option>
+                        <option value="cancelada">Cancelada</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Notas / Diagnóstico</label>
+                    <textarea id="app-notes" rows="3" placeholder="Ingresar notas de diagnóstico..." class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none"></textarea>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closeAppointmentModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-3 rounded-xl text-sm font-semibold transition">Cancelar</button>
+                    <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-sm font-semibold shadow-md transition">Guardar Cita</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL PACIENTE -->
+    <div id="patient-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4 no-print">
+        <div class="bg-white w-full max-w-lg max-h-[90vh] rounded-2xl shadow-xl overflow-hidden flex flex-col">
+            <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center flex-shrink-0">
+                <h3 id="patient-modal-title" class="font-bold text-base">👤 Registrar Paciente Clínico</h3>
+                <button onclick="closePatientModal()" class="text-indigo-200 hover:text-white transition text-lg">&times;</button>
+            </div>
+            <form id="patient-form" class="p-6 space-y-4 overflow-y-auto min-h-0">
+                <input type="hidden" id="patient-id">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Nombre Completo *</label>
+                    <input type="text" id="pat-name" required placeholder="Ej: Alejandra Ruiz Medina" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">DNI</label>
+                        <input type="text" id="pat-dni" placeholder="12345678" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Teléfono *</label>
+                        <input type="tel" id="pat-phone" required placeholder="987654321" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Fecha de Nacimiento</label>
+                    <input type="date" id="pat-birth" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
+                </div>
+
+                <div class="bg-amber-50/60 border border-amber-100 rounded-xl p-3.5 space-y-2">
+                    <label class="block text-xs font-bold uppercase text-amber-600 mb-1">🌎 Moneda del paciente</label>
+                    <select id="pat-currency" class="w-full p-2.5 border border-slate-200 rounded-xl bg-white text-sm focus:outline-none">
+                        <option value="PEN" selected>🇵🇪 Soles (paciente local)</option>
+                        <option value="USD">🌎 Dólares (paciente extranjero)</option>
+                    </select>
+                    <p class="text-[11px] text-slate-400">Define en qué moneda se registran automáticamente el costo de sus citas y sus paquetes.</p>
+                </div>
+
+                <div class="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3.5 space-y-3">
+                    <p class="text-xs font-bold uppercase text-indigo-500 flex items-center gap-1.5">📊 ¿Cómo nos conociste?</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Origen del contacto</label>
+                            <select id="pat-origen" class="w-full p-2.5 border border-slate-200 rounded-xl bg-white text-sm focus:outline-none">
+                                <option value="instagram">Instagram</option>
+                                <option value="facebook">Facebook</option>
+                                <option value="tiktok">TikTok</option>
+                                <option value="marketplace">Facebook Marketplace</option>
+                                <option value="web">Página web</option>
+                                <option value="whatsapp">WhatsApp directo</option>
+                                <option value="calendly">Calendly</option>
+                                <option value="google">Google</option>
+                                <option value="referido">Referido</option>
+                                <option value="otro" selected>Otro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Canal de contacto</label>
+                            <select id="pat-canal" class="w-full p-2.5 border border-slate-200 rounded-xl bg-white text-sm focus:outline-none">
+                                <option value="whatsapp" selected>WhatsApp</option>
+                                <option value="llamada">Llamada telefónica</option>
+                                <option value="presencial">Presencial</option>
+                                <option value="email">Email</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Estado del lead</label>
+                        <select id="pat-lead-status" class="w-full p-2.5 border border-slate-200 rounded-xl bg-white text-sm focus:outline-none">
+                            <option value="nuevo" selected>Nuevo</option>
+                            <option value="contactado">Contactado</option>
+                            <option value="interesado">Interesado</option>
+                            <option value="cita_agendada">Cita agendada</option>
+                            <option value="atendido">Atendido</option>
+                            <option value="no_asistio">No asistió</option>
+                            <option value="cancelo">Canceló</option>
+                            <option value="recurrente">Recurrente</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Antecedentes Generales / Historial</label>
+                    <textarea id="pat-history" rows="3" placeholder="Motivos clínicos recurrentes..." class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none"></textarea>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closePatientModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-3 rounded-xl text-sm font-semibold transition">Cancelar</button>
+                    <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-sm font-semibold shadow-md transition">Guardar Paciente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ================= MODAL: PERFIL DE USUARIO ================= -->
+    <div id="profile-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4 no-print">
+        <div class="bg-white w-full max-w-md max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+            <!-- Header del modal con tabs -->
+            <div class="bg-indigo-900 text-white px-6 py-5 flex-shrink-0">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="font-bold text-base">⚙️ Mi Cuenta</h3>
+                        <p id="profile-modal-email" class="text-xs text-indigo-300 mt-0.5"></p>
+                    </div>
+                    <button onclick="closeProfileModal()" class="text-indigo-200 hover:text-white transition text-xl leading-none">&times;</button>
+                </div>
+                <!-- Tabs internos -->
+                <div class="flex gap-1 bg-indigo-950/40 p-1 rounded-xl">
+                    <button id="ptab-perfil" onclick="switchProfileTab('perfil')"
+                        class="flex-1 py-2 text-xs font-semibold rounded-lg bg-white text-indigo-700 shadow transition">
+                        👤 Editar Perfil
+                    </button>
+                    <button id="ptab-clave" onclick="switchProfileTab('clave')"
+                        class="flex-1 py-2 text-xs font-semibold rounded-lg text-indigo-200 hover:bg-indigo-800/50 transition">
+                        🔐 Cambiar Clave
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB: EDITAR PERFIL -->
+            <div id="psec-perfil" class="p-6 space-y-4 overflow-y-auto min-h-0">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Nombre Completo</label>
+                    <input type="text" id="profile-displayname" placeholder="Ej: Dra. Ana García"
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Especialidad / Cargo</label>
+                    <input type="text" id="profile-specialty" placeholder="Ej: Psicóloga Clínica"
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Teléfono / Contacto</label>
+                    <input type="tel" id="profile-phone" placeholder="Ej: 987654321"
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+                <div id="profile-edit-error" class="text-xs text-red-500 hidden font-semibold bg-red-50 p-3 rounded-lg border border-red-200"></div>
+                <div id="profile-edit-success" class="text-xs text-emerald-600 hidden font-semibold bg-emerald-50 p-3 rounded-lg border border-emerald-200"></div>
+                <div class="flex gap-3 pt-1">
+                    <button type="button" onclick="closeProfileModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-3 rounded-xl text-sm font-semibold transition">Cancelar</button>
+                    <button type="button" onclick="saveProfileData()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-sm font-semibold shadow-md transition">Guardar Cambios</button>
+                </div>
+            </div>
+
+            <!-- TAB: CAMBIAR CLAVE -->
+            <div id="psec-clave" class="p-6 space-y-4 hidden overflow-y-auto min-h-0">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Contraseña Actual</label>
+                    <input type="password" id="profile-current-pwd" placeholder="••••••••"
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Nueva Contraseña</label>
+                    <input type="password" id="profile-new-pwd" placeholder="Mínimo 8 caracteres"
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Confirmar Nueva Contraseña</label>
+                    <input type="password" id="profile-confirm-pwd" placeholder="Repite tu nueva contraseña"
+                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+                <div id="profile-pwd-error" class="text-xs text-red-500 hidden font-semibold bg-red-50 p-3 rounded-lg border border-red-200"></div>
+                <div id="profile-pwd-success" class="text-xs text-emerald-600 hidden font-semibold bg-emerald-50 p-3 rounded-lg border border-emerald-200"></div>
+                <div class="flex gap-3 pt-1">
+                    <button type="button" onclick="closeProfileModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-3 rounded-xl text-sm font-semibold transition">Cancelar</button>
+                    <button type="button" onclick="saveNewPassword()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-sm font-semibold shadow-md transition">Actualizar Clave</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- MODAL IMPRESIÓN -->
+    <div id="print-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4 no-print">
+        <div class="bg-white w-full max-w-md max-h-[90vh] rounded-2xl shadow-xl overflow-hidden flex flex-col">
+            <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center flex-shrink-0">
+                <h3 class="font-bold text-base">🖨️ Generar Reporte de Consultas</h3>
+                <button onclick="closePrintModal()" class="text-indigo-200 hover:text-white transition text-lg">&times;</button>
+            </div>
+            <div class="p-6 space-y-4 overflow-y-auto min-h-0">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Contenido del Reporte</label>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="setPrintCategory('citas')" id="btn-pc-citas" class="flex-1 px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg transition">🗓️ Citas</button>
+                        <button type="button" onclick="setPrintCategory('finanzas')" id="btn-pc-finanzas" class="flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">💰 Finanzas</button>
+                        <button type="button" onclick="setPrintCategory('recepcion')" id="btn-pc-recepcion" class="flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">🛎️ Recepción</button>
+                    </div>
+                    <p id="print-category-hint" class="text-[11px] text-slate-400 mt-1.5 hidden">Lista simple sin datos clínicos ni de pago, lista para entregar en recepción.</p>
+                </div>
+                <div id="print-presencial-wrap" class="hidden flex items-center gap-2 -mt-1">
+                    <input type="checkbox" id="print-only-presencial" checked class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                    <label for="print-only-presencial" class="text-xs text-slate-600">Incluir sólo consultas presenciales</label>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Tipo de Reporte</label>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="setPrintType('dia')" id="btn-pt-dia" class="flex-1 px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg transition">📅 Por Día</button>
+                        <button type="button" onclick="setPrintType('semana')" id="btn-pt-semana" class="flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">📆 Por Semana</button>
+                        <button type="button" onclick="setPrintType('mes')" id="btn-pt-mes" class="flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition">🗓️ Por Mes</button>
+                    </div>
+                </div>
+                <div id="print-date-wrap">
+                    <label id="print-date-wrap-label" class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Fecha de Reporte</label>
+                    <input type="date" id="print-date-select" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
+                </div>
+                <div id="print-month-wrap" class="hidden">
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Mes de Reporte</label>
+                    <input type="month" id="print-month-select" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Especialista (Firma / Cabecera)</label>
+                    <input type="text" id="print-specialist-name" placeholder="Ej: Dra. Lisbeth Méndez" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closePrintModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-3 rounded-xl text-sm font-semibold transition">Cancelar</button>
+                    <button type="button" onclick="executeReportPrint()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-sm font-semibold shadow-md transition">Imprimir PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+<!-- ============================
+     MODAL HISTORIA CLÍNICA
+============================= -->
+<div id="clinical-history-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[999] no-print p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden">
+        <div class="bg-teal-700 text-white px-6 py-4 flex justify-between items-center">
+            <div>
+                <h2 class="text-xl font-bold">🩺 Historia Clínica Psicológica</h2>
+                <p class="text-sm text-teal-100">Ficha clínica del paciente</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button type="button" onclick="printClinicalHistory()" class="bg-white/15 hover:bg-white/25 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">🖨️ Imprimir</button>
+                <button type="button" onclick="closeClinicalHistory()" class="text-white text-2xl hover:text-red-300">×</button>
+            </div>
+        </div>
+
+        <div class="overflow-y-auto max-h-[80vh] p-6 bg-slate-50">
+            <input type="hidden" id="hc-patient-id">
+
+            <div class="hc-form-section">
+                <div class="hc-section-title">DATOS GENERALES</div>
+                <div class="grid md:grid-cols-2 gap-x-5 gap-y-4">
+                    <div><label class="hc-label">Nombre completo</label><input id="hc-patient-name" class="hc-input bg-slate-100" readonly></div>
+                    <div><label class="hc-label">Fecha de primera sesión</label><input id="hc-first-session" type="date" class="hc-input"></div>
+                    <div><label class="hc-label">Fecha de nacimiento</label><input id="hc-patient-birth" type="date" class="hc-input bg-slate-100" readonly></div>
+                    <div><label class="hc-label">Edad</label><input id="hc-patient-age" class="hc-input bg-slate-100" readonly></div>
+                    <div>
+                        <label class="hc-label">Estado civil</label>
+                        <select id="hc-civil-status" class="hc-input">
+                            <option value="">Seleccionar</option><option>Soltera(o)</option><option>Casada(o)</option><option>Viuda(o)</option><option>Separada(o)</option><option>Conviviente</option>
+                        </select>
+                    </div>
+                    <div><label class="hc-label">Ocupación</label><input id="hc-occupation" class="hc-input" placeholder="Ocupación actual"></div>
+                    <div><label class="hc-label">Número de contacto</label><input id="hc-patient-phone" class="hc-input bg-slate-100" readonly></div>
+                    <div><label class="hc-label">DNI</label><input id="hc-patient-dni" class="hc-input bg-slate-100" readonly></div>
+                </div>
+            </div>
+
+            <div class="hc-form-section"><div class="hc-section-title">MOTIVO DE CONSULTA</div><p class="hc-question">¿Por qué decide venir a consulta? ¿Qué le está afectando actualmente?</p><textarea id="hc-motivo" rows="4" class="hc-textarea"></textarea></div>
+            <div class="hc-form-section"><div class="hc-section-title">PROBLEMA ACTUAL</div><p class="hc-question">¿Desde cuándo ocurre? ¿En qué situaciones se presenta? ¿Cómo reacciona? ¿Qué emociones predominan? ¿Qué pensamientos aparecen?</p><textarea id="hc-problema" rows="5" class="hc-textarea"></textarea></div>
+            <div class="hc-form-section"><div class="hc-section-title">IMPACTO EN SU VIDA</div><p class="hc-question">Área personal / Área de pareja / Área familiar / Área laboral</p><textarea id="hc-impacto" rows="5" class="hc-textarea"></textarea></div>
+            <div class="hc-form-section"><div class="hc-section-title">HISTORIA PERSONAL RELEVANTE</div><p class="hc-question">Relación con padres / cuidadores · Experiencias significativas en infancia · Eventos importantes (duelos, rupturas, cambios)</p><textarea id="hc-historia-personal" rows="6" class="hc-textarea"></textarea></div>
+            <div class="hc-form-section"><div class="hc-section-title">VÍNCULOS Y RELACIONES</div><p class="hc-question">¿Cómo son sus relaciones actualmente? ¿Qué patrones se repiten? ¿Qué suele necesitar emocionalmente?</p><textarea id="hc-vinculos" rows="5" class="hc-textarea"></textarea></div>
+            <div class="hc-form-section"><div class="hc-section-title">TÉCNICAS E INSTRUMENTOS APLICADOS</div><textarea id="hc-tecnicas" rows="5" class="hc-textarea" placeholder="Entrevista, observación, pruebas o instrumentos aplicados..."></textarea></div>
+            <div class="hc-form-section"><div class="hc-section-title">OBSERVACIÓN DE CONDUCTA</div><p class="hc-question">Actitud en sesión / Nivel de apertura · Resistencias / Insight</p><textarea id="hc-conducta" rows="5" class="hc-textarea"></textarea></div>
+            <div class="hc-form-section"><div class="hc-section-title">HIPÓTESIS / CONCLUSIONES</div><textarea id="hc-hipotesis" rows="5" class="hc-textarea"></textarea></div>
+            <div class="hc-form-section"><div class="hc-section-title">RECOMENDACIONES</div><textarea id="hc-recomendaciones" rows="5" class="hc-textarea"></textarea></div>
+            <div class="hc-form-section">
+                <div class="hc-section-title">PLAN DE INTERVENCIÓN</div>
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div><label class="hc-label">Frecuencia</label><input id="hc-frecuencia" class="hc-input"></div>
+                    <div><label class="hc-label">Enfoque</label><input id="hc-enfoque" class="hc-input"></div>
+                    <div><label class="hc-label">Duración sugerida</label><input id="hc-duracion" class="hc-input"></div>
+                </div>
+            </div>
+            <div class="hc-form-section"><div class="hc-section-title">TAREAS / ACUERDOS</div><p class="hc-question">Ejercicio asignado / Reflexión / Compromisos</p><textarea id="hc-tareas" rows="5" class="hc-textarea"></textarea></div>
+
+            <div class="hc-form-section mt-8">
+                <div class="flex justify-between items-center gap-3 flex-wrap">
+                    <div><div class="hc-section-title mb-1">EVOLUCIÓN CLÍNICA</div><p class="text-sm text-slate-500">Registro de cada sesión realizada con el paciente.</p></div>
+                    <button type="button" onclick="newClinicalNote()" class="bg-teal-700 hover:bg-teal-600 text-white px-4 py-2 rounded-xl font-semibold">➕ Agregar Evolución</button>
+                </div>
+                <div id="clinical-notes-container" class="space-y-4 mt-4"></div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-8">
+                <button type="button" onclick="closeClinicalHistory()" class="px-6 py-3 rounded-xl bg-gray-200 hover:bg-gray-300">Cancelar</button>
+                <button type="button" onclick="saveClinicalHistory()" class="px-6 py-3 rounded-xl bg-teal-700 hover:bg-teal-600 text-white font-semibold">💾 Guardar Historia Clínica</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- ================= PLANTILLA DE IMPRESIÓN ================= -->
+    <div id="print-section" class="print-only p-8 text-slate-950 space-y-6">
+        <div class="flex justify-between items-start border-b-2 border-slate-950 pb-5">
+            <div>
+                <h1 id="print-title-main" class="text-3xl font-extrabold tracking-tight">REPORTE DIARIO DE AGENDA</h1>
+                <p class="text-sm font-medium uppercase mt-1">Especialista: <span id="print-head-specialist" class="font-bold"></span></p>
+                <p class="text-xs text-slate-500">Documento clínico confidencial e intransferible.</p>
+            </div>
+            <div class="text-right">
+                <span id="print-head-date-label" class="text-lg font-bold block">FECHA</span>
+                <span id="print-head-date" class="text-sm font-semibold border px-3 py-1 bg-slate-100 rounded inline-block mt-1"></span>
+            </div>
+        </div>
+        <div class="grid grid-cols-3 gap-4 border p-4 bg-slate-50 rounded">
+            <div><span class="text-xs uppercase text-slate-500 font-bold block">Total Consultas</span><span id="print-stat-total" class="text-xl font-bold">0</span></div>
+            <div><span class="text-xs uppercase text-slate-500 font-bold block">Completadas</span><span id="print-stat-completed" class="text-xl font-bold">0</span></div>
+            <div><span class="text-xs uppercase text-slate-500 font-bold block">Canceladas</span><span id="print-stat-cancelled" class="text-xl font-bold">0</span></div>
+        </div>
+        <!-- RESUMEN ECONÓMICO DEL PERIODO -->
+        <div class="border-2 border-slate-950 rounded overflow-hidden">
+            <div class="bg-slate-950 text-white px-3 py-1.5 text-xs font-extrabold uppercase tracking-wider">Resumen Económico del Periodo</div>
+            <div class="grid grid-cols-4 divide-x">
+                <div class="p-3">
+                    <span class="text-[10px] uppercase text-slate-500 font-bold block">Monto Total Facturado</span>
+                    <span id="print-stat-billed" class="text-lg font-extrabold">S/ 0.00</span>
+                    <span class="text-[9px] text-slate-400 block">Citas no canceladas</span>
+                </div>
+                <div class="p-3 bg-emerald-50">
+                    <span class="text-[10px] uppercase text-emerald-700 font-bold block">Total Cobrado</span>
+                    <span id="print-stat-revenue" class="text-lg font-extrabold text-emerald-800">S/ 0.00</span>
+                    <span id="print-stat-revenue-sub" class="text-[9px] text-emerald-600 block">0 citas pagadas</span>
+                </div>
+                <div class="p-3 bg-amber-50">
+                    <span class="text-[10px] uppercase text-amber-700 font-bold block">Pendiente de Cobro</span>
+                    <span id="print-stat-pending" class="text-lg font-extrabold text-amber-800">S/ 0.00</span>
+                    <span id="print-stat-pending-sub" class="text-[9px] text-amber-600 block">0 citas por cobrar</span>
+                </div>
+                <div class="p-3">
+                    <span class="text-[10px] uppercase text-slate-500 font-bold block">Tasa de Cobranza</span>
+                    <span id="print-stat-collection" class="text-lg font-extrabold">0%</span>
+                    <span id="print-stat-lost" class="text-[9px] text-slate-400 block">Cancelado: S/ 0.00</span>
+                </div>
+            </div>
+        </div>
+        <div class="space-y-3">
+            <h2 class="text-md font-extrabold border-b pb-1.5 uppercase">Sesiones Programadas</h2>
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b bg-slate-100 text-xs font-extrabold uppercase">
+                        <th id="print-date-column-header" class="py-2.5 px-2 w-[12%] hidden">Fecha</th>
+                        <th class="py-2.5 px-2 w-[10%]">Hora</th>
+                        <th class="py-2.5 px-2 w-[10%]">Modalidad</th>
+                        <th class="py-2.5 px-2 w-[28%]">Paciente</th>
+                        <th class="py-2.5 px-2 w-[13%]">Cobro (S/)</th>
+                        <th class="py-2.5 px-2 w-[13%]">Estado</th>
+                        <th class="py-2.5 px-2 w-[26%]">Notas Clínicas</th>
+                    </tr>
+                </thead>
+                <tbody id="print-table-rows" class="divide-y text-xs"></tbody>
+                <tfoot>
+                    <tr class="border-t-2 border-slate-950 text-xs font-extrabold bg-slate-50">
+                        <td id="print-foot-spacer" class="py-2.5 px-2" colspan="3">TOTALES DEL PERIODO</td>
+                        <td class="py-2.5 px-2 text-right">Cobrado:</td>
+                        <td class="py-2.5 px-2" id="print-foot-cobrado">S/ 0.00</td>
+                        <td class="py-2.5 px-2 text-right">Por cobrar:</td>
+                        <td class="py-2.5 px-2 text-amber-700" id="print-foot-pendiente">S/ 0.00</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div class="pt-28 flex justify-center">
+            <div class="w-[50%] text-center">
+                <div class="border-t border-slate-400 w-full pt-2"></div>
+                <p class="text-xs font-semibold">Firma del Especialista de Turno</p>
+                <p class="text-[10px] text-slate-500" id="print-foot-specialist"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PLANTILLA DE IMPRESIÓN: FINANZAS ================= -->
+    <div id="print-section-finance" class="print-only hidden p-8 text-slate-950 space-y-5">
+        <div class="flex justify-between items-start border-b-2 border-slate-950 pb-5">
+            <div>
+                <h1 id="pf-title-main" class="text-3xl font-extrabold tracking-tight">REPORTE FINANCIERO DIARIO</h1>
+                <p class="text-sm font-medium uppercase mt-1">Especialista: <span id="pf-head-specialist" class="font-bold"></span></p>
+                <p class="text-xs text-slate-500">Documento financiero confidencial e intransferible.</p>
+            </div>
+            <div class="text-right">
+                <span id="pf-head-date-label" class="text-lg font-bold block">FECHA</span>
+                <span id="pf-head-date" class="text-sm font-semibold border px-3 py-1 bg-slate-100 rounded inline-block mt-1"></span>
+                <span id="pf-generated-at" class="text-[10px] text-slate-500 block mt-1"></span>
+            </div>
+        </div>
+
+        <!-- ═══ RESUMEN EJECUTIVO ═══ -->
+        <div class="border-2 border-slate-950 rounded overflow-hidden">
+            <div class="bg-slate-950 text-white px-3 py-1.5 text-xs font-extrabold uppercase tracking-wider">Resumen Económico del Periodo</div>
+            <div class="grid grid-cols-4 divide-x border-b">
+                <div class="p-3">
+                    <span class="text-[10px] uppercase text-slate-500 font-bold block">Monto Total Facturado</span>
+                    <span id="pf-stat-billed" class="text-xl font-extrabold">S/ 0.00</span>
+                    <span id="pf-stat-billed-usd" class="text-[10px] font-bold text-slate-500 block">$ 0.00</span>
+                </div>
+                <div class="p-3 bg-emerald-50">
+                    <span class="text-[10px] uppercase text-emerald-700 font-bold block">Total Cobrado</span>
+                    <span id="pf-stat-revenue" class="text-xl font-extrabold text-emerald-800">S/ 0.00</span>
+                    <span id="pf-stat-revenue-usd" class="text-[10px] font-bold text-emerald-600 block">$ 0.00</span>
+                </div>
+                <div class="p-3 bg-amber-50">
+                    <span class="text-[10px] uppercase text-amber-700 font-bold block">Pendiente de Cobro</span>
+                    <span id="pf-stat-pending" class="text-xl font-extrabold text-amber-800">S/ 0.00</span>
+                    <span id="pf-stat-pending-usd" class="text-[10px] font-bold text-amber-600 block">$ 0.00</span>
+                </div>
+                <div class="p-3">
+                    <span class="text-[10px] uppercase text-slate-500 font-bold block">Tasa de Cobranza</span>
+                    <span id="pf-stat-collection" class="text-xl font-extrabold">0%</span>
+                    <span id="pf-stat-collection-sub" class="text-[10px] text-slate-500 block">0 de 0 citas pagadas</span>
+                </div>
+            </div>
+            <div class="grid grid-cols-6 divide-x text-center">
+                <div class="p-2"><span class="text-[9px] uppercase text-slate-500 font-bold block">Total Citas</span><span id="pf-stat-total" class="text-sm font-bold">0</span></div>
+                <div class="p-2"><span class="text-[9px] uppercase text-slate-500 font-bold block">Completadas</span><span id="pf-stat-completed" class="text-sm font-bold">0</span></div>
+                <div class="p-2"><span class="text-[9px] uppercase text-slate-500 font-bold block">Programadas</span><span id="pf-stat-scheduled" class="text-sm font-bold">0</span></div>
+                <div class="p-2"><span class="text-[9px] uppercase text-slate-500 font-bold block">Canceladas</span><span id="pf-stat-cancelled" class="text-sm font-bold">0</span></div>
+                <div class="p-2"><span class="text-[9px] uppercase text-slate-500 font-bold block">Ticket Promedio</span><span id="pf-stat-ticket" class="text-sm font-bold">S/ 0.00</span></div>
+                <div class="p-2"><span class="text-[9px] uppercase text-slate-500 font-bold block">Pacientes Únicos</span><span id="pf-stat-patients" class="text-sm font-bold">0</span></div>
+            </div>
+        </div>
+
+        <!-- ═══ COMPOSICIÓN DE LA DEUDA ═══ -->
+        <div class="grid grid-cols-3 gap-3">
+            <div class="border rounded p-3">
+                <span class="text-[10px] uppercase text-slate-500 font-bold block">Deuda vencida (sesión ya realizada)</span>
+                <span id="pf-stat-vencido" class="text-base font-extrabold text-rose-700">S/ 0.00</span>
+            </div>
+            <div class="border rounded p-3">
+                <span class="text-[10px] uppercase text-slate-500 font-bold block">Por cobrar a futuro (cita programada)</span>
+                <span id="pf-stat-futuro" class="text-base font-extrabold text-sky-700">S/ 0.00</span>
+            </div>
+            <div class="border rounded p-3">
+                <span class="text-[10px] uppercase text-slate-500 font-bold block">No facturado por cancelaciones</span>
+                <span id="pf-stat-lost" class="text-base font-extrabold text-slate-600">S/ 0.00</span>
+            </div>
+        </div>
+
+        <!-- ═══ DETALLE DÍA POR DÍA ═══ -->
+        <div class="space-y-2">
+            <h2 class="text-sm font-extrabold border-b pb-1.5 uppercase">Movimiento Día por Día</h2>
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b bg-slate-100 text-[10px] font-extrabold uppercase">
+                        <th class="py-2 px-2 w-[16%]">Fecha</th>
+                        <th class="py-2 px-2 w-[8%] text-center">Citas</th>
+                        <th class="py-2 px-2 w-[9%] text-center">Compl.</th>
+                        <th class="py-2 px-2 w-[9%] text-center">Canc.</th>
+                        <th class="py-2 px-2 w-[19%] text-right">Facturado</th>
+                        <th class="py-2 px-2 w-[19%] text-right">Cobrado</th>
+                        <th class="py-2 px-2 w-[20%] text-right">Pendiente de Cobro</th>
+                    </tr>
+                </thead>
+                <tbody id="pf-table-rows" class="divide-y text-[11px]"></tbody>
+                <tfoot>
+                    <tr class="border-t-2 border-slate-950 font-extrabold text-[11px] bg-slate-50">
+                        <td class="py-2.5 px-2">TOTAL</td>
+                        <td class="py-2.5 px-2 text-center" id="pf-total-citas">0</td>
+                        <td class="py-2.5 px-2 text-center" id="pf-total-completadas">0</td>
+                        <td class="py-2.5 px-2 text-center" id="pf-total-canceladas">0</td>
+                        <td class="py-2.5 px-2 text-right" id="pf-total-facturado">S/ 0.00</td>
+                        <td class="py-2.5 px-2 text-right text-emerald-800" id="pf-total-recaudado">S/ 0.00</td>
+                        <td class="py-2.5 px-2 text-right text-amber-800" id="pf-total-pendiente">S/ 0.00</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="pt-20 flex justify-center">
+            <div class="w-[50%] text-center">
+                <div class="border-t border-slate-400 w-full pt-2"></div>
+                <p class="text-xs font-semibold">Firma del Especialista de Turno</p>
+                <p class="text-[10px] text-slate-500" id="pf-foot-specialist"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PLANTILLA DE IMPRESIÓN: RECEPCIÓN (lista simple) ================= -->
+    <div id="print-section-reception" class="print-only hidden p-8 text-slate-950 space-y-6">
+        <div class="flex justify-between items-start border-b-2 border-slate-950 pb-5">
+            <div>
+                <h1 id="pr-title-main" class="text-3xl font-extrabold tracking-tight">LISTA DE CITAS DEL DÍA</h1>
+                <p class="text-sm font-medium uppercase mt-1">Especialista: <span id="pr-head-specialist" class="font-bold"></span></p>
+
+            </div>
+            <div class="text-right">
+                <span id="pr-head-date-label" class="text-lg font-bold block">FECHA</span>
+                <span id="pr-head-date" class="text-sm font-semibold border px-3 py-1 bg-slate-100 rounded inline-block mt-1"></span>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 gap-4 border p-4 bg-slate-50 rounded w-max">
+            <div><span class="text-xs uppercase text-slate-500 font-bold block">Total de Citas</span><span id="pr-stat-total" class="text-xl font-bold">0</span></div>
+        </div>
+        <div class="space-y-3">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b bg-slate-100 text-xs font-extrabold uppercase">
+                        <th id="pr-date-column-header" class="py-2.5 px-2 w-[15%] hidden">Fecha</th>
+                        <th class="py-2.5 px-2 w-[20%]">Hora</th>
+                        <th class="py-2.5 px-2 w-[55%]">Paciente</th>
+                        <th class="py-2.5 px-2 w-[25%]">Modalidad</th>
+                    </tr>
+                </thead>
+                <tbody id="pr-table-rows" class="divide-y text-sm"></tbody>
+            </table>
+        </div>
+        <div class="pt-16 flex justify-center">
+            <div class="w-[50%] text-center">
+                <div class="border-t border-slate-400 w-full pt-2"></div>
+                <p class="text-xs font-semibold">Recepción</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: HISTORIAL DE PACIENTE ================= -->
+    <div id="patient-history-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4 no-print">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center">
+                <div>
+                    <h3 id="hist-modal-title" class="font-bold text-base">📋 Historial Clínico</h3>
+                    <p id="hist-modal-subtitle" class="text-xs text-indigo-300 mt-0.5"></p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="printPatientCard()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">🖨️ Imprimir Ficha</button>
+                    <button onclick="closeHistoryModal()" class="text-indigo-200 hover:text-white transition text-xl leading-none">&times;</button>
+                </div>
+            </div>
+            <div class="overflow-y-auto flex-grow p-6 space-y-4">
+                <!-- Datos del paciente -->
+                <div id="hist-patient-info" class="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-2 gap-3 text-sm"></div>
+                <!-- Antecedentes -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase text-slate-400 mb-2">Antecedentes / Historial General</h4>
+                    <p id="hist-patient-history" class="text-sm text-slate-600 bg-slate-50 border border-slate-100 rounded-xl p-3"></p>
+                </div>
+                <!-- Paquetes -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase text-slate-400 mb-2">📦 Paquetes de Sesiones</h4>
+                    <div id="hist-patient-packages" class="space-y-2"></div>
+                </div>
+                <!-- Citas -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase text-slate-400 mb-2">Citas Registradas (<span id="hist-count">0</span>)</h4>
+                    <div id="hist-appointments-list" class="space-y-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PLANTILLA: FICHA DE PACIENTE (impresión) ================= -->
+    <div id="print-patient-card" class="print-only hidden p-8 text-slate-950 space-y-5">
+        <div class="flex justify-between items-start border-b-2 border-slate-950 pb-4">
+            <div>
+                <h1 class="text-2xl font-extrabold tracking-tight">FICHA CLÍNICA DEL PACIENTE</h1>
+                <p class="text-xs text-slate-500 mt-1">Documento clínico confidencial. Generado por Agenda Psicológica Pro+</p>
+            </div>
+            <div class="text-right text-xs">
+                <span class="font-bold block">Especialista:</span>
+                <span id="print-card-specialist" class="font-semibold"></span>
+                <span class="font-bold block mt-1">Fecha de impresión:</span>
+                <span id="print-card-date"></span>
+            </div>
+        </div>
+        <div class="border border-slate-200 rounded-lg p-4 space-y-2">
+            <h2 class="font-extrabold text-base uppercase border-b pb-1 mb-2">Datos del Paciente</h2>
+            <div class="grid grid-cols-2 gap-x-8 gap-y-1 text-sm">
+                <p><span class="font-bold">Nombre:</span> <span id="print-card-name"></span></p>
+                <p><span class="font-bold">Teléfono:</span> <span id="print-card-phone"></span></p>
+                <p><span class="font-bold">Fecha de nacimiento:</span> <span id="print-card-birth"></span></p>
+                <p><span class="font-bold">Edad:</span> <span id="print-card-age"></span></p>
+            </div>
+        </div>
+        <div class="border border-slate-200 rounded-lg p-4">
+            <h2 class="font-extrabold text-base uppercase border-b pb-1 mb-2">Antecedentes / Historial General</h2>
+            <p id="print-card-history" class="text-sm"></p>
+        </div>
+        <div class="border border-slate-200 rounded-lg p-4">
+            <h2 class="font-extrabold text-base uppercase border-b pb-1 mb-3">Historial de Citas</h2>
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="border-b bg-slate-100 font-extrabold uppercase">
+                        <th class="py-2 px-2">Fecha</th>
+                        <th class="py-2 px-2">Hora</th>
+                        <th class="py-2 px-2">Modalidad</th>
+                        <th class="py-2 px-2">Estado</th>
+                        <th class="py-2 px-2">Pago</th>
+                        <th class="py-2 px-2">Costo</th>
+                        <th class="py-2 px-2">Notas</th>
+                    </tr>
+                </thead>
+                <tbody id="print-card-appointments" class="divide-y"></tbody>
+            </table>
+        </div>
+        <div class="pt-20 flex justify-center">
+            <div class="w-[40%] text-center">
+                <div class="border-t border-slate-400 w-full pt-2"></div>
+                <p class="text-xs font-semibold">Firma del Especialista</p>
+                <p class="text-[10px] text-slate-500" id="print-card-specialist-foot"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PLANTILLA: HISTORIA CLÍNICA COMPLETA (impresión) ================= -->
+    <div id="print-clinical-history" class="print-only hidden hc-print-document">
+        <div class="hc-print-page hc-page-1">
+            <div class="hc-wave hc-wave-top"></div>
+            <div class="hc-print-content">
+                <div class="hc-print-brand"><img src="logo-lisbeth.png" alt="Lisbeth Méndez Psicóloga"></div>
+                <h1>HISTORIA CLÍNICA PSICOLÓGICA</h1>
+                <section><h2>DATOS GENERALES</h2><div class="hc-data-grid">
+                    <div><b>Nombre completo</b><span id="pch-name"></span></div><div><b>Fecha de Primera sesión</b><span id="pch-first-session"></span></div>
+                    <div><b>Fecha de nacimiento</b><span id="pch-birth"></span></div><div><b>Edad</b><span id="pch-age"></span></div>
+                    <div><b>Estado civil</b><span id="pch-civil"></span></div><div><b>Ocupación</b><span id="pch-occupation"></span></div>
+                    <div><b>Número de contacto</b><span id="pch-phone"></span></div><div><b>DNI</b><span id="pch-dni"></span></div>
+                </div></section>
+                <section><h2>MOTIVO DE CONSULTA <small>¿Por qué decide venir a consulta? ¿Qué le está afectando actualmente?</small></h2><p id="pch-motivo"></p></section>
+                <section><h2>PROBLEMA ACTUAL <small>¿Desde cuándo ocurre? ¿En qué situaciones se presenta? ¿Cómo reacciona? ¿Qué emociones predominan? ¿Qué pensamientos aparecen?</small></h2><p id="pch-problema"></p></section>
+                <section><h2>IMPACTO EN SU VIDA <small>Área personal / Área de pareja / Área familiar / Área laboral</small></h2><p id="pch-impacto"></p></section>
+                <section><h2>HISTORIA PERSONAL RELEVANTE <small>Relación con padres / cuidadores · Experiencias significativas en infancia · Eventos importantes</small></h2><p id="pch-historia-personal"></p></section>
+            </div>
+            <div class="hc-print-footer"><span>www.psicologalisbethmendez.com</span><strong>Lisbeth Méndez Orellana</strong><em>Psicóloga</em></div>
+        </div>
+
+        <div class="hc-print-page hc-page-2">
+            <div class="hc-wave hc-wave-top"></div><div class="hc-print-content hc-continuation">
+                <div class="hc-print-brand"><img src="logo-lisbeth.png" alt="Lisbeth Méndez Psicóloga"></div>
+                <section><h2>HISTORIA PERSONAL RELEVANTE</h2><p id="pch-historia-personal-2"></p></section>
+                <section><h2>VÍNCULOS Y RELACIONES <small>¿Cómo son sus relaciones actualmente? ¿Qué patrones se repiten? ¿Qué suele necesitar emocionalmente?</small></h2><p id="pch-vinculos"></p></section>
+                <section><h2>TÉCNICAS E INSTRUMENTOS APLICADOS</h2><p id="pch-tecnicas"></p></section>
+                <section><h2>OBSERVACIÓN DE CONDUCTA <small>Actitud en sesión / Nivel de apertura · Resistencias / Insight</small></h2><p id="pch-conducta"></p></section>
+            </div><div class="hc-print-footer"><span>www.psicologalisbethmendez.com</span><strong>Lisbeth Méndez Orellana</strong><em>Psicóloga</em></div>
+        </div>
+
+        <div class="hc-print-page hc-page-3">
+            <div class="hc-wave hc-wave-top"></div><div class="hc-print-content">
+                <div class="hc-print-brand"><img src="logo-lisbeth.png" alt="Lisbeth Méndez Psicóloga"></div>
+                <section><h2>HIPÓTESIS / CONCLUSIONES</h2><p id="pch-hipotesis"></p></section>
+                <section><h2>RECOMENDACIONES</h2><p id="pch-recomendaciones"></p></section>
+                <section><h2>PLAN DE INTERVENCIÓN</h2><div class="hc-plan-grid"><div><b>FRECUENCIA:</b><span id="pch-frecuencia"></span></div><div><b>ENFOQUE:</b><span id="pch-enfoque"></span></div><div><b>DURACIÓN SUGERIDA:</b><span id="pch-duracion"></span></div></div></section>
+                <section><h2>TAREAS / ACUERDOS <small>Ejercicio asignado / Reflexión / Compromisos</small></h2><p id="pch-tareas"></p></section>
+                <div class="hc-signature"><div></div><b id="pch-specialist-foot"></b><span>Psicóloga Clínica</span></div>
+            </div><div class="hc-print-footer"><span>www.psicologalisbethmendez.com</span><strong>Lisbeth Méndez Orellana</strong><em>Psicóloga</em></div>
+        </div>
+
+        <div class="hc-print-page hc-page-4">
+            <div class="hc-wave hc-wave-top"></div><div class="hc-print-content">
+                <div class="hc-print-brand"><img src="logo-lisbeth.png" alt="Lisbeth Méndez Psicóloga"></div>
+                <section><h2>EVOLUCIÓN CLÍNICA</h2><table><thead><tr><th>Fecha</th><th>Sesión</th><th>Evolución</th></tr></thead><tbody id="pch-notes-body"></tbody></table></section>
+                <div class="hc-signature"><div></div><b id="pch-specialist-foot-2"></b><span>Psicóloga Clínica</span></div>
+            </div><div class="hc-print-footer"><span>www.psicologalisbethmendez.com</span><strong>Lisbeth Méndez Orellana</strong><em>Psicóloga</em></div>
+        </div>
+    </div>
+
+
+<!-- Modal de Horarios -->
+<div id="modal-horario" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+    <div class="bg-white w-full max-w-5xl rounded-3xl shadow-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-start mb-5 gap-3 flex-wrap">
+            <div class="flex items-center gap-2 flex-wrap ml-auto">
+                <button onclick="shiftHorarioWeek(-1)" class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold transition">◀ Semana Anterior</button>
+                <button onclick="goToCurrentHorarioWeek()" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-semibold transition">Esta Semana</button>
+                <button onclick="shiftHorarioWeek(1)" class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold transition">Semana Siguiente ▶</button>
+                <button onclick="downloadHorarioImage()" id="btn-descargar-horario" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+                    ⬇️ Descargar Imagen
+                </button>
+                <button onclick="document.getElementById('modal-horario').classList.add('hidden')" 
+                        class="text-slate-400 hover:text-slate-600 font-bold text-xl px-2">✕</button>
+            </div>
+        </div>
+
+        <div id="horario-capture-area" class="bg-white p-4 rounded-2xl">
+            <div class="flex items-center gap-4 mb-4">
+                <img src="logo-lisbeth.png" alt="Lisbeth Méndez Psicóloga" class="h-16 w-auto object-contain shrink-0">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Consultorio Psicológico</p>
+                    <h2 class="text-2xl font-black text-slate-800">Horario Semanal</h2>
+                    <p id="horario-week-range" class="text-sm font-bold text-orange-500 mt-1"></p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4 mb-4 text-xs font-bold text-slate-500">
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-md bg-emerald-100 border border-emerald-300 inline-block"></span> Libre</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-md bg-rose-300 border border-rose-400 inline-block"></span> Ocupado</span>
+            </div>
+
+            <div id="horario-scroll-wrap" class="overflow-x-auto pb-2">
+                <div id="schedule-occupancy-grid" class="min-w-[760px]">
+                    <!-- Se llena dinámicamente vía actualizarGridHorarios() -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <script src="assistant.js?v=20260910-1"></script>
+    <script type="module" src="app.js?v=20260909-4"></script>
+    <script src="ui.js"></script>
+</body>
+</html>
