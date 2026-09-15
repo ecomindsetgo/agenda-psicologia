@@ -1165,6 +1165,39 @@ window.printClinicalHistory = function() {
             if (a) await syncPackageOnStatusChange(a, currentStatus, newStatus);
         };
 
+        // Cambia el estado de una cita directamente al valor elegido en el
+        // <select> de la ficha, sin necesidad de abrir el modal de edición.
+        window.updateAppointmentStatus = async function(aid, newStatus, selectEl) {
+            const a = state.appointments.find(x => x.id === aid);
+            if (!a) return;
+            const oldStatus = a.status;
+            if (oldStatus === newStatus) return;
+            try {
+                const ref = doc(db, 'artifacts', appId, 'users', state.currentUser.uid, 'appointments', aid);
+                await updateDoc(ref, { status: newStatus });
+                await syncPackageOnStatusChange(a, oldStatus, newStatus);
+            } catch (err) {
+                console.error('Error al actualizar estado:', err);
+                alert('⚠️ No se pudo actualizar el estado de la cita.');
+                if (selectEl) selectEl.value = oldStatus;
+            }
+        };
+
+        // Alterna el estado de pago (pendiente ⇄ pagado) directamente desde la
+        // ficha de la cita, sin necesidad de abrir el modal de edición.
+        window.quickTogglePayment = async function(aid) {
+            const a = state.appointments.find(x => x.id === aid);
+            if (!a) return;
+            const newPaymentStatus = a.paymentStatus === 'pagado' ? 'pendiente' : 'pagado';
+            try {
+                const ref = doc(db, 'artifacts', appId, 'users', state.currentUser.uid, 'appointments', aid);
+                await updateDoc(ref, { paymentStatus: newPaymentStatus });
+            } catch (err) {
+                console.error('Error al actualizar estado de pago:', err);
+                alert('⚠️ No se pudo actualizar el estado de pago.');
+            }
+        };
+
         window.editAppointment = function(aid) {
             const a = state.appointments.find(a => a.id === aid);
             if (!a) return;
@@ -1262,7 +1295,10 @@ window.printClinicalHistory = function() {
                     : a.status === 'cancelada'
                     ? 'bg-red-50 text-red-600 border-red-200'
                     : 'bg-amber-50 text-amber-700 border-amber-200';
-                const payBadge = a.paymentStatus === 'pagado' ? '💳 Pagado' : '⏳ Pendiente';
+                const payBadgeCls = a.paymentStatus === 'pagado'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-amber-50 text-amber-700 border-amber-200';
+                const payBadgeLbl = a.paymentStatus === 'pagado' ? '💳 Pagado' : '⏳ Pendiente';
                 const modalityBadge = a.modality === 'virtual'
                     ? '<span class="text-xs font-semibold px-2 py-0.5 rounded-xl border bg-sky-50 text-sky-700 border-sky-200">💻 Virtual</span>'
                     : '<span class="text-xs font-semibold px-2 py-0.5 rounded-xl border bg-graphite-50 text-graphite-600 border-graphite-200">🏢 Presencial</span>';
@@ -1277,9 +1313,14 @@ window.printClinicalHistory = function() {
                         </div>
                         <p class="text-xs text-graphite-500 italic">"${a.notes || 'Sin observaciones para esta sesión'}"</p>
                     </div>
-                    <div class="flex items-center gap-3 self-end sm:self-center">
+                    <div class="flex items-center gap-2 flex-wrap self-end sm:self-center">
                         <button onclick="enviarRecordatorioWhatsapp('${a.id}')" title="Enviar recordatorio por WhatsApp" class="bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-700 text-xs px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1">📲 WhatsApp</button>
-                        <button onclick="quickToggleStatus('${a.id}','${a.status}')" class="bg-graphite-50 border hover:bg-graphite-100 text-graphite-600 text-xs px-3 py-1.5 rounded-xl font-semibold">🔄 Estado</button>
+                        <select onchange="updateAppointmentStatus('${a.id}', this.value, this)" title="Cambiar estado de la cita" class="bg-graphite-50 border hover:bg-graphite-100 text-graphite-600 text-xs px-2 py-1.5 rounded-xl font-semibold cursor-pointer">
+                            <option value="pendiente" ${a.status === 'pendiente' ? 'selected' : ''}>Pendiente</option>
+                            <option value="completada" ${a.status === 'completada' ? 'selected' : ''}>Completado</option>
+                            <option value="cancelada" ${a.status === 'cancelada' ? 'selected' : ''}>Cancelado</option>
+                        </select>
+                        <button onclick="quickTogglePayment('${a.id}')" title="Cambiar estado de pago" class="text-xs px-3 py-1.5 rounded-xl font-semibold border ${payBadgeCls}">${payBadgeLbl}</button>
                         <button onclick="editAppointment('${a.id}')" class="text-sage-600 hover:text-sage-800 text-xs font-bold">✏️</button>
                         <button onclick="deleteAppointment('${a.id}')" class="text-red-500 hover:text-red-700 text-xs font-bold">🗑️</button>
                     </div>
@@ -2307,7 +2348,8 @@ window.printClinicalHistory = function() {
                 rangeEl.innerText = `Del ${first.getDate()} al ${last.getDate()} de ${mesLbl.charAt(0).toUpperCase() + mesLbl.slice(1)}`;
             }
 
-            const todayStr = horarioDateStr(new Date());
+            const now = new Date();
+            const todayStr = horarioDateStr(now);
             const appts = (state.appointments || []).filter(a => a.status !== 'cancelada');
 
             let html = `<div class="grid gap-1.5" style="grid-template-columns: 110px repeat(${HORARIO_DAYS.length}, minmax(90px,1fr));">`;
@@ -2332,7 +2374,15 @@ window.printClinicalHistory = function() {
                     const isSabado = HORARIO_DAYS[dayIdx] === 'Sábado';
                     const isTardeNoche = ['16:00', '17:00', '18:00', '19:00'].includes(slot);
                     const bloqueadoPorDefecto = isSabado && isTardeNoche;
-                    const occupied = bloqueadoPorDefecto || appts.some(a => a.date === dateStr && a.time && a.time.slice(0, 5) === slot);
+                    const tieneCita = appts.some(a => a.date === dateStr && a.time && a.time.slice(0, 5) === slot);
+
+                    // Un slot ya pasado (fecha + hora de inicio anteriores al momento actual)
+                    // se considera "ocupado" aunque no tenga cita registrada.
+                    const slotDateTime = new Date(d);
+                    slotDateTime.setHours(h, m, 0, 0);
+                    const yaPaso = slotDateTime.getTime() < now.getTime();
+
+                    const occupied = bloqueadoPorDefecto || tieneCita || yaPaso;
                     html += occupied
                         ? `<div class="flex items-center justify-center py-2.5 rounded-xl bg-rose-300 text-rose-800 font-extrabold text-[11px] uppercase tracking-wide">Ocupado</div>`
                         : `<div class="flex items-center justify-center py-2.5 rounded-xl bg-emerald-100 text-emerald-700 font-extrabold text-[11px] uppercase tracking-wide">Libre</div>`;
