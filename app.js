@@ -1627,6 +1627,22 @@ window.printClinicalHistory = function() {
             const todayFilter = document.getElementById('date-filter').value;
             const todayApps   = state.appointments.filter(a => a.date === todayFilter);
 
+            // Etiquetas de los badges ("Hoy"/"Ayer"/"Mañana"/fecha) para que
+            // reflejen el día realmente seleccionado en el filtro, no siempre "Hoy".
+            const dayLabel = (() => {
+                if (todayFilter === todayStr) return 'Hoy';
+                const sel = new Date(todayFilter + 'T00:00:00');
+                const ref = new Date(todayStr + 'T00:00:00');
+                const diffDays = Math.round((sel - ref) / 86400000);
+                if (diffDays === -1) return 'Ayer';
+                if (diffDays === 1) return 'Mañana';
+                return `${String(sel.getDate()).padStart(2, '0')}/${String(sel.getMonth() + 1).padStart(2, '0')}`;
+            })();
+            ['stat-citas-hoy-label', 'stat-citas-ingresos-label'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerText = dayLabel;
+            });
+
             document.getElementById('stat-citas-hoy').innerText       = todayApps.length;
             document.getElementById('stat-citas-pendientes').innerText = todayApps.filter(a => a.status === 'pendiente').length;
             document.getElementById('stat-citas-completas').innerText  = todayApps.filter(a => a.status === 'completada').length;
@@ -1704,6 +1720,7 @@ window.printClinicalHistory = function() {
 
             renderDashboardTodayList();
         }
+        window.updateStatsDashboard = updateStatsDashboard;
 
         // ─── DASHBOARD GENERAL: RESUMEN DEL DÍA (mini-lista de citas de hoy) ───────
         function renderDashboardTodayList() {

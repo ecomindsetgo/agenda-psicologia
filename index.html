@@ -240,7 +240,7 @@
                         <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Citas Hoy</span>
                         <div class="flex items-baseline justify-between mt-1">
                             <span id="stat-citas-hoy" class="text-3xl font-extrabold text-indigo-600">0</span>
-                            <span class="text-xs text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded-md font-medium">Hoy</span>
+                            <span id="stat-citas-hoy-label" class="text-xs text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded-md font-medium">Hoy</span>
                         </div>
                     </div>
                     <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
@@ -261,7 +261,7 @@
                         <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Recaudación Estimada</span>
                         <div class="flex items-baseline justify-between mt-1">
                             <span id="stat-citas-ingresos" class="text-2xl font-extrabold text-slate-800">S/ 0.00</span>
-                            <span class="text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md font-medium">Hoy</span>
+                            <span id="stat-citas-ingresos-label" class="text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md font-medium">Hoy</span>
                         </div>
                     </div>
                 </div>
@@ -288,7 +288,7 @@
                             <div class="flex flex-wrap items-center gap-2">
                                 <div class="flex items-center bg-slate-50 border border-slate-200 rounded-xl p-1">
                                     <button onclick="shiftDate(-1)" class="px-2.5 py-1.5 text-slate-600 hover:bg-white rounded-lg transition-all text-xs font-semibold">◀ Anterior</button>
-                                    <input type="date" id="date-filter" onchange="renderAppointments()" class="bg-transparent border-none text-sm font-semibold text-slate-700 focus:outline-none px-2 py-1">
+                                    <input type="date" id="date-filter" onchange="renderAppointments(); window.updateStatsDashboard && window.updateStatsDashboard();" class="bg-transparent border-none text-sm font-semibold text-slate-700 focus:outline-none px-2 py-1">
                                     <button onclick="shiftDate(1)" class="px-2.5 py-1.5 text-slate-600 hover:bg-white rounded-lg transition-all text-xs font-semibold">Siguiente ▶</button>
                                 </div>
                                 <button onclick="goToToday()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3.5 py-2.5 rounded-xl text-xs transition">Hoy</button>

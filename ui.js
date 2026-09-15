@@ -25,11 +25,13 @@
             d.setDate(d.getDate() + days);
             input.value = d.toISOString().split('T')[0];
             window.renderAppointments();
+            if (window.updateStatsDashboard) window.updateStatsDashboard();
         }
 
         function goToToday() {
             document.getElementById('date-filter').value = new Date().toISOString().split('T')[0];
             window.renderAppointments();
+            if (window.updateStatsDashboard) window.updateStatsDashboard();
         }
 
         function toggleFloatingMenu() {
