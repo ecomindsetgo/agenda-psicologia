@@ -674,6 +674,246 @@ window.printClinicalHistory = function() {
         function isPenAppt(a) { return a.currency !== 'USD'; }
         function isUsdAppt(a) { return a.currency === 'USD'; }
 
+        // ══════════════════════════════════════════════════════════════════════
+        //  MOTOR DE MÉTRICAS FINANCIERAS (fuente única de verdad)
+        //  ------------------------------------------------------------------
+        //  Estas definiciones se usan TANTO en la pantalla "Estadísticas y
+        //  Finanzas" COMO en los reportes PDF, para que ningún número se
+        //  contradiga entre una vista y otra.
+        //
+        //    FACTURADO   → monto de las citas que siguen en pie
+        //                  (completadas + programadas). NO incluye canceladas.
+        //    COBRADO     → lo que ya entró a caja (paymentStatus = 'pagado').
+        //    POR COBRAR  → lo facturado que todavía no se paga. Se divide en:
+        //                    · VENCIDO : la sesión ya se dio y no pagó → deuda real
+        //                    · FUTURO  : la cita aún no se realiza → expectativa
+        //    DEVENGADO   → monto de las citas ya completadas (servicio prestado),
+        //                  se haya cobrado o no.
+        //    PERDIDO     → monto de las citas canceladas.
+        //
+        //  Siempre se calcula por separado en S/ y en $ : sumar dos monedas
+        //  en un mismo número no tendría ningún sentido contable.
+        // ══════════════════════════════════════════════════════════════════════
+        function emptyMoneyBucket() {
+            return { facturado: 0, cobrado: 0, porCobrar: 0, vencido: 0, futuro: 0, perdido: 0, devengado: 0 };
+        }
+
+        function computeFinanceMetrics(apps) {
+            const m = {
+                PEN: emptyMoneyBucket(),
+                USD: emptyMoneyBucket(),
+                citas: 0, completadas: 0, canceladas: 0, programadas: 0,
+                citasPagadas: 0, citasPorCobrar: 0,
+                presencial: 0, virtual: 0,
+                individual: 0, pareja: 0,
+                sesionSuelta: 0, sesionPaquete: 0,
+                _pacientes: new Set()
+            };
+
+            (apps || []).forEach(a => {
+                const cur  = isUsdAppt(a) ? 'USD' : 'PEN';
+                const b    = m[cur];
+                const cost = Number(a.cost || 0);
+
+                m.citas++;
+                if (a.patientId) m._pacientes.add(a.patientId);
+                if (a.modality === 'virtual') m.virtual++; else m.presencial++;
+                if (a.attentionType === 'pareja') m.pareja++; else m.individual++;
+                if (a.packageId) m.sesionPaquete++; else m.sesionSuelta++;
+
+                if (a.status === 'cancelada') {
+                    m.canceladas++;
+                    b.perdido += cost;
+                    return; // una cita cancelada no factura ni se cobra
+                }
+
+                if (a.status === 'completada') { m.completadas++; b.devengado += cost; }
+                else                           { m.programadas++; }
+
+                b.facturado += cost;
+
+                if (a.paymentStatus === 'pagado') {
+                    b.cobrado += cost;
+                    if (cost > 0) m.citasPagadas++;
+                } else {
+                    b.porCobrar += cost;
+                    if (cost > 0) m.citasPorCobrar++;
+                    if (a.status === 'completada') b.vencido += cost; else b.futuro += cost;
+                }
+            });
+
+            m.pacientesUnicos = m._pacientes.size;
+
+            // Tasa de cobranza: cuánto de lo facturado ya está efectivamente cobrado.
+            const facturadoTot = m.PEN.facturado + m.USD.facturado;
+            const cobradoTot   = m.PEN.cobrado   + m.USD.cobrado;
+            m.tasaCobranzaPEN = m.PEN.facturado > 0 ? (m.PEN.cobrado / m.PEN.facturado) * 100 : 0;
+            m.tasaCobranzaUSD = m.USD.facturado > 0 ? (m.USD.cobrado / m.USD.facturado) * 100 : 0;
+            m.tasaCobranza    = facturadoTot > 0 ? (cobradoTot / facturadoTot) * 100 : 0;
+
+            // Ticket promedio: sobre citas facturables (no canceladas) y con monto > 0,
+            // porque las sesiones incluidas en un paquete ya pagado valen 0 y
+            // distorsionarían el promedio hacia abajo.
+            const facturables = (apps || []).filter(a => a.status !== 'cancelada' && Number(a.cost || 0) > 0);
+            const tickPen = facturables.filter(isPenAppt);
+            const tickUsd = facturables.filter(isUsdAppt);
+            m.ticketPromedioPEN = tickPen.length ? tickPen.reduce((s, a) => s + Number(a.cost || 0), 0) / tickPen.length : 0;
+            m.ticketPromedioUSD = tickUsd.length ? tickUsd.reduce((s, a) => s + Number(a.cost || 0), 0) / tickUsd.length : 0;
+
+            // Tasa de asistencia sobre las citas ya resueltas (completadas + canceladas).
+            const resueltas = m.completadas + m.canceladas;
+            m.tasaAsistencia = resueltas ? (m.completadas / resueltas) * 100 : 0;
+            m.tasaCancelacion = resueltas ? (m.canceladas / resueltas) * 100 : 0;
+
+            return m;
+        }
+        window.computeFinanceMetrics = computeFinanceMetrics;
+
+        // Formatea un par (soles, dólares) en una sola etiqueta legible.
+        function dualMoney(pen, usd) {
+            const p = Number(pen || 0), u = Number(usd || 0);
+            return `S/ ${p.toFixed(2)}` + (u > 0 ? ` (+ $ ${u.toFixed(2)})` : '');
+        }
+        window.dualMoney = dualMoney;
+
+        // Etiqueta de variación porcentual contra el periodo anterior.
+        function variationLabel(actual, previo) {
+            const a = Number(actual || 0), p = Number(previo || 0);
+            if (p === 0 && a === 0) return { txt: 'Sin datos del periodo anterior', cls: 'text-slate-400', pct: 0 };
+            if (p === 0)            return { txt: 'Nuevo respecto al periodo anterior', cls: 'text-emerald-600', pct: 100 };
+            const pct = ((a - p) / p) * 100;
+            const up  = pct >= 0;
+            return {
+                pct,
+                cls: up ? 'text-emerald-600' : 'text-rose-600',
+                txt: `${up ? '▲' : '▼'} ${Math.abs(pct).toFixed(1)}% vs. periodo anterior`
+            };
+        }
+
+        // Rango [inicio, fin] en formato YYYY-MM-DD para un periodo dado.
+        function periodRangeStr(period, refStr) {
+            if (period === 'dia')    return [refStr, refStr];
+            if (period === 'semana') return getWeekRangeStr(refStr);
+            if (period === 'mes')    { const m = refStr.substring(0, 7); return [m + '-01', m + '-31']; }
+            return ['0000-01-01', '9999-12-31'];
+        }
+
+        // Mismo rango pero desplazado un periodo hacia atrás (para comparativos).
+        function previousPeriodRangeStr(period, refStr) {
+            const d = new Date(refStr + 'T00:00:00');
+            if (period === 'dia')    { d.setDate(d.getDate() - 1); const s = horarioDateStr(d); return [s, s]; }
+            if (period === 'semana') { d.setDate(d.getDate() - 7); return getWeekRangeStr(horarioDateStr(d)); }
+            if (period === 'mes')    { d.setDate(1); d.setMonth(d.getMonth() - 1);
+                                       const m = horarioDateStr(d).substring(0, 7); return [m + '-01', m + '-31']; }
+            return null; // "todo el tiempo" no tiene periodo anterior
+        }
+
+        function appsInRange(range) {
+            if (!range) return [];
+            return state.appointments.filter(a => a.date >= range[0] && a.date <= range[1]);
+        }
+
+        // ─── CUENTAS POR COBRAR: deuda agrupada por paciente ──────────────────
+        // Sólo cuenta citas ya COMPLETADAS con pago pendiente: son cobros que
+        // realmente están vencidos, no expectativas de citas futuras.
+        function computeReceivables(apps) {
+            const byPatient = {};
+            (apps || [])
+                .filter(a => a.status === 'completada'
+                          && a.paymentStatus === 'pendiente'
+                          && Number(a.cost || 0) > 0)
+                .forEach(a => {
+                    const key = a.patientId || a.patientName || 'sin-id';
+                    if (!byPatient[key]) {
+                        byPatient[key] = {
+                            nombre: a.patientName || 'Paciente',
+                            sesiones: 0, pen: 0, usd: 0,
+                            masAntigua: a.date, masReciente: a.date
+                        };
+                    }
+                    const r = byPatient[key];
+                    r.sesiones++;
+                    if (isUsdAppt(a)) r.usd += Number(a.cost || 0); else r.pen += Number(a.cost || 0);
+                    if (a.date < r.masAntigua)  r.masAntigua  = a.date;
+                    if (a.date > r.masReciente) r.masReciente = a.date;
+                });
+
+            const hoy = new Date(todayStr + 'T00:00:00');
+            return Object.values(byPatient).map(r => {
+                r.diasDeuda = Math.max(0, Math.round((hoy - new Date(r.masAntigua + 'T00:00:00')) / 86400000));
+                return r;
+            // El 3.7 es sólo un factor de referencia para ORDENAR la lista cuando
+            // hay deudas mixtas en S/ y $. Nunca se usa para sumar ni mostrar montos:
+            // cada moneda se reporta siempre por separado.
+            }).sort((a, b) => (b.pen + b.usd * 3.7) - (a.pen + a.usd * 3.7));
+        }
+        window.computeReceivables = computeReceivables;
+
+        // ─── TOP PACIENTES POR INGRESO COBRADO ────────────────────────────────
+        function computeTopPatients(apps, limit) {
+            const byPatient = {};
+            (apps || []).filter(a => a.status !== 'cancelada').forEach(a => {
+                const key = a.patientId || a.patientName || 'sin-id';
+                if (!byPatient[key]) byPatient[key] = { nombre: a.patientName || 'Paciente', sesiones: 0, cobradoPen: 0, cobradoUsd: 0, pendientePen: 0, pendienteUsd: 0 };
+                const r = byPatient[key];
+                if (a.status === 'completada') r.sesiones++;
+                const cost = Number(a.cost || 0);
+                const usd  = isUsdAppt(a);
+                if (a.paymentStatus === 'pagado') { if (usd) r.cobradoUsd += cost; else r.cobradoPen += cost; }
+                else                              { if (usd) r.pendienteUsd += cost; else r.pendientePen += cost; }
+            });
+            return Object.values(byPatient)
+                .filter(r => r.sesiones > 0 || r.cobradoPen > 0 || r.cobradoUsd > 0)
+                .sort((a, b) => (b.cobradoPen + b.cobradoUsd * 3.7) - (a.cobradoPen + a.cobradoUsd * 3.7))
+                .slice(0, limit || 8);
+        }
+        window.computeTopPatients = computeTopPatients;
+
+        // ─── FRANJAS HORARIAS MÁS DEMANDADAS ──────────────────────────────────
+        function computeTimeSlots(apps) {
+            const franjas = [
+                { key: 'manana', label: '🌅 Mañana (07:00 - 12:00)', from: '07:00', to: '12:00', citas: 0, ingresos: 0, ingresosUsd: 0 },
+                { key: 'tarde',  label: '☀️ Tarde (12:00 - 18:00)',  from: '12:00', to: '18:00', citas: 0, ingresos: 0, ingresosUsd: 0 },
+                { key: 'noche',  label: '🌙 Noche (18:00 - 23:59)',  from: '18:00', to: '23:59', citas: 0, ingresos: 0, ingresosUsd: 0 }
+            ];
+            (apps || []).filter(a => a.status !== 'cancelada').forEach(a => {
+                const t = (a.time || '00:00').slice(0, 5);
+                const f = franjas.find(fr => t >= fr.from && t <= fr.to) || franjas[0];
+                f.citas++;
+                if (isUsdAppt(a)) f.ingresosUsd += Number(a.cost || 0); else f.ingresos += Number(a.cost || 0);
+            });
+            return franjas;
+        }
+        window.computeTimeSlots = computeTimeSlots;
+
+        // ─── TENDENCIA: últimos N meses (independiente del filtro de periodo) ──
+        function computeMonthlyTrend(months) {
+            const n = months || 6;
+            const out = [];
+            const base = new Date(todayStr + 'T00:00:00');
+            base.setDate(1);
+            for (let i = n - 1; i >= 0; i--) {
+                const d = new Date(base);
+                d.setMonth(d.getMonth() - i);
+                const key = horarioDateStr(d).substring(0, 7);
+                const apps = state.appointments.filter(a => (a.date || '').startsWith(key));
+                const m = computeFinanceMetrics(apps);
+                out.push({
+                    key,
+                    label: d.toLocaleDateString('es-PE', { month: 'short' }).replace('.', ''),
+                    citas: m.citas,
+                    completadas: m.completadas,
+                    facturado: m.PEN.facturado,
+                    cobrado: m.PEN.cobrado,
+                    porCobrar: m.PEN.porCobrar,
+                    facturadoUsd: m.USD.facturado,
+                    cobradoUsd: m.USD.cobrado
+                });
+            }
+            return out;
+        }
+        window.computeMonthlyTrend = computeMonthlyTrend;
+
         function packageSizeFromRateType(rateType) {
             if (rateType === 'paquete6') return 6;
             if (rateType === 'paquete8') return 8;
@@ -1638,7 +1878,7 @@ window.printClinicalHistory = function() {
                 if (diffDays === 1) return 'Mañana';
                 return `${String(sel.getDate()).padStart(2, '0')}/${String(sel.getMonth() + 1).padStart(2, '0')}`;
             })();
-            ['stat-citas-hoy-label', 'stat-citas-ingresos-label'].forEach(id => {
+            ['stat-citas-hoy-label', 'stat-citas-ingresos-label', 'stat-citas-ingresos-real-label'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.innerText = dayLabel;
             });
@@ -1646,53 +1886,94 @@ window.printClinicalHistory = function() {
             document.getElementById('stat-citas-hoy').innerText       = todayApps.length;
             document.getElementById('stat-citas-pendientes').innerText = todayApps.filter(a => a.status === 'pendiente').length;
             document.getElementById('stat-citas-completas').innerText  = todayApps.filter(a => a.status === 'completada').length;
-            const ingresosHoy = todayApps.filter(a => a.status === 'completada' && isPenAppt(a)).reduce((s, a) => s + a.cost, 0);
-            const ingresosHoyUsd = todayApps.filter(a => a.status === 'completada' && isUsdAppt(a)).reduce((s, a) => s + a.cost, 0);
+            // Recaudación Estimada: proyección de lo que se recaudaría si se completan
+            // todas las citas del día que siguen en pie (se excluyen las canceladas,
+            // ya que esas no van a generar ingreso).
+            const ingresosHoy = todayApps.filter(a => a.status !== 'cancelada' && isPenAppt(a)).reduce((s, a) => s + a.cost, 0);
+            const ingresosHoyUsd = todayApps.filter(a => a.status !== 'cancelada' && isUsdAppt(a)).reduce((s, a) => s + a.cost, 0);
             document.getElementById('stat-citas-ingresos').innerText   = `S/ ${ingresosHoy.toFixed(2)}` + (ingresosHoyUsd > 0 ? ` (+ $ ${ingresosHoyUsd.toFixed(2)})` : '');
 
-            // ── Sección Finanzas: filtrada por periodo seleccionado (todo / mes / día) ──
-            const financeApps = getFinanceAppointments();
-
-            const uniquePatientsInPeriod = state.financePeriod === 'todo'
-                ? state.patients.length
-                : new Set(financeApps.map(a => a.patientId)).size;
-
-            document.getElementById('stats-total-patients').innerText     = uniquePatientsInPeriod;
-            document.getElementById('stats-total-appointments').innerText  = financeApps.length;
-            // Ingresos S/ y $ se muestran POR SEPARADO — sumarlos en un solo
-            // número no tendría sentido (son monedas distintas).
-            const totalRev    = financeApps.filter(a => a.status === 'completada' && isPenAppt(a)).reduce((s, a) => s + a.cost, 0);
-            const totalRevUsd = financeApps.filter(a => a.status === 'completada' && isUsdAppt(a)).reduce((s, a) => s + a.cost, 0);
-            document.getElementById('stats-revenue-total').innerText       = `S/ ${totalRev.toFixed(2)}`;
-            const revUsdEl = document.getElementById('stats-revenue-total-usd');
-            if (revUsdEl) revUsdEl.innerText = `$ ${totalRevUsd.toFixed(2)} USD`;
-
-            const penApps = financeApps.filter(isPenAppt);
-            const avgCost      = penApps.length ? penApps.reduce((s, a) => s + Number(a.cost || 0), 0) / penApps.length : 0;
-            const pendingCobro = penApps.filter(a => a.paymentStatus === 'pendiente').reduce((s, a) => s + Number(a.cost || 0), 0);
-            const futureCobro  = penApps.filter(a => a.status === 'pendiente').reduce((s, a) => s + Number(a.cost || 0), 0);
-
-            const usdApps = financeApps.filter(isUsdAppt);
-            const pendingCobroUsd = usdApps.filter(a => a.paymentStatus === 'pendiente').reduce((s, a) => s + Number(a.cost || 0), 0);
-            const futureCobroUsd  = usdApps.filter(a => a.status === 'pendiente').reduce((s, a) => s + Number(a.cost || 0), 0);
-
-            document.getElementById('finance-average-cost').innerText  = `S/ ${avgCost.toFixed(2)}`;
-            document.getElementById('finance-pending-cobro').innerText = `S/ ${pendingCobro.toFixed(2)}` + (pendingCobroUsd > 0 ? ` (+ $ ${pendingCobroUsd.toFixed(2)})` : '');
-            document.getElementById('finance-future-cobro').innerText  = `S/ ${futureCobro.toFixed(2)}` + (futureCobroUsd > 0 ? ` (+ $ ${futureCobroUsd.toFixed(2)})` : '');
-            // ── Tasa de asistencia: completadas vs. (completadas + canceladas) ──
-            const consideradas = financeApps.filter(a => a.status === 'completada' || a.status === 'cancelada');
-            const asistenciaRate = consideradas.length
-                ? (financeApps.filter(a => a.status === 'completada').length / consideradas.length) * 100
-                : 0;
-            const attEl = document.getElementById('finance-attendance-rate');
-            if (attEl) attEl.innerText = `${asistenciaRate.toFixed(0)}%`;
-            const attSubEl = document.getElementById('finance-attendance-sub');
-            if (attSubEl) {
-                const comp = financeApps.filter(a => a.status === 'completada').length;
-                const canc = financeApps.filter(a => a.status === 'cancelada').length;
-                attSubEl.innerText = `${comp} asistidas / ${canc} canceladas`;
+            // Recaudación Real: solo las citas del día que ya están efectivamente pagadas.
+            const ingresosHoyReal = todayApps.filter(a => a.paymentStatus === 'pagado' && isPenAppt(a)).reduce((s, a) => s + a.cost, 0);
+            const ingresosHoyRealUsd = todayApps.filter(a => a.paymentStatus === 'pagado' && isUsdAppt(a)).reduce((s, a) => s + a.cost, 0);
+            const elIngresosReal = document.getElementById('stat-citas-ingresos-real');
+            if (elIngresosReal) {
+                elIngresosReal.innerText = `S/ ${ingresosHoyReal.toFixed(2)}` + (ingresosHoyRealUsd > 0 ? ` (+ $ ${ingresosHoyRealUsd.toFixed(2)})` : '');
             }
 
+            // ══ Sección Finanzas: todo se calcula con el motor único de métricas ══
+            const financeApps = getFinanceAppointments();
+            const fm = computeFinanceMetrics(financeApps);
+
+            // Comparativo contra el periodo anterior equivalente
+            const prevRange = previousPeriodRangeStr(state.financePeriod, todayStr);
+            const fmPrev    = prevRange ? computeFinanceMetrics(appsInRange(prevRange)) : null;
+
+            const setTxt = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
+            const setVar = (id, actual, previo) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                if (!fmPrev) { el.innerText = 'Comparativo no aplica en "Todo el tiempo"'; el.className = 'text-[11px] font-semibold block mt-1.5 text-slate-400'; return; }
+                const v = variationLabel(actual, previo);
+                el.innerText  = v.txt;
+                el.className  = 'text-[11px] font-semibold block mt-1.5 ' + v.cls;
+            };
+
+            // ── Estado de caja ──
+            setTxt('fin-facturado',     `S/ ${fm.PEN.facturado.toFixed(2)}`);
+            setTxt('fin-facturado-usd', `$ ${fm.USD.facturado.toFixed(2)} USD`);
+            setVar('fin-facturado-var', fm.PEN.facturado, fmPrev ? fmPrev.PEN.facturado : 0);
+
+            setTxt('fin-cobrado',     `S/ ${fm.PEN.cobrado.toFixed(2)}`);
+            setTxt('fin-cobrado-usd', `$ ${fm.USD.cobrado.toFixed(2)} USD`);
+            setVar('fin-cobrado-var', fm.PEN.cobrado, fmPrev ? fmPrev.PEN.cobrado : 0);
+
+            setTxt('fin-porcobrar',     `S/ ${fm.PEN.porCobrar.toFixed(2)}`);
+            setTxt('fin-porcobrar-usd', `$ ${fm.USD.porCobrar.toFixed(2)} USD`);
+            setTxt('fin-porcobrar-detalle', `${fm.citasPorCobrar} ${fm.citasPorCobrar === 1 ? 'cita por cobrar' : 'citas por cobrar'}`);
+
+            setTxt('fin-tasa-cobranza', `${fm.tasaCobranza.toFixed(0)}%`);
+            setTxt('fin-tasa-cobranza-sub', `${fm.citasPagadas} de ${fm.citasPagadas + fm.citasPorCobrar} citas facturables ya pagadas`);
+            setVar('fin-tasa-cobranza-var', fm.tasaCobranza, fmPrev ? fmPrev.tasaCobranza : 0);
+
+            // Barra visual cobrado / por cobrar
+            const barEl = document.getElementById('fin-bar-cobrado');
+            if (barEl) barEl.style.width = `${Math.max(0, Math.min(100, fm.tasaCobranza)).toFixed(1)}%`;
+            setTxt('fin-bar-left',  `Cobrado ${dualMoney(fm.PEN.cobrado, fm.USD.cobrado)}`);
+            setTxt('fin-bar-right', `Por cobrar ${dualMoney(fm.PEN.porCobrar, fm.USD.porCobrar)}`);
+
+            setTxt('fin-vencido', dualMoney(fm.PEN.vencido, fm.USD.vencido));
+            setTxt('fin-futuro',  dualMoney(fm.PEN.futuro,  fm.USD.futuro));
+            setTxt('fin-perdido', dualMoney(fm.PEN.perdido, fm.USD.perdido));
+
+            // ── Actividad ──
+            const uniquePatientsInPeriod = state.financePeriod === 'todo'
+                ? state.patients.length
+                : fm.pacientesUnicos;
+            setTxt('stats-total-patients',    uniquePatientsInPeriod);
+            setTxt('stats-total-appointments', fm.citas);
+            setTxt('fin-citas-desglose', `${fm.completadas} hechas · ${fm.programadas} por dar · ${fm.canceladas} canceladas`);
+            setTxt('stats-revenue-total',     `S/ ${fm.PEN.devengado.toFixed(2)}`);
+            setTxt('stats-revenue-total-usd', `$ ${fm.USD.devengado.toFixed(2)} USD`);
+            setTxt('fin-ticket',     `S/ ${fm.ticketPromedioPEN.toFixed(2)}`);
+            setTxt('fin-ticket-usd', `$ ${fm.ticketPromedioUSD.toFixed(2)} USD`);
+            setTxt('finance-attendance-rate', `${fm.tasaAsistencia.toFixed(0)}%`);
+            setTxt('finance-attendance-sub',  `${fm.completadas} asistidas / ${fm.canceladas} canceladas`);
+
+            // ── Control financiero de sesiones ──
+            setTxt('finance-average-cost',     `S/ ${fm.ticketPromedioPEN.toFixed(2)}`);
+            setTxt('finance-pending-cobro',    dualMoney(fm.PEN.porCobrar, fm.USD.porCobrar));
+            setTxt('finance-future-cobro',     dualMoney(fm.PEN.futuro, fm.USD.futuro));
+            setTxt('finance-package-split',    `${fm.sesionSuelta} sueltas / ${fm.sesionPaquete} de paquete`);
+            setTxt('finance-attention-split',  `${fm.individual} individuales / ${fm.pareja} pareja`);
+            setTxt('finance-unpaid-count',     fm.citasPorCobrar);
+
+            renderReceivables(financeApps);
+            renderTopPatients(financeApps);
+            renderModalityBreakdown(financeApps, fm);
+            renderTimeSlots(financeApps);
+            renderCurrencyBreakdown(fm);
+            renderMonthlyTrend();
             renderLeadsBySource(financeApps);
             renderWeeklyBarChart();
 
@@ -1823,6 +2104,181 @@ window.printClinicalHistory = function() {
         }
         window.renderWeeklyBarChart = renderWeeklyBarChart;
 
+        // ─── CUENTAS POR COBRAR (tabla de deudores con antigüedad) ────────────────
+        function renderReceivables(financeApps) {
+            const tbody = document.getElementById('receivables-body');
+            if (!tbody) return;
+            const rows = computeReceivables(financeApps);
+
+            const totPen = rows.reduce((s, r) => s + r.pen, 0);
+            const totUsd = rows.reduce((s, r) => s + r.usd, 0);
+            const totEl = document.getElementById('receivables-total');
+            if (totEl) totEl.innerText = dualMoney(totPen, totUsd);
+
+            if (!rows.length) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-emerald-600 font-semibold py-4">✅ Sin deudas pendientes en este periodo. Todas las sesiones realizadas están pagadas.</td></tr>`;
+                return;
+            }
+
+            // Semáforo por antigüedad de la deuda
+            const agingBadge = (d) => {
+                if (d <= 7)  return '<span class="text-[10px] font-bold uppercase bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">' + d + ' d</span>';
+                if (d <= 30) return '<span class="text-[10px] font-bold uppercase bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">' + d + ' d</span>';
+                return '<span class="text-[10px] font-bold uppercase bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full">' + d + ' d</span>';
+            };
+
+            tbody.innerHTML = rows.map(r => `
+                <tr class="border-b border-slate-50 hover:bg-slate-50">
+                    <td class="py-2 pr-2 font-semibold text-slate-700">${r.nombre}</td>
+                    <td class="py-2 pr-2 text-center">${r.sesiones}</td>
+                    <td class="py-2 pr-2 text-center text-slate-500">${r.masAntigua}</td>
+                    <td class="py-2 pr-2 text-center">${agingBadge(r.diasDeuda)}</td>
+                    <td class="py-2 pr-2 text-right font-bold text-amber-700">${dualMoney(r.pen, r.usd)}</td>
+                </tr>`).join('');
+        }
+
+        // ─── TOP PACIENTES POR APORTE ─────────────────────────────────────────────
+        function renderTopPatients(financeApps) {
+            const tbody = document.getElementById('top-patients-body');
+            if (!tbody) return;
+            const rows = computeTopPatients(financeApps, 8);
+            if (!rows.length) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center text-slate-400 py-4">Aún no hay citas en este periodo.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = rows.map((r, i) => `
+                <tr class="border-b border-slate-50 hover:bg-slate-50">
+                    <td class="py-2 pr-2 font-semibold text-slate-700">${i + 1}. ${r.nombre}</td>
+                    <td class="py-2 pr-2 text-center">${r.sesiones}</td>
+                    <td class="py-2 pr-2 text-right font-bold text-emerald-600">${dualMoney(r.cobradoPen, r.cobradoUsd)}</td>
+                    <td class="py-2 pr-2 text-right font-semibold ${(r.pendientePen + r.pendienteUsd) > 0 ? 'text-amber-600' : 'text-slate-300'}">${dualMoney(r.pendientePen, r.pendienteUsd)}</td>
+                </tr>`).join('');
+        }
+
+        // ─── PRESENCIAL VS VIRTUAL ────────────────────────────────────────────────
+        function renderModalityBreakdown(financeApps, fm) {
+            const wrap = document.getElementById('modality-breakdown');
+            if (!wrap) return;
+            const activas = financeApps.filter(a => a.status !== 'cancelada');
+            const calc = (pred) => {
+                const sub = activas.filter(pred);
+                return {
+                    citas: sub.length,
+                    pen: sub.reduce((s, a) => s + (isPenAppt(a) ? Number(a.cost || 0) : 0), 0),
+                    usd: sub.reduce((s, a) => s + (isUsdAppt(a) ? Number(a.cost || 0) : 0), 0)
+                };
+            };
+            const pres = calc(a => a.modality !== 'virtual');
+            const virt = calc(a => a.modality === 'virtual');
+            const total = pres.citas + virt.citas;
+            if (!total) {
+                wrap.innerHTML = '<p class="text-xs text-slate-400 py-4 text-center">Sin citas en este periodo.</p>';
+                return;
+            }
+            const row = (icon, label, d, color) => {
+                const pct = total ? (d.citas / total) * 100 : 0;
+                return `
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-semibold text-slate-600">
+                        <span>${icon} ${label} · ${d.citas} citas (${pct.toFixed(0)}%)</span>
+                        <span class="text-slate-500">${dualMoney(d.pen, d.usd)}</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div class="h-full ${color}" style="width:${pct.toFixed(1)}%"></div>
+                    </div>
+                </div>`;
+            };
+            wrap.innerHTML = row('🏢', 'Presencial', pres, 'bg-indigo-500')
+                           + row('💻', 'Virtual',    virt, 'bg-sky-500')
+                           + `<p class="text-[11px] text-slate-400 pt-1">Atenciones: ${fm.individual} individuales · ${fm.pareja} de pareja.</p>`;
+        }
+
+        // ─── FRANJAS HORARIAS ─────────────────────────────────────────────────────
+        function renderTimeSlots(financeApps) {
+            const wrap = document.getElementById('timeslot-breakdown');
+            if (!wrap) return;
+            const franjas = computeTimeSlots(financeApps);
+            const max = Math.max(1, ...franjas.map(f => f.citas));
+            const total = franjas.reduce((s, f) => s + f.citas, 0);
+            if (!total) {
+                wrap.innerHTML = '<p class="text-xs text-slate-400 py-4 text-center">Sin citas en este periodo.</p>';
+                return;
+            }
+            wrap.innerHTML = franjas.map(f => `
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-semibold text-slate-600">
+                        <span>${f.label}</span>
+                        <span>${f.citas} citas</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div class="h-full bg-violet-500" style="width:${((f.citas / max) * 100).toFixed(1)}%"></div>
+                    </div>
+                    <p class="text-[11px] text-slate-400">${dualMoney(f.ingresos, f.ingresosUsd)} facturados</p>
+                </div>`).join('');
+        }
+
+        // ─── DETALLE POR MONEDA ───────────────────────────────────────────────────
+        function renderCurrencyBreakdown(fm) {
+            const tbody = document.getElementById('currency-breakdown-body');
+            if (!tbody) return;
+            const rows = [
+                { lbl: '🇵🇪 Soles (S/)',   sym: 'S/', b: fm.PEN },
+                { lbl: '🇺🇸 Dólares ($)',  sym: '$',  b: fm.USD }
+            ].filter(r => r.b.facturado > 0 || r.b.cobrado > 0 || r.b.porCobrar > 0);
+
+            if (!rows.length) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center text-slate-400 py-4">Sin montos registrados en este periodo.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = rows.map(r => `
+                <tr class="border-b border-slate-50">
+                    <td class="py-2 pr-2 font-semibold text-slate-700">${r.lbl}</td>
+                    <td class="py-2 pr-2 text-right">${r.sym} ${r.b.facturado.toFixed(2)}</td>
+                    <td class="py-2 pr-2 text-right font-bold text-emerald-600">${r.sym} ${r.b.cobrado.toFixed(2)}</td>
+                    <td class="py-2 pr-2 text-right font-bold text-amber-600">${r.sym} ${r.b.porCobrar.toFixed(2)}</td>
+                </tr>`).join('');
+        }
+
+        // ─── TENDENCIA DE LOS ÚLTIMOS 6 MESES ─────────────────────────────────────
+        function renderMonthlyTrend() {
+            const wrap  = document.getElementById('monthly-trend-wrap');
+            const tbody = document.getElementById('monthly-trend-body');
+            if (!wrap && !tbody) return;
+            const data = computeMonthlyTrend(6);
+            const max  = Math.max(1, ...data.map(d => d.facturado));
+
+            if (wrap) {
+                const chartH = 130, barW = 34, gap = 26, leftPad = 12, topPad = 18;
+                const svgW = leftPad * 2 + data.length * (barW + gap);
+                const bars = data.map((d, i) => {
+                    const x = leftPad + i * (barW + gap);
+                    const totalH = (d.facturado / max) * chartH;
+                    const cobH   = d.facturado ? (d.cobrado / d.facturado) * totalH : 0;
+                    const y = topPad + (chartH - totalH);
+                    return `
+                        <g>
+                            <rect x="${x}" y="${y}" width="${barW}" height="${totalH}" rx="4" fill="#fcd34d" />
+                            <rect x="${x}" y="${topPad + (chartH - cobH)}" width="${barW}" height="${cobH}" rx="4" fill="#10b981" />
+                            <text x="${x + barW / 2}" y="${topPad + chartH + 16}" text-anchor="middle" font-size="11" font-weight="600" fill="#64748b">${d.label}</text>
+                            <text x="${x + barW / 2}" y="${y - 5}" text-anchor="middle" font-size="10" font-weight="700" fill="#334155">${d.facturado > 0 ? d.facturado.toFixed(0) : ''}</text>
+                        </g>`;
+                }).join('');
+                wrap.innerHTML = `<svg viewBox="0 0 ${svgW} ${chartH + topPad + 26}" width="100%" height="${chartH + topPad + 26}" xmlns="http://www.w3.org/2000/svg" style="min-width:${svgW}px">${bars}</svg>`;
+            }
+
+            if (tbody) {
+                tbody.innerHTML = data.map(d => `
+                    <tr class="border-b border-slate-50 ${d.key === todayStr.substring(0, 7) ? 'bg-indigo-50/50 font-semibold' : ''}">
+                        <td class="py-2 pr-2 text-slate-700">${d.key}</td>
+                        <td class="py-2 pr-2 text-center">${d.citas}</td>
+                        <td class="py-2 pr-2 text-center">${d.completadas}</td>
+                        <td class="py-2 pr-2 text-right">${dualMoney(d.facturado, d.facturadoUsd)}</td>
+                        <td class="py-2 pr-2 text-right text-emerald-600 font-semibold">${dualMoney(d.cobrado, d.cobradoUsd)}</td>
+                        <td class="py-2 pr-2 text-right text-amber-600 font-semibold">S/ ${d.porCobrar.toFixed(2)}</td>
+                    </tr>`).join('');
+            }
+        }
+
         // ─── FASE 3: DASHBOARD "LEADS POR ORIGEN" ─────────────────────────────────
         function renderLeadsBySource(financeApps) {
             const tbody = document.getElementById('leads-by-source-body');
@@ -1931,12 +2387,27 @@ window.printClinicalHistory = function() {
             document.getElementById('print-foot-specialist').innerText = specialistName;
             document.getElementById('print-head-date').innerText = periodLabel;
 
-            const completas  = reportApps.filter(a => a.status === 'completada').length;
-            const recaudado  = reportApps.filter(a => a.status === 'completada' && isPenAppt(a)).reduce((s, a) => s + a.cost, 0);
-            const recaudadoUsd = reportApps.filter(a => a.status === 'completada' && isUsdAppt(a)).reduce((s, a) => s + a.cost, 0);
-            document.getElementById('print-stat-total').innerText     = reportApps.length;
-            document.getElementById('print-stat-completed').innerText = completas;
-            document.getElementById('print-stat-revenue').innerText   = `S/ ${recaudado.toFixed(2)}` + (recaudadoUsd > 0 ? ` (+ $ ${recaudadoUsd.toFixed(2)})` : '');
+            // Resumen económico calculado con el motor único de métricas,
+            // para que el PDF y la pantalla de Finanzas nunca se contradigan.
+            const fmRep = computeFinanceMetrics(reportApps);
+            const setP = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
+
+            setP('print-stat-total',     reportApps.length);
+            setP('print-stat-completed', fmRep.completadas);
+            setP('print-stat-cancelled', fmRep.canceladas);
+
+            setP('print-stat-billed',        dualMoney(fmRep.PEN.facturado, fmRep.USD.facturado));
+            setP('print-stat-revenue',       dualMoney(fmRep.PEN.cobrado,   fmRep.USD.cobrado));
+            setP('print-stat-revenue-sub',   `${fmRep.citasPagadas} ${fmRep.citasPagadas === 1 ? 'cita pagada' : 'citas pagadas'}`);
+            setP('print-stat-pending',       dualMoney(fmRep.PEN.porCobrar, fmRep.USD.porCobrar));
+            setP('print-stat-pending-sub',   `${fmRep.citasPorCobrar} ${fmRep.citasPorCobrar === 1 ? 'cita por cobrar' : 'citas por cobrar'}`);
+            setP('print-stat-collection',    `${fmRep.tasaCobranza.toFixed(0)}%`);
+            setP('print-stat-lost',          `No facturado por cancelaciones: ${dualMoney(fmRep.PEN.perdido, fmRep.USD.perdido)}`);
+
+            setP('print-foot-cobrado',   dualMoney(fmRep.PEN.cobrado,   fmRep.USD.cobrado));
+            setP('print-foot-pendiente', dualMoney(fmRep.PEN.porCobrar, fmRep.USD.porCobrar));
+            const footSpacer = document.getElementById('print-foot-spacer');
+            if (footSpacer) footSpacer.colSpan = (printType === 'mes' || printType === 'semana') ? 4 : 3;
 
             const dateHeader = document.getElementById('print-date-column-header');
             const tbody = document.getElementById('print-table-rows');
@@ -2016,56 +2487,152 @@ window.printClinicalHistory = function() {
             document.getElementById('pf-foot-specialist').innerText = specialistName;
             document.getElementById('pf-head-date').innerText = periodLabel;
 
-            // Agrupar por fecha: sólo montos, sin nombres de pacientes ni notas clínicas
+            const gen = document.getElementById('pf-generated-at');
+            if (gen) gen.innerText = 'Generado: ' + new Date().toLocaleString('es-PE');
+
+            const fmF  = computeFinanceMetrics(reportApps);
+            const setF = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
+
+            // ── Resumen ejecutivo ──
+            setF('pf-stat-billed',       `S/ ${fmF.PEN.facturado.toFixed(2)}`);
+            setF('pf-stat-billed-usd',   `$ ${fmF.USD.facturado.toFixed(2)}`);
+            setF('pf-stat-revenue',      `S/ ${fmF.PEN.cobrado.toFixed(2)}`);
+            setF('pf-stat-revenue-usd',  `$ ${fmF.USD.cobrado.toFixed(2)}`);
+            setF('pf-stat-pending',      `S/ ${fmF.PEN.porCobrar.toFixed(2)}`);
+            setF('pf-stat-pending-usd',  `$ ${fmF.USD.porCobrar.toFixed(2)}`);
+            setF('pf-stat-collection',   `${fmF.tasaCobranza.toFixed(0)}%`);
+            setF('pf-stat-collection-sub', `${fmF.citasPagadas} de ${fmF.citasPagadas + fmF.citasPorCobrar} citas facturables pagadas`);
+
+            setF('pf-stat-total',     fmF.citas);
+            setF('pf-stat-completed', fmF.completadas);
+            setF('pf-stat-scheduled', fmF.programadas);
+            setF('pf-stat-cancelled', fmF.canceladas);
+            setF('pf-stat-ticket',    `S/ ${fmF.ticketPromedioPEN.toFixed(2)}`);
+            setF('pf-stat-patients',  fmF.pacientesUnicos);
+
+            setF('pf-stat-vencido', dualMoney(fmF.PEN.vencido, fmF.USD.vencido));
+            setF('pf-stat-futuro',  dualMoney(fmF.PEN.futuro,  fmF.USD.futuro));
+            setF('pf-stat-lost',    dualMoney(fmF.PEN.perdido, fmF.USD.perdido));
+
+            // ── Movimiento día por día (sin datos clínicos, sólo montos) ──
             const byDate = {};
             reportApps.forEach(a => {
-                if (!byDate[a.date]) {
-                    byDate[a.date] = { total: 0, completadas: 0, recaudado: 0, pendiente: 0, recaudadoUsd: 0, pendienteUsd: 0 };
-                }
-                byDate[a.date].total++;
-                const usd = isUsdAppt(a);
-                if (a.status === 'completada') {
-                    byDate[a.date].completadas++;
-                    if (usd) byDate[a.date].recaudadoUsd += a.cost; else byDate[a.date].recaudado += a.cost;
-                }
-                if (a.paymentStatus === 'pendiente') {
-                    if (usd) byDate[a.date].pendienteUsd += a.cost; else byDate[a.date].pendiente += a.cost;
-                }
+                if (!byDate[a.date]) byDate[a.date] = [];
+                byDate[a.date].push(a);
             });
             const dates = Object.keys(byDate).sort();
-
-            const totalCitas       = reportApps.length;
-            const totalCompletadas = reportApps.filter(a => a.status === 'completada').length;
-            const totalRecaudado   = reportApps.filter(a => a.status === 'completada' && isPenAppt(a)).reduce((s, a) => s + a.cost, 0);
-            const totalRecaudadoUsd = reportApps.filter(a => a.status === 'completada' && isUsdAppt(a)).reduce((s, a) => s + a.cost, 0);
-            const totalPendiente   = reportApps.filter(a => a.paymentStatus === 'pendiente' && isPenAppt(a)).reduce((s, a) => s + a.cost, 0);
-            const totalPendienteUsd = reportApps.filter(a => a.paymentStatus === 'pendiente' && isUsdAppt(a)).reduce((s, a) => s + a.cost, 0);
-
-            document.getElementById('pf-stat-total').innerText     = totalCitas;
-            document.getElementById('pf-stat-completed').innerText = totalCompletadas;
-            document.getElementById('pf-stat-revenue').innerText   = `S/ ${totalRecaudado.toFixed(2)}` + (totalRecaudadoUsd > 0 ? ` (+ $ ${totalRecaudadoUsd.toFixed(2)})` : '');
-            document.getElementById('pf-stat-pending').innerText   = `S/ ${totalPendiente.toFixed(2)}` + (totalPendienteUsd > 0 ? ` (+ $ ${totalPendienteUsd.toFixed(2)})` : '');
-
-            document.getElementById('pf-total-citas').innerText       = totalCitas;
-            document.getElementById('pf-total-completadas').innerText = totalCompletadas;
-            document.getElementById('pf-total-recaudado').innerText   = `S/ ${totalRecaudado.toFixed(2)}` + (totalRecaudadoUsd > 0 ? ` (+ $ ${totalRecaudadoUsd.toFixed(2)})` : '');
-            document.getElementById('pf-total-pendiente').innerText   = `S/ ${totalPendiente.toFixed(2)}` + (totalPendienteUsd > 0 ? ` (+ $ ${totalPendienteUsd.toFixed(2)})` : '');
 
             const tbody = document.getElementById('pf-table-rows');
             tbody.innerHTML = dates.length
                 ? dates.map(dateStr => {
-                    const d = byDate[dateStr];
-                    const recaudadoLbl = `S/ ${d.recaudado.toFixed(2)}` + (d.recaudadoUsd > 0 ? ` (+ $ ${d.recaudadoUsd.toFixed(2)})` : '');
-                    const pendienteLbl = `S/ ${d.pendiente.toFixed(2)}` + (d.pendienteUsd > 0 ? ` (+ $ ${d.pendienteUsd.toFixed(2)})` : '');
+                    const d = computeFinanceMetrics(byDate[dateStr]);
                     return `<tr class="border-b">
-                        <td class="py-2.5 px-2 font-bold whitespace-nowrap">${dateStr}</td>
-                        <td class="py-2.5 px-2">${d.total}</td>
-                        <td class="py-2.5 px-2">${d.completadas}</td>
-                        <td class="py-2.5 px-2 font-semibold">${recaudadoLbl}</td>
-                        <td class="py-2.5 px-2 font-semibold text-amber-700">${pendienteLbl}</td>
+                        <td class="py-2 px-2 font-bold whitespace-nowrap">${dateStr}</td>
+                        <td class="py-2 px-2 text-center">${d.citas}</td>
+                        <td class="py-2 px-2 text-center">${d.completadas}</td>
+                        <td class="py-2 px-2 text-center">${d.canceladas || '—'}</td>
+                        <td class="py-2 px-2 text-right">${dualMoney(d.PEN.facturado, d.USD.facturado)}</td>
+                        <td class="py-2 px-2 text-right font-semibold text-emerald-800">${dualMoney(d.PEN.cobrado, d.USD.cobrado)}</td>
+                        <td class="py-2 px-2 text-right font-semibold text-amber-800">${dualMoney(d.PEN.porCobrar, d.USD.porCobrar)}</td>
                     </tr>`;
                 }).join('')
-                : `<tr><td colspan="5" class="py-4 text-center text-graphite-400">No hay datos financieros para este periodo.</td></tr>`;
+                : `<tr><td colspan="7" class="py-4 text-center text-slate-400">No hay datos financieros para este periodo.</td></tr>`;
+
+            setF('pf-total-citas',       fmF.citas);
+            setF('pf-total-completadas', fmF.completadas);
+            setF('pf-total-canceladas',  fmF.canceladas);
+            setF('pf-total-facturado',   dualMoney(fmF.PEN.facturado, fmF.USD.facturado));
+            setF('pf-total-recaudado',   dualMoney(fmF.PEN.cobrado,   fmF.USD.cobrado));
+            setF('pf-total-pendiente',   dualMoney(fmF.PEN.porCobrar, fmF.USD.porCobrar));
+
+            // ── Cuentas por cobrar por paciente ──
+            const recRows  = computeReceivables(reportApps);
+            const recTbody = document.getElementById('pf-receivables-rows');
+            if (recTbody) {
+                recTbody.innerHTML = recRows.length
+                    ? recRows.map(r => `<tr class="border-b">
+                        <td class="py-2 px-2 font-semibold">${r.nombre}</td>
+                        <td class="py-2 px-2 text-center">${r.sesiones}</td>
+                        <td class="py-2 px-2 text-center">${r.masAntigua}</td>
+                        <td class="py-2 px-2 text-center font-bold ${r.diasDeuda > 30 ? 'text-rose-700' : ''}">${r.diasDeuda}</td>
+                        <td class="py-2 px-2 text-right font-bold">${dualMoney(r.pen, r.usd)}</td>
+                    </tr>`).join('')
+                    : `<tr><td colspan="5" class="py-3 text-center text-slate-400">Sin deudas pendientes: todas las sesiones realizadas en este periodo están pagadas.</td></tr>`;
+                setF('pf-receivables-total', dualMoney(
+                    recRows.reduce((s, r) => s + r.pen, 0),
+                    recRows.reduce((s, r) => s + r.usd, 0)
+                ));
+            }
+
+            // ── Desglose por modalidad y tipo de atención ──
+            const modTbody = document.getElementById('pf-modality-rows');
+            if (modTbody) {
+                const activas = reportApps.filter(a => a.status !== 'cancelada');
+                const grupo = (label, pred) => {
+                    const sub = activas.filter(pred);
+                    return {
+                        label,
+                        citas: sub.length,
+                        pen: sub.reduce((s, a) => s + (isPenAppt(a) ? Number(a.cost || 0) : 0), 0),
+                        usd: sub.reduce((s, a) => s + (isUsdAppt(a) ? Number(a.cost || 0) : 0), 0)
+                    };
+                };
+                const grupos = [
+                    grupo('Presencial',           a => a.modality !== 'virtual'),
+                    grupo('Virtual',              a => a.modality === 'virtual'),
+                    grupo('Atención individual',  a => a.attentionType !== 'pareja'),
+                    grupo('Atención de pareja',   a => a.attentionType === 'pareja'),
+                    grupo('Sesión suelta',        a => !a.packageId),
+                    grupo('Sesión de paquete',    a => !!a.packageId)
+                ].filter(g => g.citas > 0);
+
+                modTbody.innerHTML = grupos.length
+                    ? grupos.map(g => `<tr class="border-b">
+                        <td class="py-1.5 px-2 font-semibold">${g.label}</td>
+                        <td class="py-1.5 px-2 text-center">${g.citas}</td>
+                        <td class="py-1.5 px-2 text-right">${dualMoney(g.pen, g.usd)}</td>
+                    </tr>`).join('')
+                    : `<tr><td colspan="3" class="py-3 text-center text-slate-400">Sin datos.</td></tr>`;
+            }
+
+            // ── Desglose por origen del paciente ──
+            const oriTbody = document.getElementById('pf-origin-rows');
+            if (oriTbody) {
+                const byOrigen = {};
+                reportApps.filter(a => a.status !== 'cancelada').forEach(a => {
+                    const pat = state.patients.find(pp => pp.id === a.patientId);
+                    const key = pat && ORIGEN_LABELS[pat.origen] ? pat.origen : 'otro';
+                    if (!byOrigen[key]) byOrigen[key] = { citas: 0, pen: 0, usd: 0 };
+                    byOrigen[key].citas++;
+                    if (isUsdAppt(a)) byOrigen[key].usd += Number(a.cost || 0);
+                    else              byOrigen[key].pen += Number(a.cost || 0);
+                });
+                const oriRows = Object.entries(byOrigen).sort((x, y) => y[1].pen - x[1].pen);
+                oriTbody.innerHTML = oriRows.length
+                    ? oriRows.map(([k, v]) => `<tr class="border-b">
+                        <td class="py-1.5 px-2 font-semibold">${(ORIGEN_LABELS[k] || ORIGEN_LABELS.otro).label}</td>
+                        <td class="py-1.5 px-2 text-center">${v.citas}</td>
+                        <td class="py-1.5 px-2 text-right">${dualMoney(v.pen, v.usd)}</td>
+                    </tr>`).join('')
+                    : `<tr><td colspan="3" class="py-3 text-center text-slate-400">Sin datos.</td></tr>`;
+            }
+
+            // ── Cierre por moneda ──
+            const curTbody = document.getElementById('pf-currency-rows');
+            if (curTbody) {
+                const curRows = [
+                    { lbl: 'Soles (S/)',  sym: 'S/', b: fmF.PEN },
+                    { lbl: 'Dólares ($)', sym: '$',  b: fmF.USD }
+                ].filter(r => r.b.facturado > 0 || r.b.cobrado > 0 || r.b.porCobrar > 0);
+                curTbody.innerHTML = curRows.length
+                    ? curRows.map(r => `<tr class="border-b">
+                        <td class="py-1.5 px-2 font-semibold">${r.lbl}</td>
+                        <td class="py-1.5 px-2 text-right">${r.sym} ${r.b.facturado.toFixed(2)}</td>
+                        <td class="py-1.5 px-2 text-right font-semibold text-emerald-800">${r.sym} ${r.b.cobrado.toFixed(2)}</td>
+                        <td class="py-1.5 px-2 text-right font-semibold text-amber-800">${r.sym} ${r.b.porCobrar.toFixed(2)}</td>
+                    </tr>`).join('')
+                    : `<tr><td colspan="4" class="py-3 text-center text-slate-400">Sin montos registrados.</td></tr>`;
+            }
 
             hideAllPrintSections();
             document.getElementById('print-section-finance').classList.remove('hidden');
@@ -2122,9 +2689,33 @@ window.printClinicalHistory = function() {
             document.getElementById('pr-head-date').innerText = periodLabel;
             document.getElementById('pr-stat-total').innerText = reportApps.length;
 
+            // Montos: le sirven a recepción para saber a quién cobrar al llegar.
+            const fmR = computeFinanceMetrics(reportApps);
+            const setR = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
+            setR('pr-stat-modality', `${fmR.presencial} / ${fmR.virtual}`);
+            setR('pr-stat-tocharge', dualMoney(fmR.PEN.porCobrar, fmR.USD.porCobrar));
+            setR('pr-stat-charged',  dualMoney(fmR.PEN.cobrado,   fmR.USD.cobrado));
+            setR('pr-foot-pendiente', dualMoney(fmR.PEN.porCobrar, fmR.USD.porCobrar));
+            const prFootLabel = document.getElementById('pr-foot-label');
+            if (prFootLabel) prFootLabel.colSpan = (isMonth || isWeek) ? 4 : 3;
+
             const dateHeader = document.getElementById('pr-date-column-header');
             const tbody = document.getElementById('pr-table-rows');
             const modalityLabel = (a) => a.modality === 'virtual' ? '💻 Virtual' : 'Presencial';
+
+            // Etiqueta de cobro pensada para el mostrador: qué monto corresponde
+            // y si el paciente ya pagó o hay que cobrarle al llegar.
+            const payCell = (a) => {
+                if (a.status === 'cancelada') return '<span class="text-slate-400">Cancelada</span>';
+                if (a.paymentStatus === 'pagado') return '<span class="font-semibold text-emerald-700">✓ Pagado</span>';
+                if (Number(a.cost || 0) === 0)  return '<span class="text-slate-500">Incluida en paquete</span>';
+                return '<span class="font-bold text-amber-800">⚠ COBRAR</span>';
+            };
+            const amountCell = (a) => {
+                const cost = Number(a.cost || 0);
+                if (cost === 0) return '<span class="text-slate-400">—</span>';
+                return `${currencySymbol(a.currency)} ${cost.toFixed(2)}`;
+            };
 
             if (isMonth || isWeek) {
                 dateHeader.classList.remove('hidden');
@@ -2135,8 +2726,10 @@ window.printClinicalHistory = function() {
                             <td class="py-2.5 px-2 font-bold">${a.time}</td>
                             <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
                             <td class="py-2.5 px-2">${modalityLabel(a)}</td>
+                            <td class="py-2.5 px-2 text-right">${amountCell(a)}</td>
+                            <td class="py-2.5 px-2 text-center">${payCell(a)}</td>
                         </tr>`).join('')
-                    : `<tr><td colspan="4" class="py-4 text-center text-graphite-400">No hay consultas agendadas para este periodo.</td></tr>`;
+                    : `<tr><td colspan="6" class="py-4 text-center text-graphite-400">No hay consultas agendadas para este periodo.</td></tr>`;
             } else {
                 dateHeader.classList.add('hidden');
                 tbody.innerHTML = reportApps.length
@@ -2145,8 +2738,10 @@ window.printClinicalHistory = function() {
                             <td class="py-2.5 px-2 font-bold">${a.time}</td>
                             <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
                             <td class="py-2.5 px-2">${modalityLabel(a)}</td>
+                            <td class="py-2.5 px-2 text-right">${amountCell(a)}</td>
+                            <td class="py-2.5 px-2 text-center">${payCell(a)}</td>
                         </tr>`).join('')
-                    : `<tr><td colspan="3" class="py-4 text-center text-graphite-400">No hay consultas agendadas para esta fecha.</td></tr>`;
+                    : `<tr><td colspan="5" class="py-4 text-center text-graphite-400">No hay consultas agendadas para esta fecha.</td></tr>`;
             }
 
             hideAllPrintSections();
