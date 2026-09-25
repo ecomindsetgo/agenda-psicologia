@@ -830,11 +830,13 @@
                     <div>
                         <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Fecha de Nacimiento</label>
                         <input type="date" id="pat-birth" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
+                        <p class="text-[11px] text-slate-400 mt-1">La edad se calculará automáticamente al ingresar la fecha.</p>
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Edad</label>
-                        <input type="text" id="pat-age" placeholder="Ingrese la edad"
-                               class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-100 text-sm text-slate-600 focus:outline-none">
+                        <input type="text" id="pat-age" placeholder="Ej. 30 años"
+                               class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
+                        <p class="text-[11px] text-slate-400 mt-1">Puedes modificarla manualmente si es necesario.</p>
                     </div>
                 </div>
 
@@ -1054,8 +1056,10 @@
                 <div class="grid md:grid-cols-2 gap-x-5 gap-y-4">
                     <div><label class="hc-label">Nombre completo</label><input id="hc-patient-name" class="hc-input bg-slate-100" readonly></div>
                     <div><label class="hc-label">Fecha de primera sesión</label><input id="hc-first-session" type="date" class="hc-input"></div>
-                    <div><label class="hc-label">Fecha de nacimiento</label><input id="hc-patient-birth" type="date" class="hc-input bg-slate-100" readonly></div>
-                    <div><label class="hc-label">Edad</label><input id="hc-patient-age" class="hc-input"></div>
+                    <div><label class="hc-label">Fecha de nacimiento</label><input id="hc-patient-birth" type="date" class="hc-input"></div>
+                    <div><label class="hc-label">Edad</label><input id="hc-patient-age" class="hc-input" placeholder="Ej. 30 años">
+                        <p class="text-[11px] text-slate-400 mt-1">Se calcula automáticamente con la fecha de nacimiento, pero puedes modificarla manualmente.</p>
+                    </div>
                     <div>
                         <label class="hc-label">Estado civil</label>
                         <select id="hc-civil-status" class="hc-input">
@@ -1079,10 +1083,14 @@
             <div class="hc-form-section"><div class="hc-section-title">RECOMENDACIONES</div><textarea id="hc-recomendaciones" rows="5" class="hc-textarea"></textarea></div>
             <div class="hc-form-section">
                 <div class="hc-section-title">PLAN DE INTERVENCIÓN</div>
+                <div class="mb-4">
+                    <label class="hc-label">Información / Plan de intervención</label>
+                    <textarea id="hc-plan-info" rows="5" class="hc-textarea" placeholder="Describe objetivos, estrategias, actividades o indicaciones generales del plan de intervención..."></textarea>
+                </div>
                 <div class="grid md:grid-cols-3 gap-4">
-                    <div><label class="hc-label">Frecuencia</label><input id="hc-frecuencia" class="hc-input"></div>
-                    <div><label class="hc-label">Enfoque</label><input id="hc-enfoque" class="hc-input"></div>
-                    <div><label class="hc-label">Duración sugerida</label><input id="hc-duracion" class="hc-input"></div>
+                    <div><label class="hc-label">Frecuencia</label><input id="hc-frecuencia" class="hc-input" placeholder="Ej. 1 sesión semanal"></div>
+                    <div><label class="hc-label">Enfoque</label><input id="hc-enfoque" class="hc-input" placeholder="Ej. Cognitivo-conductual"></div>
+                    <div><label class="hc-label">Duración sugerida</label><input id="hc-duracion" class="hc-input" placeholder="Ej. 8 sesiones / 2 meses"></div>
                 </div>
             </div>
             <div class="hc-form-section"><div class="hc-section-title">TAREAS / ACUERDOS</div><p class="hc-question">Ejercicio asignado / Reflexión / Compromisos</p><textarea id="hc-tareas" rows="5" class="hc-textarea"></textarea></div>
@@ -1448,7 +1456,7 @@
                 <div class="hc-print-brand"><img src="logo-lisbeth.png" alt="Lisbeth Méndez Psicóloga"></div>
                 <section><h2>HIPÓTESIS / CONCLUSIONES</h2><p id="pch-hipotesis"></p></section>
                 <section><h2>RECOMENDACIONES</h2><p id="pch-recomendaciones"></p></section>
-                <section><h2>PLAN DE INTERVENCIÓN</h2><div class="hc-plan-grid"><div><b>FRECUENCIA:</b><span id="pch-frecuencia"></span></div><div><b>ENFOQUE:</b><span id="pch-enfoque"></span></div><div><b>DURACIÓN SUGERIDA:</b><span id="pch-duracion"></span></div></div></section>
+                <section><h2>PLAN DE INTERVENCIÓN</h2><div class="hc-plan-info-print"><b>PLAN / INFORMACIÓN:</b><p id="pch-plan-info"></p></div><div class="hc-plan-grid"><div><b>FRECUENCIA:</b><span id="pch-frecuencia"></span></div><div><b>ENFOQUE:</b><span id="pch-enfoque"></span></div><div><b>DURACIÓN SUGERIDA:</b><span id="pch-duracion"></span></div></div></section>
                 <section><h2>TAREAS / ACUERDOS <small>Ejercicio asignado / Reflexión / Compromisos</small></h2><p id="pch-tareas"></p></section>
                 <div class="hc-signature"><div></div><b id="pch-specialist-foot"></b><span>Psicóloga Clínica</span></div>
             </div><div class="hc-print-footer"><span>www.psicologalisbethmendez.com</span><strong>Lisbeth Méndez Orellana</strong><em>Psicóloga</em></div>
