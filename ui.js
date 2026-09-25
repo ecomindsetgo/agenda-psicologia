@@ -73,6 +73,8 @@
             if (!editMode) {
                 document.getElementById('patient-form').reset();
                 document.getElementById('patient-id').value = '';
+                const patAgeEl = document.getElementById('pat-age');
+                if (patAgeEl) patAgeEl.value = '';
                 document.getElementById('patient-modal-title').innerText = "👤 Registrar Paciente Clínico";
             }
             const m = document.getElementById('patient-modal');

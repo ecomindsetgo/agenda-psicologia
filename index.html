@@ -826,9 +826,16 @@
                         <input type="tel" id="pat-phone" required placeholder="987654321" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
                     </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Fecha de Nacimiento</label>
-                    <input type="date" id="pat-birth" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Fecha de Nacimiento</label>
+                        <input type="date" id="pat-birth" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Edad</label>
+                        <input type="text" id="pat-age" placeholder="Ingrese la edad"
+                               class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-100 text-sm text-slate-600 focus:outline-none">
+                    </div>
                 </div>
 
                 <div class="bg-amber-50/60 border border-amber-100 rounded-xl p-3.5 space-y-2">
@@ -1048,7 +1055,7 @@
                     <div><label class="hc-label">Nombre completo</label><input id="hc-patient-name" class="hc-input bg-slate-100" readonly></div>
                     <div><label class="hc-label">Fecha de primera sesión</label><input id="hc-first-session" type="date" class="hc-input"></div>
                     <div><label class="hc-label">Fecha de nacimiento</label><input id="hc-patient-birth" type="date" class="hc-input bg-slate-100" readonly></div>
-                    <div><label class="hc-label">Edad</label><input id="hc-patient-age" class="hc-input bg-slate-100" readonly></div>
+                    <div><label class="hc-label">Edad</label><input id="hc-patient-age" class="hc-input"></div>
                     <div>
                         <label class="hc-label">Estado civil</label>
                         <select id="hc-civil-status" class="hc-input">

@@ -358,6 +358,7 @@ id:doc.id,
                 dni:        document.getElementById('pat-dni').value.trim(),
                 phone:      document.getElementById('pat-phone').value.trim(),
                 birth:      document.getElementById('pat-birth').value,
+                age:        document.getElementById('pat-age').value.trim(),
                 history:    document.getElementById('pat-history').value.trim(),
                 origen:     document.getElementById('pat-origen').value,
                 canal:      document.getElementById('pat-canal').value,
@@ -406,7 +407,7 @@ window.openClinicalHistory = function(patientId){
         setValue("hc-patient-dni", patient.dni || "");
         setValue("hc-patient-phone", patient.phone || "");
         setValue("hc-patient-birth", patient.birth || "");
-        setValue("hc-patient-age", calculatePatientAge(patient.birth));
+        setValue("hc-patient-age", patient.age || "");
         setValue("hc-first-session", firstSession);
         setValue("hc-civil-status", history.civilStatus || history.estadoCivil || "");
         setValue("hc-occupation", history.occupation || history.ocupacion || "");
@@ -478,6 +479,7 @@ window.saveClinicalHistory = async function(){
         if(!patientId) return;
         const data = {
             firstSession: document.getElementById("hc-first-session").value,
+            patientAge: document.getElementById("hc-patient-age").value.trim(),
             civilStatus: document.getElementById("hc-civil-status").value,
             occupation: document.getElementById("hc-occupation").value,
             motivo: document.getElementById("hc-motivo").value,
@@ -501,6 +503,10 @@ window.saveClinicalHistory = async function(){
             updatedAt: new Date().toISOString()
         };
         await setDoc(doc(db,'artifacts',appId,'users',state.currentUser.uid,'clinicalHistories',patientId), data, {merge:true});
+        // La edad es un dato independiente y se guarda manualmente en la ficha del paciente.
+        const ageValue = document.getElementById("hc-patient-age").value.trim();
+        const patientRef = doc(db,'artifacts',appId,'users',state.currentUser.uid,'patients',patientId);
+        await setDoc(patientRef, { age: ageValue, updatedAt: new Date().toISOString() }, {merge:true});
 
         const cards = document.querySelectorAll("#clinical-notes-container > div");
         for (const card of cards) {
@@ -571,7 +577,7 @@ window.printClinicalHistory = function() {
     setPrintText('pch-dni', patient.dni);
     setPrintText('pch-phone', patient.phone);
     setPrintText('pch-birth', patient.birth || '—');
-    setPrintText('pch-age', calculatePatientAge(patient.birth) || '—');
+    setPrintText('pch-age', document.getElementById('hc-patient-age').value || patient.age || '—');
     setPrintText('pch-civil', document.getElementById('hc-civil-status').value || history.civilStatus || '—');
     setPrintText('pch-occupation', document.getElementById('hc-occupation').value || history.occupation || '—');
     setPrintText('pch-first-session', document.getElementById('hc-first-session').value || history.firstSession || '—');
@@ -614,6 +620,8 @@ window.printClinicalHistory = function() {
             document.getElementById('pat-dni').value     = p.dni    || '';
             document.getElementById('pat-phone').value   = p.phone;
             document.getElementById('pat-birth').value   = p.birth   || '';
+            const patAgeEl = document.getElementById('pat-age');
+            if (patAgeEl) patAgeEl.value = p.age || '';
             document.getElementById('pat-history').value = p.history || '';
             document.getElementById('pat-origen').value      = p.origen     || 'otro';
             document.getElementById('pat-canal').value       = p.canal      || 'whatsapp';
@@ -2656,19 +2664,10 @@ window.printClinicalHistory = function() {
             if (!p) return;
             window._currentHistoryPatientId = pid;
 
-            // Calcular edad
-            let ageStr = 'No especificada';
-            if (p.birth) {
-                const born = new Date(p.birth + 'T00:00:00');
-                const today = new Date();
-                let age = today.getFullYear() - born.getFullYear();
-                const m = today.getMonth() - born.getMonth();
-                if (m < 0 || (m === 0 && today.getDate() < born.getDate())) age--;
-                ageStr = age + ' años';
-            }
+            const ageStr = p.age ? String(p.age) + ' años' : 'No especificada';
 
             document.getElementById('hist-modal-title').innerText = '📋 Historial — ' + p.name;
-            document.getElementById('hist-modal-subtitle').innerText = '📞 ' + p.phone + (p.birth ? '  •  🎂 ' + p.birth + ' (' + ageStr + ')' : '');
+            document.getElementById('hist-modal-subtitle').innerText = '📞 ' + p.phone + (p.birth ? '  •  🎂 ' + p.birth : '') + (p.age ? '  •  Edad: ' + p.age : '');
 
             document.getElementById('hist-patient-info').innerHTML = `
                 <div><span class="font-bold text-graphite-500 text-xs uppercase block mb-0.5">Nombre</span><span class="font-semibold">${p.name}</span></div>
@@ -2743,16 +2742,7 @@ window.printClinicalHistory = function() {
                 specialistName = saved.displayName || user.email.split('@')[0];
             }
 
-            // Calcular edad
-            let ageStr = '—';
-            if (p.birth) {
-                const born = new Date(p.birth + 'T00:00:00');
-                const today = new Date();
-                let age = today.getFullYear() - born.getFullYear();
-                const m2 = today.getMonth() - born.getMonth();
-                if (m2 < 0 || (m2 === 0 && today.getDate() < born.getDate())) age--;
-                ageStr = age + ' años';
-            }
+            const ageStr = p.age ? String(p.age) + ' años' : '—';
 
             document.getElementById('print-card-specialist').innerText = specialistName;
             document.getElementById('print-card-specialist-foot').innerText = specialistName;
