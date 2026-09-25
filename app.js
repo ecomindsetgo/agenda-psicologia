@@ -348,59 +348,6 @@ id:doc.id,
   activeListeners.push(unsubAppts, unsubPatients, unsubHistories, unsubNotes);
         }
 
-        // ─── EDAD: cálculo automático + edición manual ─────────────────────────────
-        function calculatePatientAge(birth){
-            if(!birth) return "";
-            const born = new Date(birth + 'T00:00:00');
-            if (Number.isNaN(born.getTime())) return "";
-            const today = new Date();
-            let age = today.getFullYear() - born.getFullYear();
-            const m = today.getMonth() - born.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < born.getDate())) age--;
-            return age >= 0 ? age + ' años' : '';
-        }
-
-        function setupAgeFields(){
-            const birth = document.getElementById('pat-birth');
-            const age = document.getElementById('pat-age');
-            if (birth && !birth.dataset.ageListener) {
-                birth.addEventListener('change', () => {
-                    const calculated = calculatePatientAge(birth.value);
-                    if (age) {
-                        age.value = calculated;
-                        age.dataset.manual = 'false';
-                    }
-                });
-                birth.dataset.ageListener = 'true';
-            }
-            if (age && !age.dataset.ageListener) {
-                age.addEventListener('input', () => {
-                    age.dataset.manual = 'true';
-                });
-                age.dataset.ageListener = 'true';
-            }
-
-            const hcBirth = document.getElementById('hc-patient-birth');
-            const hcAge = document.getElementById('hc-patient-age');
-            if (hcBirth && !hcBirth.dataset.ageListener) {
-                hcBirth.addEventListener('change', () => {
-                    const calculated = calculatePatientAge(hcBirth.value);
-                    if (hcAge) {
-                        hcAge.value = calculated;
-                        hcAge.dataset.manual = 'false';
-                    }
-                });
-                hcBirth.dataset.ageListener = 'true';
-            }
-            if (hcAge && !hcAge.dataset.ageListener) {
-                hcAge.addEventListener('input', () => {
-                    hcAge.dataset.manual = 'true';
-                });
-                hcAge.dataset.ageListener = 'true';
-            }
-        }
-        setupAgeFields();
-
         // ─── CRUD PACIENTES ───────────────────────────────────────────────────────
         document.getElementById('patient-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -412,7 +359,6 @@ id:doc.id,
                 phone:      document.getElementById('pat-phone').value.trim(),
                 birth:      document.getElementById('pat-birth').value,
                 age:        document.getElementById('pat-age').value.trim(),
-                ageManual:  document.getElementById('pat-age').dataset.manual === 'true',
                 history:    document.getElementById('pat-history').value.trim(),
                 origen:     document.getElementById('pat-origen').value,
                 canal:      document.getElementById('pat-canal').value,
@@ -461,10 +407,7 @@ window.openClinicalHistory = function(patientId){
         setValue("hc-patient-dni", patient.dni || "");
         setValue("hc-patient-phone", patient.phone || "");
         setValue("hc-patient-birth", patient.birth || "");
-        const hcAgeEl = document.getElementById("hc-patient-age");
-        const hcShouldCalculateAge = !!patient.birth && patient.ageManual !== true;
-        setValue("hc-patient-age", hcShouldCalculateAge ? calculatePatientAge(patient.birth) : (patient.age || history.patientAge || ""));
-        if (hcAgeEl) hcAgeEl.dataset.manual = hcShouldCalculateAge ? "false" : "true";
+        setValue("hc-patient-age", patient.age || "");
         setValue("hc-first-session", firstSession);
         setValue("hc-civil-status", history.civilStatus || history.estadoCivil || "");
         setValue("hc-occupation", history.occupation || history.ocupacion || "");
@@ -478,7 +421,6 @@ window.openClinicalHistory = function(patientId){
         setValue("hc-conducta", history.conducta || history.observaciones || "");
         setValue("hc-hipotesis", history.hipotesis || history.diagnostico || "");
         setValue("hc-recomendaciones", history.recomendaciones || "");
-        setValue("hc-plan-info", history.planIntervencion || history.planInfo || "");
         setValue("hc-frecuencia", history.frecuencia || "");
         setValue("hc-enfoque", history.enfoque || "");
         setValue("hc-duracion", history.duracion || "");
@@ -549,7 +491,6 @@ window.saveClinicalHistory = async function(){
             conducta: document.getElementById("hc-conducta").value,
             hipotesis: document.getElementById("hc-hipotesis").value,
             recomendaciones: document.getElementById("hc-recomendaciones").value,
-            planIntervencion: document.getElementById("hc-plan-info").value,
             frecuencia: document.getElementById("hc-frecuencia").value,
             enfoque: document.getElementById("hc-enfoque").value,
             duracion: document.getElementById("hc-duracion").value,
@@ -562,17 +503,10 @@ window.saveClinicalHistory = async function(){
             updatedAt: new Date().toISOString()
         };
         await setDoc(doc(db,'artifacts',appId,'users',state.currentUser.uid,'clinicalHistories',patientId), data, {merge:true});
-        // La edad se calcula desde la fecha de nacimiento, pero puede quedar modificada manualmente.
+        // La edad es un dato independiente y se guarda manualmente en la ficha del paciente.
         const ageValue = document.getElementById("hc-patient-age").value.trim();
-        const birthValue = document.getElementById("hc-patient-birth").value;
-        const ageManual = document.getElementById("hc-patient-age").dataset.manual === "true";
         const patientRef = doc(db,'artifacts',appId,'users',state.currentUser.uid,'patients',patientId);
-        await setDoc(patientRef, {
-            birth: birthValue,
-            age: ageValue,
-            ageManual: ageManual,
-            updatedAt: new Date().toISOString()
-        }, {merge:true});
+        await setDoc(patientRef, { age: ageValue, updatedAt: new Date().toISOString() }, {merge:true});
 
         const cards = document.querySelectorAll("#clinical-notes-container > div");
         for (const card of cards) {
@@ -656,7 +590,6 @@ window.printClinicalHistory = function() {
     setPrintText('pch-conducta', document.getElementById('hc-conducta').value);
     setPrintText('pch-hipotesis', document.getElementById('hc-hipotesis').value);
     setPrintText('pch-recomendaciones', document.getElementById('hc-recomendaciones').value);
-    setPrintText('pch-plan-info', document.getElementById('hc-plan-info').value);
     setPrintText('pch-frecuencia', document.getElementById('hc-frecuencia').value);
     setPrintText('pch-enfoque', document.getElementById('hc-enfoque').value);
     setPrintText('pch-duracion', document.getElementById('hc-duracion').value);
@@ -688,11 +621,7 @@ window.printClinicalHistory = function() {
             document.getElementById('pat-phone').value   = p.phone;
             document.getElementById('pat-birth').value   = p.birth   || '';
             const patAgeEl = document.getElementById('pat-age');
-            if (patAgeEl) {
-                const shouldCalculate = !!p.birth && p.ageManual !== true;
-                patAgeEl.value = shouldCalculate ? calculatePatientAge(p.birth) : (p.age || '');
-                patAgeEl.dataset.manual = shouldCalculate ? 'false' : 'true';
-            }
+            if (patAgeEl) patAgeEl.value = p.age || '';
             document.getElementById('pat-history').value = p.history || '';
             document.getElementById('pat-origen').value      = p.origen     || 'otro';
             document.getElementById('pat-canal').value       = p.canal      || 'whatsapp';
