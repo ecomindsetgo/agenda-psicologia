@@ -110,13 +110,17 @@
             document.getElementById('btn-pt-dia').className    = type === 'dia'    ? activeCls : inactiveCls;
             document.getElementById('btn-pt-semana').className = type === 'semana' ? activeCls : inactiveCls;
             document.getElementById('btn-pt-mes').className    = type === 'mes'    ? activeCls : inactiveCls;
+            const customBtn = document.getElementById('btn-pt-personalizado');
+            if (customBtn) customBtn.className = type === 'personalizado' ? activeCls : inactiveCls;
             // "Día" y "Semana" comparten el mismo selector de fecha (para semana, se
             // usa como una fecha de referencia dentro de la semana a reportar).
-            document.getElementById('print-date-wrap').classList.toggle('hidden', type === 'mes');
+            document.getElementById('print-date-wrap').classList.toggle('hidden', type === 'mes' || type === 'personalizado');
             document.getElementById('print-month-wrap').classList.toggle('hidden', type !== 'mes');
+            document.getElementById('print-custom-wrap').classList.toggle('hidden', type !== 'personalizado');
             const dateLabel = document.getElementById('print-date-wrap-label');
             if (dateLabel) {
                 dateLabel.innerText = type === 'semana' ? 'Fecha dentro de la semana a reportar' : 'Fecha de Reporte';
+                if (type === 'personalizado') dateLabel.innerText = 'Rango personalizado';
             }
         }
 
@@ -124,6 +128,10 @@
             document.getElementById('print-date-select').value = document.getElementById('date-filter').value;
             const now = new Date();
             document.getElementById('print-month-select').value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+            const cStart = document.getElementById('print-custom-start');
+            const cEnd = document.getElementById('print-custom-end');
+            if (cStart) cStart.value = (window._profileState && window._profileState.financeCustomStart) || document.getElementById('print-date-select').value;
+            if (cEnd) cEnd.value = (window._profileState && window._profileState.financeCustomEnd) || document.getElementById('print-date-select').value;
             // Auto-cargar nombre del especialista desde el perfil guardado
             const user = window._profileState && window._profileState.currentUser;
             if (user) {

@@ -74,46 +74,12 @@ try {
             citasView: 'dia',
             monthViewDate: new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0'),
             financePeriod: 'todo',
+            financeCustomStart: '',
+            financeCustomEnd: '',
             currentUser: null
         };
 
         window._profileState = state;
-
-        // ─── PUENTE SEGURO PARA EL ASISTENTE IA ───────────────────────────────
-        // IMPORTANTE: solo expone datos administrativos de citas. Nunca historias,
-        // notas clínicas, diagnósticos, motivos de consulta ni campos clínicos.
-        // Gemini NO recibe este objeto; el asistente calcula las respuestas localmente.
-        window.getAgendaAdminSnapshot = function () {
-            return {
-                appointments: (state.appointments || []).map(a => ({
-                    id: a.id,
-                    date: a.date || '',
-                    time: a.time || '',
-                    patientName: a.patientName || 'Paciente',
-                    status: a.status || 'pendiente',
-                    cost: Number(a.cost || 0),
-                    currency: a.currency === 'USD' ? 'USD' : 'PEN',
-                    paymentStatus: a.paymentStatus || 'pendiente',
-                    modality: a.modality || ''
-                }))
-            };
-        };
-
-        // Nombre a mostrar en el saludo del asistente IA (solo el nombre, nada
-        // clínico ni sensible). Reutiliza el mismo perfil que ya se usa en el
-        // encabezado y en la impresión de fichas.
-        window.getAgendaSpecialistFirstName = function () {
-            try {
-                const user = state.currentUser;
-                if (!user) return '';
-                const saved = JSON.parse(localStorage.getItem('userProfile_' + user.uid) || '{}');
-                const full = (saved.displayName || (user.email ? user.email.split('@')[0] : '') || '').trim();
-                if (!full) return '';
-                // Si guardó "Dra. Lisbeth Méndez" nos quedamos solo con "Lisbeth".
-                const parts = full.replace(/^(dra?\.?|lic\.?|psic\.?)\s+/i, '').split(/\s+/);
-                return parts[0] || full;
-            } catch (e) { return ''; }
-        };
 
         // ── Hora actual de Perú (GMT-5). Se usa para deshabilitar horas ya
         // pasadas al agendar una cita para el día de hoy.
@@ -802,7 +768,15 @@ window.printClinicalHistory = function() {
         function periodRangeStr(period, refStr) {
             if (period === 'dia')    return [refStr, refStr];
             if (period === 'semana') return getWeekRangeStr(refStr);
-            if (period === 'mes')    { const m = refStr.substring(0, 7); return [m + '-01', m + '-31']; }
+            if (period === 'mes') {
+                const d = new Date(refStr + 'T00:00:00');
+                const first = new Date(d.getFullYear(), d.getMonth(), 1);
+                const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+                return [horarioDateStr(first), horarioDateStr(last)];
+            }
+            if (period === 'personalizado' && state.financeCustomStart && state.financeCustomEnd) {
+                return [state.financeCustomStart, state.financeCustomEnd];
+            }
             return ['0000-01-01', '9999-12-31'];
         }
 
@@ -812,7 +786,19 @@ window.printClinicalHistory = function() {
             if (period === 'dia')    { d.setDate(d.getDate() - 1); const s = horarioDateStr(d); return [s, s]; }
             if (period === 'semana') { d.setDate(d.getDate() - 7); return getWeekRangeStr(horarioDateStr(d)); }
             if (period === 'mes')    { d.setDate(1); d.setMonth(d.getMonth() - 1);
-                                       const m = horarioDateStr(d).substring(0, 7); return [m + '-01', m + '-31']; }
+                                       const first = new Date(d.getFullYear(), d.getMonth(), 1);
+                                       const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+                                       return [horarioDateStr(first), horarioDateStr(last)]; }
+            if (period === 'personalizado' && state.financeCustomStart && state.financeCustomEnd) {
+                const start = new Date(state.financeCustomStart + 'T00:00:00');
+                const end = new Date(state.financeCustomEnd + 'T00:00:00');
+                const days = Math.round((end - start) / 86400000) + 1;
+                const prevEnd = new Date(start);
+                prevEnd.setDate(prevEnd.getDate() - 1);
+                const prevStart = new Date(prevEnd);
+                prevStart.setDate(prevStart.getDate() - days + 1);
+                return [horarioDateStr(prevStart), horarioDateStr(prevEnd)];
+            }
             return null; // "todo el tiempo" no tiene periodo anterior
         }
 
@@ -1857,21 +1843,62 @@ window.printClinicalHistory = function() {
                 const [lunes, domingo] = getWeekRangeStr(todayStr);
                 return state.appointments.filter(a => a.date >= lunes && a.date <= domingo);
             } else if (state.financePeriod === 'mes') {
-                const monthStr = todayStr.substring(0, 7);
-                return state.appointments.filter(a => a.date.startsWith(monthStr));
+                const [inicio, fin] = periodRangeStr('mes', todayStr);
+                return state.appointments.filter(a => a.date >= inicio && a.date <= fin);
+            } else if (state.financePeriod === 'personalizado') {
+                const [inicio, fin] = periodRangeStr('personalizado', todayStr);
+                return state.appointments.filter(a => a.date >= inicio && a.date <= fin);
             }
             return state.appointments;
         }
 
-        window.setFinancePeriod = function(period) {
-            state.financePeriod = period;
-            ['todo', 'mes', 'semana', 'dia'].forEach(p => {
+        function formatDateRangeLabel(start, end) {
+            if (!start || !end) return '';
+            const opts = { day: '2-digit', month: '2-digit', year: 'numeric' };
+            return `${new Date(start + 'T00:00:00').toLocaleDateString('es-PE', opts)} al ${new Date(end + 'T00:00:00').toLocaleDateString('es-PE', opts)}`;
+        }
+
+        window.showFinanceCustomRange = function() {
+            const wrap = document.getElementById('finance-custom-range');
+            if (!wrap) return;
+            const start = document.getElementById('finance-custom-start');
+            const end = document.getElementById('finance-custom-end');
+            if (!start.value) start.value = state.financeCustomStart || todayStr;
+            if (!end.value) end.value = state.financeCustomEnd || todayStr;
+            wrap.classList.remove('hidden');
+        };
+
+        window.applyFinanceCustomRange = function() {
+            const start = document.getElementById('finance-custom-start')?.value;
+            const end = document.getElementById('finance-custom-end')?.value;
+            if (!start || !end) { alert('Selecciona ambas fechas.'); return; }
+            if (start > end) { alert('La fecha inicial no puede ser posterior a la fecha final.'); return; }
+            state.financeCustomStart = start;
+            state.financeCustomEnd = end;
+            state.financePeriod = 'personalizado';
+            updateFinancePeriodButtons();
+            const lbl = document.getElementById('finance-period-label');
+            if (lbl) lbl.innerText = 'Mostrando datos de: ' + formatDateRangeLabel(start, end);
+            updateStatsDashboard();
+        };
+
+        function updateFinancePeriodButtons() {
+            ['todo', 'mes', 'semana', 'dia', 'personalizado'].forEach(p => {
                 const btn = document.getElementById('btn-fp-' + p);
                 if (!btn) return;
-                btn.className = p === period
+                btn.className = p === state.financePeriod
                     ? "px-3 py-1.5 bg-sage-600 text-white text-xs font-semibold rounded-lg shadow-sm transition"
                     : "px-3 py-1.5 bg-graphite-100 hover:bg-graphite-200 text-graphite-600 text-xs font-semibold rounded-lg transition";
             });
+        }
+
+        window.setFinancePeriod = function(period) {
+            if (period === 'personalizado') {
+                showFinanceCustomRange();
+                return;
+            }
+            state.financePeriod = period;
+            updateFinancePeriodButtons();
             const labels = { todo: 'Todo el tiempo', mes: 'Este mes', semana: 'Esta semana', dia: 'Hoy' };
             const lbl = document.getElementById('finance-period-label');
             if (lbl) lbl.innerText = 'Mostrando datos de: ' + labels[period];
@@ -2422,14 +2449,14 @@ window.printClinicalHistory = function() {
             setP('print-foot-cobrado',   dualMoney(fmRep.PEN.cobrado,   fmRep.USD.cobrado));
             setP('print-foot-pendiente', dualMoney(fmRep.PEN.porCobrar, fmRep.USD.porCobrar));
             const footSpacer = document.getElementById('print-foot-spacer');
-            if (footSpacer) footSpacer.colSpan = (printType === 'mes' || printType === 'semana') ? 4 : 3;
+            if (footSpacer) footSpacer.colSpan = (printType === 'mes' || printType === 'semana' || printType === 'personalizado') ? 4 : 3;
 
             const dateHeader = document.getElementById('print-date-column-header');
             const tbody = document.getElementById('print-table-rows');
 
             const modalityLabel = (a) => a.modality === 'virtual' ? '💻 Virtual' : '🏢 Presencial';
 
-            if (isMonth || isWeek) {
+            if (isMonth || isWeek || isCustom) {
                 dateHeader.classList.remove('hidden');
                 tbody.innerHTML = reportApps.length
                     ? reportApps.map(a => `
@@ -2465,6 +2492,71 @@ window.printClinicalHistory = function() {
             setTimeout(() => window.print(), 300);
         }
 
+        // ─── EXCEL DE ESTADÍSTICAS / FINANZAS ─────────────────────────────────
+        window.downloadFinanceExcel = function () {
+            if (typeof XLSX === 'undefined') {
+                alert('No se pudo cargar el generador de Excel. Revisa tu conexión a internet e inténtalo nuevamente.');
+                return;
+            }
+            const apps = getFinanceAppointments().slice().sort((a,b) => (a.date + ' ' + (a.time||'')).localeCompare(b.date + ' ' + (b.time||'')));
+            const fm = computeFinanceMetrics(apps);
+            let periodLabel = 'Todo el tiempo';
+            if (state.financePeriod === 'dia') periodLabel = new Date(todayStr+'T00:00:00').toLocaleDateString('es-PE');
+            else if (state.financePeriod === 'semana') { const r=getWeekRangeStr(todayStr); periodLabel=`${r[0]} al ${r[1]}`; }
+            else if (state.financePeriod === 'mes') { const r=periodRangeStr('mes',todayStr); periodLabel=`${r[0]} al ${r[1]}`; }
+            else if (state.financePeriod === 'personalizado') periodLabel=formatDateRangeLabel(state.financeCustomStart,state.financeCustomEnd);
+
+            const rows = [
+                ['ESTADÍSTICAS Y FINANZAS'],
+                [],
+                ['PERIODO', periodLabel],
+                [],
+                ['INDICADOR','VALOR'],
+                ['Total de citas', fm.citas],
+                ['Citas completadas', fm.completadas],
+                ['Citas programadas', fm.programadas],
+                ['Citas canceladas', fm.canceladas],
+                ['Pacientes únicos', fm.pacientesUnicos],
+                ['Facturado (S/)', fm.PEN.facturado],
+                ['Cobrado (S/)', fm.PEN.cobrado],
+                ['Por cobrar (S/)', fm.PEN.porCobrar],
+                ['Vencido (S/)', fm.PEN.vencido],
+                ['Futuro (S/)', fm.PEN.futuro],
+                ['Devengado (S/)', fm.PEN.devengado],
+                ['Perdido por cancelaciones (S/)', fm.PEN.perdido],
+                ['Facturado (USD)', fm.USD.facturado],
+                ['Cobrado (USD)', fm.USD.cobrado],
+                ['Por cobrar (USD)', fm.USD.porCobrar],
+                ['Tasa de cobranza', fm.tasaCobranza / 100],
+                ['Tasa de asistencia', fm.tasaAsistencia / 100],
+                ['Tasa de cancelación', fm.tasaCancelacion / 100],
+                ['Ticket promedio (S/)', fm.ticketPromedioPEN],
+                [],
+                ['DETALLE DE CITAS'],
+                ['ITEM','PACIENTE','MODALIDAD','FECHA','HORA','ESTADO','PAGO','MONEDA','IMPORTE','OBSERVACIÓN']
+            ];
+            apps.forEach((a,i)=>rows.push([
+                i+1, a.patientName||'Paciente', a.modality==='virtual'?'VIRTUAL':'PRESENCIAL', a.date||'', (a.time||'').slice(0,5),
+                String(a.status||'').toUpperCase(), a.paymentStatus==='pagado'?'PAGADO':'PENDIENTE', a.currency==='USD'?'USD':'PEN', Number(a.cost||0), a.notes||''
+            ]));
+            const ws=XLSX.utils.aoa_to_sheet(rows);
+            ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:9}}];
+            ws['!cols']=[{wch:8},{wch:28},{wch:15},{wch:14},{wch:10},{wch:16},{wch:14},{wch:10},{wch:13},{wch:35}];
+            const range=XLSX.utils.decode_range(ws['!ref']);
+            for(let r=0;r<=range.e.r;r++) for(let c=0;c<=range.e.c;c++){
+                const cell=ws[XLSX.utils.encode_cell({r,c})]; if(!cell) continue;
+                cell.alignment={vertical:'center',horizontal:c===1||c===9?'left':'center',wrapText:true};
+                if((r>=10&&r<=19&&c===1)|| (r>=27&&c===8)) cell.numFmt=c===1?'"S/" #,##0.00':'#,##0.00';
+                if(r===0){cell.font={bold:true,size:16};}
+                if(r===4||r===26){cell.font={bold:true}; cell.fill={fgColor:{rgb:'E2E8F0'}};}
+            }
+            // Porcentajes
+            [20,21,22].forEach(r=>{ if(ws[XLSX.utils.encode_cell({r,c:1})]) ws[XLSX.utils.encode_cell({r,c:1})].numFmt='0.0%'; });
+            const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Estadísticas');
+            const suffix=state.financePeriod==='personalizado' ? `${state.financeCustomStart}_a_${state.financeCustomEnd}` : state.financePeriod;
+            XLSX.writeFile(wb,`Estadisticas_Finanzas_${suffix}.xlsx`,{compression:true});
+        };
+
         // ─── REPORTE FINANCIERO (solo montos por fecha, sin datos clínicos) ───────
         function executeFinanceReportPrint(printType) {
             const specialistName = document.getElementById('print-specialist-name').value.trim() || 'Especialista General';
@@ -2472,8 +2564,17 @@ window.printClinicalHistory = function() {
             let periodLabel = '';
             const isMonth = printType === 'mes';
             const isWeek  = printType === 'semana';
+            const isCustom = printType === 'personalizado';
 
-            if (isMonth) {
+            if (isCustom) {
+                const start = document.getElementById('print-custom-start').value;
+                const end = document.getElementById('print-custom-end').value;
+                if (!start || !end || start > end) { alert('Selecciona un rango de fechas válido.'); return; }
+                reportApps = state.appointments.filter(a => a.date >= start && a.date <= end);
+                periodLabel = formatDateRangeLabel(start, end);
+                document.getElementById('pf-title-main').innerText = 'REPORTE FINANCIERO POR RANGO';
+                document.getElementById('pf-head-date-label').innerText = 'PERIODO';
+            } else if (isMonth) {
                 const monthVal = document.getElementById('print-month-select').value; // YYYY-MM
                 reportApps = state.appointments.filter(a => a.date.startsWith(monthVal));
                 const [y, m] = monthVal.split('-').map(Number);
@@ -2619,7 +2720,7 @@ window.printClinicalHistory = function() {
             const tbody = document.getElementById('pr-table-rows');
             const modalityLabel = (a) => a.modality === 'virtual' ? '💻 Virtual' : 'Presencial';
 
-            if (isMonth || isWeek) {
+            if (isMonth || isWeek || isCustom) {
                 dateHeader.classList.remove('hidden');
                 tbody.innerHTML = reportApps.length
                     ? reportApps.map(a => `
@@ -2883,6 +2984,209 @@ window.printClinicalHistory = function() {
 
             html += `</div>`;
             container.innerHTML = html;
+        };
+
+        // ─── DESCARGA DEL HORARIO SEMANAL EN EXCEL ───────────────────────────
+        // Genera un .xlsx con la misma estructura de la ficha semanal:
+        // ITEM | PACIENTE | MODALIDAD | FECHA | HORA | PRECIO | SI | COBRADO | OBSERVACION
+        // Los datos corresponden exclusivamente a la semana mostrada en el modal
+        // (lunes a sábado). Los totales también se calculan sobre ese mismo rango.
+        window.downloadHorarioExcel = function () {
+            const btn = document.getElementById('btn-descargar-horario-excel');
+
+            if (typeof XLSX === 'undefined') {
+                alert('No se pudo cargar el generador de Excel. Revisa tu conexión a internet e inténtalo nuevamente.');
+                return;
+            }
+
+            if (!state.horarioWeekStart) {
+                state.horarioWeekStart = getMondayOf(new Date());
+            }
+
+            const weekStart = new Date(state.horarioWeekStart);
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekEnd.getDate() + 5); // lunes a sábado
+
+            const startStr = horarioDateStr(weekStart);
+            const endStr = horarioDateStr(weekEnd);
+
+            // El Excel NO depende de las franjas visibles del horario.
+            // Incluye todas las citas registradas de lunes a sábado, sin importar
+            // la hora ni si la cita está pendiente, completada, reprogramada
+            // o cancelada. Así el archivo funciona como registro completo de la semana.
+            const weeklyAppointments = (state.appointments || [])
+                .filter(a => a && a.date >= startStr && a.date <= endStr)
+                .sort((a, b) => {
+                    const da = `${a.date || ''} ${String(a.time || '')}`;
+                    const db = `${b.date || ''} ${String(b.time || '')}`;
+                    return da.localeCompare(db);
+                });
+
+            const monthName = weekEnd.toLocaleDateString('es-PE', { month: 'long' });
+            const monthTitle = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+            const rangeTitle = `DEL ${weekStart.getDate()} AL ${weekEnd.getDate()} DE ${monthTitle.toUpperCase()}`;
+
+            const rows = [];
+            // Filas superiores como en la ficha proporcionada
+            rows.push([monthTitle.toUpperCase()]);
+            rows.push([]);
+            rows.push([rangeTitle]);
+            rows.push([]);
+
+            // Encabezados exactamente en el orden solicitado
+            rows.push(['ITEM', 'PACIENTE', 'MODALIDAD', 'FECHA', 'HORA', 'PRECIO', 'SI', 'COBRADO', 'OBSERVACION']);
+
+            let totalPrecio = 0;
+            let totalCobrado = 0;
+
+            weeklyAppointments.forEach((a, index) => {
+                const cost = Number(a.cost || 0);
+                const paid = a.paymentStatus === 'pagado';
+                const currency = a.currency === 'USD' ? 'USD' : 'PEN';
+                const symbol = currency === 'USD' ? '$' : 'S/';
+
+                totalPrecio += cost;
+                if (paid) totalCobrado += cost;
+
+                const statusLabel = {
+                    completada: 'REALIZADO',
+                    cancelada: 'CANCELADO',
+                    pendiente: 'PENDIENTE',
+                    reprogramada: 'REPROGRAMADO'
+                }[a.status] || String(a.status || '').toUpperCase();
+
+                let observation = statusLabel || 'PENDIENTE';
+                if (a.notes && String(a.notes).trim()) {
+                    observation = `${observation} — ${String(a.notes).trim()}`;
+                }
+
+                // Para mantener la estructura de la ficha:
+                // "SI" indica pago registrado y "COBRADO" muestra el importe cobrado.
+                rows.push([
+                    index + 1,
+                    a.patientName || 'Paciente',
+                    a.modality || '',
+                    a.date || '',
+                    a.time ? String(a.time).slice(0, 5) : '',
+                    cost > 0 ? cost : 0,
+                    paid ? 'SI' : '',
+                    paid ? cost : 0,
+                    observation
+                ]);
+            });
+
+            // Fila de total
+            rows.push([]);
+            rows.push(['', '', '', '', 'TOTAL', totalPrecio, '', totalCobrado, '']);
+
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+
+            // Combinar títulos como en la ficha
+            ws['!merges'] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } },
+                { s: { r: 2, c: 0 }, e: { r: 2, c: 8 } }
+            ];
+
+            // Anchos de columna para conservar la estructura visual
+            ws['!cols'] = [
+                { wch: 8 },   // ITEM
+                { wch: 25 },  // PACIENTE
+                { wch: 16 },  // MODALIDAD
+                { wch: 14 },  // FECHA
+                { wch: 12 },  // HORA
+                { wch: 13 },  // PRECIO
+                { wch: 8 },   // SI
+                { wch: 13 },  // COBRADO
+                { wch: 28 }   // OBSERVACION
+            ];
+
+            // Alturas de filas
+            ws['!rows'] = [
+                { hpt: 24 },
+                { hpt: 8 },
+                { hpt: 20 },
+                { hpt: 8 },
+                { hpt: 24 }
+            ];
+
+            // Estilos compatibles con Excel (SheetJS Community)
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let r = 0; r <= range.e.r; r++) {
+                for (let c = 0; c <= range.e.c; c++) {
+                    const cell = ws[XLSX.utils.encode_cell({ r, c })];
+                    if (!cell) continue;
+
+                    cell.alignment = {
+                        vertical: 'center',
+                        horizontal: c === 1 || c === 2 || c === 8 ? 'left' : 'center',
+                        wrapText: true
+                    };
+
+                    // Formato monetario para PRECIO y COBRADO
+                    if (c === 5 || c === 7) {
+                        cell.numFmt = '"S/" #,##0.00';
+                    }
+
+                    // Cabecera
+                    if (r === 4) {
+                        cell.font = { bold: true, color: { rgb: 'FFFFFF' } };
+                        cell.fill = { fgColor: { rgb: '2563EB' } };
+                        cell.alignment = { vertical: 'center', horizontal: 'center', wrapText: true };
+                    }
+
+                    // Título del mes
+                    if (r === 0) {
+                        cell.font = { bold: true, size: 16, color: { rgb: '1E293B' } };
+                        cell.alignment = { vertical: 'center', horizontal: 'left' };
+                    }
+
+                    // Rango de fechas
+                    if (r === 2) {
+                        cell.font = { bold: true, color: { rgb: 'F97316' } };
+                        cell.alignment = { vertical: 'center', horizontal: 'left' };
+                    }
+
+                    // Total
+                    if (r === range.e.r) {
+                        cell.font = { bold: true };
+                        cell.fill = { fgColor: { rgb: 'E2E8F0' } };
+                        cell.border = {
+                            top: { style: 'thin', color: { rgb: '94A3B8' } }
+                        };
+                    }
+                }
+            }
+
+            // Fecha y hora como texto para conservar exactamente la apariencia de la ficha
+            for (let r = 5; r < range.e.r; r++) {
+                const dateCell = ws[XLSX.utils.encode_cell({ r, c: 3 })];
+                const timeCell = ws[XLSX.utils.encode_cell({ r, c: 4 })];
+                if (dateCell) dateCell.t = 's';
+                if (timeCell) timeCell.t = 's';
+            }
+
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, ws, 'Horario semanal');
+
+            const fileDate = startStr;
+            const fileName = `Horario_Semanal_${fileDate}.xlsx`;
+
+            try {
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '⏳ Generando...';
+                }
+
+                XLSX.writeFile(workbook, fileName, { compression: true });
+            } catch (err) {
+                console.error('[Excel horario semanal]', err);
+                alert('Ocurrió un error al generar el archivo Excel.');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '📊 Descargar Excel';
+                }
+            }
         };
 
         window.downloadHorarioImage = async function () {
