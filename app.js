@@ -41,22 +41,31 @@ import {
             appId: "1:164610159912:web:4b29a3185058938e008c1d"
         };
 
-// ─── INICIALIZACIÓN DE FIREBASE (protegida) ───────────────────────────────
+// ─── INICIALIZACIÓN DE FIREBASE ───────────────────────────────────────────
+// Firebase Auth/Firestore se inicializan de forma independiente de App Check.
+// Así, un problema con reCAPTCHA/App Check no deja inutilizable el inicio de sesión.
 let app, auth, db;
 try {
     app = initializeApp(firebaseConfig);
-
-    // App Check — pega la Site Key del reCAPTCHA v3 de ESTE proyecto
-    initializeAppCheck(app, {
-        provider: new ReCaptchaV3Provider("6Ld0s4QtAAAAADBZkz-urUfz_V5dqBGlWvpHYWSC"),
-        isTokenAutoRefreshEnabled: true
-    });
-
     auth = getAuth(app);
     db = getFirestore(app);
 } catch (initError) {
     console.error('[Error inicializando Firebase]', initError);
-    mostrarErrorGlobal('⚠️ No se pudo conectar con el servidor de autenticación. Revisa la consola (F12) o contacta a soporte.');
+    mostrarErrorGlobal('⚠️ No se pudo conectar con Firebase. Recarga la página e inténtalo nuevamente.');
+}
+
+// App Check es una capa adicional de protección y nunca debe impedir que Auth
+// se inicialice. Si reCAPTCHA no está disponible en el dominio actual, se registra
+// el problema y la aplicación continúa funcionando con Firebase Auth.
+if (app) {
+    try {
+        initializeAppCheck(app, {
+            provider: new ReCaptchaV3Provider("6Ld0s4QtAAAAADBZkz-urUfz_V5dqBGlWvpHYWSC"),
+            isTokenAutoRefreshEnabled: true
+        });
+    } catch (appCheckError) {
+        console.warn('[App Check no disponible; Auth continúa activo]', appCheckError);
+    }
 }
 
         let activeListeners = [];
