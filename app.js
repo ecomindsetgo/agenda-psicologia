@@ -3247,3 +3247,140 @@ window.printClinicalHistory = function() {
                 if (btn) { btn.disabled = false; btn.innerHTML = originalLabel; }
             }
         };
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ASISTENTE VIRTUAL IA — MOTOR DE ANÁLISIS DE DATOS DE LA AGENDA
+// Funciona con los datos ya sincronizados de la cuenta. No usa una API key expuesta.
+// ═══════════════════════════════════════════════════════════════════════════════
+(function initAgendaAssistant(){
+    const monthNames = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    const esc = (v='') => String(v).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+    const norm = v => String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+    const money = n => `S/ ${Number(n||0).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+    const datePE = d => { if(!d) return ''; const x=new Date(d+'T00:00:00'); return x.toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'numeric'}); };
+    const timePE = t => t || '--:--';
+    const statusText = s => ({completada:'Realizada',pendiente:'Pendiente',cancelada:'Cancelada',reprogramada:'Reprogramada'}[s] || s || 'Sin estado');
+    const getPatientName = a => { const p=(state.patients||[]).find(x=>x.id===a.patientId); return p?.name || a.patientName || a.patient || 'Paciente sin nombre'; };
+    const amount = a => Number(a.cost ?? a.price ?? a.amount ?? 0) || 0;
+    const isPaid = a => ['pagado','paid','si','true'].includes(norm(a.paymentStatus||a.paid||''));
+    const active = a => a.status !== 'cancelada';
+    const parseISO = s => { const m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})$/); return m?s:new Date(s).toISOString().slice(0,10); };
+    const monthNum = name => { const n=norm(name); const i=monthNames.indexOf(n); return i>=0?i+1:null; };
+    function dateFromParts(day, month, year){
+        const y=Number(year)||new Date().getFullYear(), m=Number(month), d=Number(day); if(!m||!d)return null;
+        return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    }
+    function extractDateRange(q){
+        const t=norm(q), now=new Date();
+        const explicit=[...t.matchAll(/(\d{1,2})[\s\/-]+(\d{1,2})(?:[\s\/-]+(\d{4}))?/g)];
+        if(explicit.length>=2){
+            const a=explicit[0][0].split(/[\s\/-]+/), b=explicit[1][0].split(/[\s\/-]+/);
+            const y1=a[2]||now.getFullYear(), y2=b[2]||y1;
+            return [dateFromParts(a[0],a[1],y1),dateFromParts(b[0],b[1],y2)];
+        }
+        const byName=[...t.matchAll(/(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:\s+de\s+(\d{4}))?/g)];
+        if(byName.length>=2){
+            const fix=n=>n==='setiembre'?'septiembre':n;
+            const a=byName[0],b=byName[1], y1=a[3]||now.getFullYear(), y2=b[3]||y1;
+            return [dateFromParts(a[1],monthNum(fix(a[2])),y1),dateFromParts(b[1],monthNum(fix(b[2])),y2)];
+        }
+        if(/hoy/.test(t)) { const d=parseISO(getLimaDateStr(getLimaNow())); return [d,d]; }
+        if(/manana|mañana/.test(t)) { const d=getLimaNow(); d.setDate(d.getDate()+1); const s=getLimaDateStr(d); return [s,s]; }
+        if(/esta semana|semana actual|esta semana/.test(t)) return getWeekRangeStr(getLimaDateStr(getLimaNow()));
+        if(/este mes|mes actual/.test(t)) return periodRangeStr('mes',getLimaDateStr(getLimaNow()));
+        for(let i=0;i<monthNames.length;i++) if(t.includes(monthNames[i]) || (i===8 && t.includes('setiembre'))){
+            const y=(t.match(/\b(20\d{2})\b/)||[])[1]||now.getFullYear();
+            const start=`${y}-${String(i+1).padStart(2,'0')}-01`, end=new Date(Number(y),i+1,0); return [start,getLimaDateStr(end)];
+        }
+        return null;
+    }
+    function rangeLabel(range){ return range ? `${datePE(range[0])} al ${datePE(range[1])}` : 'todo el tiempo'; }
+    function filterRange(apps, range){ return range ? apps.filter(a => (a.date||'')>=range[0] && (a.date||'')<=range[1]) : apps.slice(); }
+    function sortApps(apps){ return apps.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'') || (a.time||'').localeCompare(b.time||'')); }
+    function kpi(label,value){ return `<div class="assistant-kpi"><strong>${esc(value)}</strong><span>${esc(label)}</span></div>`; }
+    function table(headers, rows){
+        if(!rows.length) return `<div class="text-xs text-slate-500 p-3">No encontré registros para esa consulta.</div>`;
+        return `<div class="assistant-result overflow-x-auto"><table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    }
+    function getData(q){
+        const t=norm(q), all=state.appointments||[];
+        let range=extractDateRange(q);
+        if(/proxima|siguiente|siguientes|próxima|proximas/.test(t) && !range){
+            const today=getLimaDateStr(getLimaNow());
+            const future=sortApps(all.filter(a=>(a.date||'')>=today && active(a)));
+            return {html: `<p class="font-semibold text-slate-800 mb-2">Próximas citas</p>${table(['Fecha','Hora','Paciente','Modalidad','Estado'],future.slice(0,12).map(a=>[datePE(a.date),timePE(a.time),getPatientName(a),a.modality==='virtual'?'Virtual':'Presencial',statusText(a.status)]))}`, label:'próximas citas'};
+        }
+        if(!range && /hoy/.test(t)) range=extractDateRange('hoy');
+        const apps=filterRange(all,range);
+        const names=state.patients||[];
+        const patientMention=names.slice().sort((a,b)=>(b.name||'').length-(a.name||'').length).find(p=>p.name && t.includes(norm(p.name)));
+
+        if(patientMention && /(historia|clinica|clínica|evolucion|evolución|motivo|hipotesis|hipótesis|recomendacion|recomendación|tarea|acuerdo)/.test(t)){
+            const h=(state.histories||[]).find(x=>x.patientId===patientMention.id) || {};
+            const notes=(state.notes||[]).filter(x=>x.patientId===patientMention.id).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+            const fields=[['Motivo de consulta',h.motivo],['Problema actual',h.problemaActual||h.problema],['Impacto',h.impacto],['Historia personal',h.historiaPersonal||h.antecedentes],['Vínculos',h.vinculos||h.familiares],['Técnicas',h.tecnicas],['Observación',h.conducta],['Hipótesis / conclusiones',h.hipotesis||h.diagnostico],['Recomendaciones',h.recomendaciones],['Frecuencia',h.frecuencia],['Enfoque',h.enfoque],['Duración',h.duracion],['Tareas / acuerdos',h.tareas]];
+            const available=fields.filter(x=>x[1]);
+            return {html:`<p class="font-semibold text-slate-800 mb-2">Información clínica registrada de ${esc(patientMention.name)}</p>${available.length?available.map(x=>`<div class="mb-3"><div class="text-[10px] font-extrabold uppercase text-slate-400">${esc(x[0])}</div><div class="text-xs text-slate-700 whitespace-pre-wrap">${esc(x[1])}</div></div>`:'<p class="text-xs text-slate-500">No hay campos clínicos registrados para este paciente.</p>'}${notes.length?`<div class="mt-3 pt-3 border-t border-slate-100"><div class="text-[10px] font-extrabold uppercase text-slate-400 mb-2">Evolución clínica</div>${notes.slice(0,8).map(n=>`<div class="mb-2 text-xs"><b>${esc(datePE(n.date||''))}</b> — ${esc(n.text||n.evolution||n.content||'')}</div>`).join('')}</div>`:''}` ,label:'historia clínica'};
+        }
+        if(patientMention && /(cita|sesion|sesión|agenda|cuando|cuándo|horario|cuantas|cuántas)/.test(t)){
+            const pa=sortApps(all.filter(a=>a.patientId===patientMention.id || norm(getPatientName(a))===norm(patientMention.name)));
+            const shown=range?filterRange(pa,range):pa;
+            return {html:`<p class="font-semibold text-slate-800 mb-2">Agenda de ${esc(patientMention.name)}</p><div class="grid grid-cols-3 gap-2 mb-3">${kpi('Citas encontradas',shown.length)}${kpi('Realizadas',shown.filter(a=>a.status==='completada').length)}${kpi('Pendientes',shown.filter(a=>a.status==='pendiente').length)}</div>${table(['Fecha','Hora','Modalidad','Estado','Importe'],shown.map(a=>[datePE(a.date),timePE(a.time),a.modality==='virtual'?'Virtual':'Presencial',statusText(a.status),money(amount(a))]))}`,label:`citas de ${patientMention.name}`};
+        }
+        if(/quien|quién|paciente.*mas|paciente.*más|mas citas|más citas/.test(t)){
+            const map={}; apps.forEach(a=>{if(active(a)){const n=getPatientName(a);map[n]=(map[n]||0)+1;}});
+            const rows=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([n,c])=>[n,String(c)]);
+            return {html:`<p class="font-semibold text-slate-800 mb-2">Pacientes con más citas — ${esc(rangeLabel(range))}</p>${table(['Paciente','Citas'],rows)}`,label:'pacientes con más citas'};
+        }
+        if(/debe|deben|deuda|pendiente.*cobrar|por cobrar|no.*pagad/.test(t)){
+            const unpaid=apps.filter(a=>active(a)&&!isPaid(a)&&amount(a)>0);
+            const total=unpaid.reduce((s,a)=>s+amount(a),0);
+            const by={}; unpaid.forEach(a=>{const n=getPatientName(a);by[n]=(by[n]||0)+amount(a);});
+            const rows=Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([n,v])=>[n,money(v)]);
+            return {html:`<p class="font-semibold text-slate-800 mb-2">Cuentas pendientes — ${esc(rangeLabel(range))}</p><div class="grid grid-cols-2 gap-2 mb-3">${kpi('Pendiente estimado',money(total))}${kpi('Citas sin pago',unpaid.length)}</div>${table(['Paciente','Monto'],rows)}`,label:'cuentas pendientes'};
+        }
+        if(/cob(re|rado)|recaud|ingreso|factur|gan[ae]|cuanto.*dinero|cuánto.*dinero/.test(t)){
+            const completed=apps.filter(a=>a.status==='completada'), billed=completed.reduce((s,a)=>s+amount(a),0), paid=completed.filter(isPaid).reduce((s,a)=>s+amount(a),0), pending=completed.filter(a=>!isPaid(a)).reduce((s,a)=>s+amount(a),0);
+            const rows=sortApps(completed).slice(0,15).map(a=>[datePE(a.date),getPatientName(a),statusText(a.status),money(amount(a)),isPaid(a)?'Pagado':'Pendiente']);
+            return {html:`<p class="font-semibold text-slate-800 mb-2">Resumen financiero — ${esc(rangeLabel(range))}</p><div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">${kpi('Devengado',money(billed))}${kpi('Cobrado',money(paid))}${kpi('Pendiente',money(pending))}${kpi('Sesiones realizadas',completed.length)}</div>${table(['Fecha','Paciente','Estado','Importe','Pago'],rows)}`,label:'resumen financiero'};
+        }
+        if(/virtual|presencial|modalidad/.test(t)){
+            const v=apps.filter(a=>a.modality==='virtual').length,p=apps.filter(a=>a.modality!=='virtual').length;
+            return {html:`<p class="font-semibold text-slate-800 mb-2">Modalidad — ${esc(rangeLabel(range))}</p><div class="grid grid-cols-2 gap-2">${kpi('Virtuales',v)}${kpi('Presenciales',p)}</div>`,label:'modalidades'};
+        }
+        if(/cancelad|reprogramad|pendiente|por dar/.test(t)){
+            const wanted=/cancelad/.test(t)?'cancelada':/reprogramad/.test(t)?'reprogramada':'pendiente';
+            const rows=sortApps(apps.filter(a=>a.status===wanted)).map(a=>[datePE(a.date),timePE(a.time),getPatientName(a),a.modality==='virtual'?'Virtual':'Presencial',statusText(a.status)]);
+            return {html:`<p class="font-semibold text-slate-800 mb-2">Citas ${wanted}s — ${esc(rangeLabel(range))}</p>${table(['Fecha','Hora','Paciente','Modalidad','Estado'],rows)}`,label:`citas ${wanted}s`};
+        }
+        if(/dia.*mas|d[ií]as.*mas|d[ií]as.*más|carga|ocupad|demanda|horario/.test(t)){
+            const map={}; apps.filter(active).forEach(a=>map[a.date]=(map[a.date]||0)+1);
+            const rows=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([d,c])=>[datePE(d),String(c)]);
+            return {html:`<p class="font-semibold text-slate-800 mb-2">Carga de citas por día — ${esc(rangeLabel(range))}</p>${table(['Fecha','Citas'],rows)}`,label:'carga de trabajo'};
+        }
+        if(/cuantas|cuántas|total.*cita|numero.*cita|número.*cita|citas/.test(t)){
+            const real=apps.filter(a=>a.status==='completada').length, pend=apps.filter(a=>a.status==='pendiente').length, canc=apps.filter(a=>a.status==='cancelada').length, repro=apps.filter(a=>a.status==='reprogramada').length;
+            return {html:`<p class="font-semibold text-slate-800 mb-2">Actividad — ${esc(rangeLabel(range))}</p><div class="grid grid-cols-2 sm:grid-cols-4 gap-2">${kpi('Total de citas',apps.length)}${kpi('Realizadas',real)}${kpi('Pendientes',pend)}${kpi('Canceladas',canc)}${kpi('Reprogramadas',repro)}</div>`,label:'actividad'};
+        }
+        if(/hola|ayuda|puedes|que puedes|qué puedes/.test(t)) return {html:`<p class="font-semibold text-slate-800 mb-2">Puedo analizar tu agenda directamente.</p><ul class="text-xs text-slate-600 space-y-1 list-disc pl-4"><li>Citas por día, semana, mes o rango personalizado.</li><li>Ingresos devengados, cobros y pendientes.</li><li>Pacientes con más citas y agenda individual.</li><li>Virtual vs. presencial.</li><li>Cancelaciones, reprogramaciones y pendientes.</li><li>Días con mayor carga de trabajo.</li><li>Información registrada en historia clínica por paciente.</li></ul><p class="text-xs text-slate-500 mt-3">Prueba: “¿Cuánto cobré del 3 de septiembre al 3 de octubre?”</p>`,label:'ayuda'};
+        return {html:`<p class="font-semibold text-slate-800 mb-2">No quiero darte una respuesta inventada.</p><p class="text-xs text-slate-600">Puedo responder preguntas sobre citas, pacientes, pagos, ingresos, deudas, modalidades, horarios, cancelaciones, reprogramaciones y rangos de fechas. Intenta formularla con el nombre del paciente o una fecha si corresponde.</p>`,label:'ayuda'};
+    }
+    function appendMessage(html,who='ai'){
+        const box=document.getElementById('assistant-messages'); if(!box)return;
+        const wrap=document.createElement('div'); wrap.className='flex gap-3 '+(who==='user'?'justify-end':'');
+        if(who==='user') wrap.innerHTML=`<div class="max-w-[88%] bg-violet-600 text-white rounded-2xl rounded-tr-md px-4 py-3 text-sm whitespace-pre-wrap">${esc(html)}</div>`;
+        else wrap.innerHTML=`<div class="w-8 h-8 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">🤖</div><div class="max-w-[92%] bg-white border border-slate-200 rounded-2xl rounded-tl-md px-4 py-3 text-sm text-slate-700">${html}</div>`;
+        box.appendChild(wrap); box.scrollTop=box.scrollHeight;
+    }
+    window.openAssistantModal=function(){ document.getElementById('assistant-modal')?.classList.remove('hidden'); document.getElementById('assistant-modal')?.classList.add('flex'); setTimeout(()=>document.getElementById('assistant-input')?.focus(),80); };
+    window.closeAssistantModal=function(){ const m=document.getElementById('assistant-modal'); if(m){m.classList.add('hidden');m.classList.remove('flex');} };
+    window.clearAssistantChat=function(){ const b=document.getElementById('assistant-messages'); if(b)b.innerHTML=''; appendMessage('<p class="font-bold text-slate-800 mb-1">Conversación limpia.</p><p>Escribe una pregunta y consultaré nuevamente los datos actuales de tu agenda.</p>'); };
+    window.assistantQuickAsk=function(q){ const i=document.getElementById('assistant-input'); if(i)i.value=q; sendAssistantMessage(); };
+    window.sendAssistantMessage=function(){
+        const input=document.getElementById('assistant-input'), q=(input?.value||'').trim(); if(!q)return;
+        appendMessage(q,'user'); input.value='';
+        const box=document.getElementById('assistant-messages'); const loading=document.createElement('div'); loading.id='assistant-loading'; loading.className='flex gap-3'; loading.innerHTML='<div class="w-8 h-8 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">🤖</div><div class="bg-slate-50 border border-slate-200 rounded-2xl rounded-tl-md px-4 py-3"><span class="assistant-loading"><i></i><i></i><i></i></span></div>'; box.appendChild(loading); box.scrollTop=box.scrollHeight;
+        setTimeout(()=>{ loading.remove(); try{const r=getData(q); appendMessage(r.html+'<div class="text-[10px] text-slate-400 mt-3 pt-2 border-t border-slate-100">Fuente: datos sincronizados de esta cuenta · '+new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})+'</div>');}catch(e){console.error('[Asistente]',e);appendMessage('<p class="text-red-600 font-semibold">No pude procesar la consulta.</p><p class="text-xs mt-1">Revisa la consola para más detalles o prueba una pregunta más específica.</p>');}},180);
+    };
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeAssistantModal(); if((e.ctrlKey||e.metaKey)&&e.key==='Enter'&&document.activeElement?.id==='assistant-input') sendAssistantMessage(); });
+})();
