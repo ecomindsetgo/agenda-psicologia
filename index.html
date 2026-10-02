@@ -676,7 +676,7 @@
                     <div class="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center text-lg">🤖</div>
                     <div>
                         <h3 class="font-bold text-sm leading-tight">Asistente personal</h3>
-                        <p class="text-[11px] text-emerald-100 flex items-center gap-1 mt-0.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-300 inline-block"></span> En línea · solo datos administrativos</p>
+                        <p class="text-[11px] text-emerald-100 flex items-center gap-1 mt-0.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-300 inline-block"></span> <span id="assistant-subtitle">En línea · solo datos administrativos</span></p>
                     </div>
                 </div>
                 <button onclick="closeAssistantModal()" class="text-emerald-100 hover:text-white transition text-xl leading-none">&times;</button>
@@ -687,6 +687,7 @@
 
             <div class="border-t border-slate-100 bg-white">
                 <div class="flex flex-wrap gap-1.5 px-3 pt-2.5">
+                    <button onclick="startClinicalMode()" class="assistant-chip" style="border-color:#c4b5fd;color:#6d28d9">🩺 Dictar historia clínica</button>
                     <button onclick="askAssistantExample('¿Qué paciente sigue?')" class="assistant-chip">Próximo paciente</button>
                     <button onclick="askAssistantExample('¿Cuántas citas tuve del 1 al 10?')" class="assistant-chip">Citas del 1 al 10</button>
                     <button onclick="askAssistantExample('¿Cuántas citas tengo hoy?')" class="assistant-chip">Citas de hoy</button>
@@ -695,9 +696,15 @@
                     <button onclick="askAssistantExample('¿Qué clientes me deben?')" class="assistant-chip">Quién me debe</button>
                     <button onclick="askAssistantExample('¿Tengo citas sin confirmar?')" class="assistant-chip">Sin confirmar</button>
                 </div>
+                <div id="assistant-clinical-bar" class="hidden mx-3 mt-2 px-3 py-2 rounded-xl bg-violet-50 border border-violet-200 text-violet-800 text-xs flex items-center justify-between gap-2">
+                    <span>🩺 Modo historia clínica · Paciente: <b data-role="patient"></b></span>
+                    <button onclick="cancelClinicalMode()" class="text-violet-600 hover:text-violet-900 font-semibold">Salir</button>
+                </div>
                 <div id="assistant-status" class="hidden text-xs rounded-xl mx-3 mt-2 p-2.5"></div>
                 <div class="p-3 flex gap-2 items-end">
                     <textarea id="assistant-question" rows="1" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); askAssistant();}" class="flex-1 border border-slate-200 rounded-full px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 max-h-24" placeholder="Escribe tu pregunta…"></textarea>
+                    <input id="assistant-audio-input" type="file" accept="audio/*,.ogg,.opus,.m4a,.mp3,.wav,.aac,.flac,.webm" class="hidden" onchange="handleAssistantAudio(this)">
+                    <button id="assistant-attach-btn" onclick="pickAssistantAudio()" class="w-10 h-10 shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full font-bold text-lg transition" title="Adjuntar audio (historia clínica)" aria-label="Adjuntar audio">📎</button>
                     <button id="assistant-voice-btn" onclick="toggleAssistantVoice()" class="w-10 h-10 shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full font-bold text-lg transition" title="Hablar" aria-label="Hablar">🎙️</button>
                     <button id="assistant-send-btn" onclick="askAssistant()" class="w-10 h-10 shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full font-bold transition" title="Enviar">➤</button>
                 </div>
@@ -1063,6 +1070,7 @@
                 <p class="text-sm text-teal-100">Ficha clínica del paciente</p>
             </div>
             <div class="flex items-center gap-3">
+                <button type="button" onclick="openAssistantForClinical()" class="bg-violet-500 hover:bg-violet-400 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">✨ Dictar con IA</button>
                 <button type="button" onclick="printClinicalHistory()" class="bg-white/15 hover:bg-white/25 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">🖨️ Imprimir</button>
                 <button type="button" onclick="closeClinicalHistory()" class="text-white text-2xl hover:text-red-300">×</button>
             </div>
@@ -1532,7 +1540,7 @@
     <!-- SheetJS: generación de archivos Excel (.xlsx) -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <script type="module" src="app.js?v=20261001-3"></script>
-    <script src="assistant.js?v=20261001-1"></script>
+    <script src="assistant.js?v=20261001-2"></script>
     <script src="ui.js"></script>
 </body>
 </html>

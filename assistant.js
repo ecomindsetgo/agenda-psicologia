@@ -1,8 +1,15 @@
+/* Asistente IA - Agenda Psicología Pro+
+   Consultas administrativas: Gemini recibe SOLO la pregunta para clasificar la intención;
+   los datos de agenda se procesan localmente. Nunca se envían historias existentes.
+   Modo Historia Clínica (opt-in): se envía a Gemini ÚNICAMENTE el texto/audio que la
+   profesional dicta o adjunta en ese momento, para ordenarlo en los campos de la ficha.
+   Nada se guarda automáticamente: la profesional revisa y pulsa "Guardar Historia Clínica".
+*/
 (function () {
   'use strict';
 
   const KEY_NAME = 'agenda_pro_gemini_api_key';
-  const APP_VERSION = '2026.10.01.1';
+  const APP_VERSION = '2026.10.01.2';
   const MODEL = 'gemini-2.0-flash';
   let lastAnswerText = '';
   let voiceQueryActive = false;
@@ -98,7 +105,7 @@
   function greetingMessage() {
     const name = specialistName();
     const hello = name ? `Hola ${escapeHtml(name)} 👋` : 'Hola 👋';
-    return `<div class="assistant-title">${hello}</div><div>Soy tu asistente personal de la agenda. Puedo revisar tus citas, pacientes, horarios libres e ingresos al instante. ¿En qué puedo ayudarte hoy?</div><div class="mt-2 text-[11px] text-slate-400">🔒 Tus historias clínicas y notas nunca se leen ni se envían a ningún lado; solo trabajo con fechas, nombres y montos de la agenda.</div>`;
+    return `<div class="assistant-title">${hello}</div><div>Soy tu asistente personal de la agenda. Puedo revisar tus citas, pacientes, horarios libres e ingresos al instante. ¿En qué puedo ayudarte hoy?</div><div class="mt-2 text-[11px] text-slate-400">🔒 Para consultas de agenda solo uso fechas, nombres y montos, y nunca leo tus historias existentes. Si activas «Dictar historia clínica», únicamente lo que dictes o adjuntes en ese momento se envía a Gemini para ordenarlo en la ficha.</div>`;
   }
 
   // Muestra el saludo inicial solo una vez por sesión de chat (mientras el
@@ -130,6 +137,7 @@
     if (!modal) return;
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    modal.style.zIndex = '';
   }
 
   // Burbuja tipo "widget de WhatsApp" que aparece sola una vez, invitando a
@@ -901,12 +909,13 @@ Pregunta: ${question}`;
   let isListening = false;
 
   function toggleAssistantVoice() {
-    voiceQueryActive = true;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setStatus('Tu navegador no admite dictado por voz. Usa Google Chrome o Microsoft Edge.', 'error');
       return;
     }
+    if (clinicalMode) { toggleClinicalDictation(SpeechRecognition); return; }
+    voiceQueryActive = true;
     if (isListening && recognition) { recognition.stop(); return; }
 
     recognition = new SpeechRecognition();
@@ -968,6 +977,8 @@ Pregunta: ${question}`;
     if (btn) { btn.disabled = true; btn.textContent = '…'; }
     showTyping();
     try {
+      if (pendingClinical) { hideTyping(); await continuePendingClinical(question); return; }
+      if (clinicalMode || isClinicalCommand(question)) { hideTyping(); await handleClinicalInput({ text: question }); return; }
       // Un rango explícito siempre tiene prioridad sobre la clasificación IA.
       // Así Gemini no puede convertir '07/09 al 03/10' en una consulta genérica de mes.
       let intent = parseDateRange(question) ? 'range' : localIntent(question);
@@ -1004,6 +1015,449 @@ Pregunta: ${question}`;
     if (input) input.value = text;
     askAssistant();
   }
+
+
+  /* =====================================================================
+     HISTORIA CLÍNICA ASISTIDA POR IA
+     La profesional dicta, escribe o adjunta un audio; Gemini lo ordena en
+     los campos de la ficha. Se rellena el formulario abierto (sin guardar).
+     ===================================================================== */
+  const HC_CONSENT_KEY = 'agenda_pro_hc_ai_consent_v1';
+  const HC_MAX_AUDIO_BYTES = 14 * 1024 * 1024; // el límite de la petición inline es ~20 MB (base64 +33%)
+  let clinicalMode = false;
+  let clinicalPatientId = '';
+  let pendingClinical = null; // { text, audio } esperando que se indique el paciente
+  let clinicalListening = false;
+  let clinicalUserStopped = false;
+  let clinicalRecognition = null;
+
+  const HC_FIELDS = [
+    { key: 'motivo', id: 'hc-motivo', label: 'Motivo de consulta' },
+    { key: 'problema', id: 'hc-problema', label: 'Problema actual' },
+    { key: 'impacto', id: 'hc-impacto', label: 'Impacto en su vida' },
+    { key: 'historiaPersonal', id: 'hc-historia-personal', label: 'Historia personal relevante' },
+    { key: 'vinculos', id: 'hc-vinculos', label: 'Vínculos y relaciones' },
+    { key: 'tecnicas', id: 'hc-tecnicas', label: 'Técnicas e instrumentos' },
+    { key: 'conducta', id: 'hc-conducta', label: 'Observación de conducta' },
+    { key: 'hipotesis', id: 'hc-hipotesis', label: 'Hipótesis / conclusiones' },
+    { key: 'recomendaciones', id: 'hc-recomendaciones', label: 'Recomendaciones' },
+    { key: 'tareas', id: 'hc-tareas', label: 'Tareas / acuerdos' },
+    { key: 'frecuencia', id: 'hc-frecuencia', label: 'Frecuencia', short: true },
+    { key: 'enfoque', id: 'hc-enfoque', label: 'Enfoque', short: true },
+    { key: 'duracion', id: 'hc-duracion', label: 'Duración sugerida', short: true },
+    { key: 'ocupacion', id: 'hc-occupation', label: 'Ocupación', short: true },
+    { key: 'estadoCivil', id: 'hc-civil-status', label: 'Estado civil', select: true }
+  ];
+
+  function isClinicalCommand(q) {
+    const x = normalizeQuestion(q);
+    return /\b(anota|anotar|registra|registrar|llena|llenar|completa|completar|agrega|agregar|actualiza|actualizar|escribe|redacta)\b.*\b(historia|evolucion|ficha)\b/.test(x)
+      || /^\s*(historia clinica|evolucion|ficha clinica)\s+(de|del|para)\b/.test(x)
+      || /\bdictar?\b.*\bhistoria\b/.test(x);
+  }
+
+  function patientById(id) {
+    return (getData().patients || []).find(p => String(p.id) === String(id)) || null;
+  }
+
+  // Busca un paciente nombrado en el texto: nombre completo, o nombre + apellido, o nombre único.
+  function findPatientInText(text) {
+    const patients = (getData().patients || []).filter(p => p && p.name);
+    const qn = normalizeQuestion(text || '');
+    const full = patients
+      .filter(p => qn.includes(normalizeQuestion(p.name)))
+      .sort((a, b) => b.name.length - a.name.length);
+    if (full.length) return { patient: full[0] };
+    const words = new Set(qn.split(/[^a-z0-9]+/).filter(w => w.length > 2));
+    const scored = patients.map(p => {
+      const tokens = normalizeQuestion(p.name).split(/[^a-z0-9]+/).filter(w => w.length > 3);
+      return { p, score: tokens.filter(t => words.has(t)).length };
+    }).filter(x => x.score > 0);
+    if (!scored.length) return null;
+    const best = Math.max.apply(null, scored.map(x => x.score));
+    const top = scored.filter(x => x.score === best);
+    if (top.length === 1) return { patient: top[0].p };
+    return { ambiguous: top.map(x => x.p) };
+  }
+
+  function openClinicalPatientId() {
+    const modal = $('clinical-history-modal');
+    if (!modal || modal.style.display !== 'flex') return '';
+    const el = $('hc-patient-id');
+    return el ? String(el.value || '') : '';
+  }
+
+  function updateClinicalBar() {
+    const bar = $('assistant-clinical-bar');
+    const sub = $('assistant-subtitle');
+    const q = $('assistant-question');
+    const p = clinicalPatientId ? patientById(clinicalPatientId) : null;
+    if (bar) {
+      bar.classList.toggle('hidden', !clinicalMode);
+      const name = bar.querySelector('[data-role="patient"]');
+      if (name) name.textContent = p ? p.name : 'se indicará en el mensaje';
+    }
+    if (sub) sub.textContent = clinicalMode ? 'Modo historia clínica · el contenido se envía a Gemini' : 'En línea · solo datos administrativos';
+    if (q) q.placeholder = clinicalMode ? 'Dicta o escribe lo trabajado en la sesión…' : 'Escribe tu pregunta…';
+  }
+
+  function startClinicalMode(patientId) {
+    clinicalMode = true;
+    pendingClinical = null;
+    clinicalPatientId = patientId ? String(patientId) : '';
+    updateClinicalBar();
+    ensureGreeting();
+    const p = clinicalPatientId ? patientById(clinicalPatientId) : null;
+    appendBotMessage(`<div class="assistant-title">🩺 Modo historia clínica</div><div>${p ? 'Paciente: <b>' + escapeHtml(p.name) + '</b>. ' : 'Indica el paciente en tu mensaje (por ejemplo: «María López: …»). '}Dicta con 🎙️, escribe, o adjunta un audio con 📎. Completaré los campos de la ficha y tú revisas antes de guardar.</div>`);
+    const q = $('assistant-question');
+    if (q) setTimeout(() => q.focus(), 100);
+  }
+
+  function cancelClinicalMode() {
+    clinicalMode = false;
+    clinicalPatientId = '';
+    pendingClinical = null;
+    if (clinicalListening && clinicalRecognition) { clinicalUserStopped = true; try { clinicalRecognition.stop(); } catch (_) {} }
+    updateClinicalBar();
+  }
+
+  // Abre el chat por encima de la ficha clínica ya abierta, con el paciente preseleccionado.
+  function openAssistantForClinical(patientId) {
+    openAssistantModal();
+    const modal = $('assistant-modal');
+    if (modal) modal.style.zIndex = '10000';
+    startClinicalMode(patientId || openClinicalPatientId());
+  }
+
+  function ensureClinicalConsent() {
+    if (localStorage.getItem(HC_CONSENT_KEY) === 'yes') return true;
+    const ok = confirm('El modo Historia Clínica envía a Gemini (Google) el texto o audio que dictes o adjuntes, solo para ordenarlo en la ficha. Las consultas de agenda siguen resolviéndose en tu navegador.\n\nÚsalo únicamente si cuentas con el consentimiento informado del paciente para este tratamiento de sus datos.\n\n¿Continuar?');
+    if (ok) localStorage.setItem(HC_CONSENT_KEY, 'yes');
+    return ok;
+  }
+
+  function buildClinicalPrompt(hasAudio) {
+    const keys = HC_FIELDS.map(f => '"' + f.key + '"').join(', ');
+    return `Eres un asistente de redacción clínica para una psicóloga. ${hasAudio ? 'Recibirás un audio (dictado de la profesional o grabación de una sesión)' : 'Recibirás un texto dictado o escrito por la profesional'} con información de un paciente. Tu tarea es ordenar SOLO lo que se dijo dentro de los campos de una historia clínica psicológica.
+Devuelve únicamente un objeto JSON con estas claves de tipo texto: ${keys}; y la clave "evolucion", un objeto con "fecha" (AAAA-MM-DD), "sesion" y "texto".
+Reglas estrictas:
+- Usa únicamente información presente en el contenido. NO inventes, NO completes con suposiciones y NO propongas diagnósticos: "hipotesis" solo si la profesional los formuló explícitamente.
+- Si un campo no se menciona, devuélvelo como "" (cadena vacía).
+- Redacta en español, en tercera persona, con tono clínico profesional y conciso, fiel a lo dicho; elimina muletillas y repeticiones.
+- "estadoCivil" debe ser exactamente uno de: Soltera(o), Casada(o), Viuda(o), Separada(o), Conviviente; o "".
+- "evolucion.texto" resume lo ocurrido en la sesión descrita (temas tratados, intervenciones, respuesta del paciente, acuerdos). Déjalo "" si el contenido son solo datos generales de la historia y no describe una sesión concreta.
+- "evolucion.fecha": la fecha indicada o, si no se menciona, ${todayLima()}. "evolucion.sesion": por ejemplo "Sesión 3" solo si se menciona; si no, "".
+- Responde solo con el JSON, sin comentarios ni markdown.`;
+  }
+
+  function parseJsonLoose(raw) {
+    let t = String(raw || '').trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+    try { return JSON.parse(t); } catch (_) {}
+    const a = t.indexOf('{'), b = t.lastIndexOf('}');
+    if (a !== -1 && b > a) { try { return JSON.parse(t.slice(a, b + 1)); } catch (_) {} }
+    throw new Error('No pude interpretar la respuesta de Gemini. Inténtalo de nuevo.');
+  }
+
+  async function extractClinicalWithGemini(content) {
+    const key = localStorage.getItem(KEY_NAME);
+    if (!key) throw new Error('Configura tu clave de Gemini (botón ⚙️ Gemini, abajo) para usar esta función.');
+    const parts = [{ text: buildClinicalPrompt(!!content.audio) }];
+    if (content.text) parts.push({ text: 'CONTENIDO:\n' + content.text });
+    if (content.audio) parts.push({ inline_data: { mime_type: content.audio.mime, data: content.audio.data } });
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(key)}`;
+    const response = await fetch(url, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 4096, responseMimeType: 'application/json' }
+      })
+    });
+    if (!response.ok) {
+      let detail = '';
+      try { const err = await response.json(); detail = (err && err.error && err.error.message) || ''; } catch (_) {}
+      throw new Error('Gemini respondió con HTTP ' + response.status + (detail ? ': ' + detail : ''));
+    }
+    const data = await response.json();
+    const raw = (((data.candidates || [])[0] || {}).content || {}).parts?.map(p => p.text || '').join('') || '';
+    if (!raw) throw new Error('Gemini no devolvió contenido. Prueba con un texto o audio más claro.');
+    return parseJsonLoose(raw);
+  }
+
+  function markAiField(el) {
+    if (!el) return;
+    el.style.boxShadow = '0 0 0 2px #a78bfa';
+    el.addEventListener('input', () => { el.style.boxShadow = ''; }, { once: true });
+  }
+
+  function clinicalHasContent(data) {
+    if (!data || typeof data !== 'object') return false;
+    const anyField = HC_FIELDS.some(f => typeof data[f.key] === 'string' && data[f.key].trim());
+    const ev = data.evolucion;
+    return anyField || !!(ev && typeof ev.texto === 'string' && ev.texto.trim());
+  }
+
+  // Rellena el formulario de la historia clínica SIN guardar. Nunca borra ni pisa lo ya escrito:
+  // en textos largos añade debajo; en campos cortos solo rellena si están vacíos.
+  function applyClinicalToForm(patient, data) {
+    const modal = $('clinical-history-modal');
+    const openId = openClinicalPatientId();
+    if (String(openId) !== String(patient.id)) {
+      if (openId && !confirm('Tienes abierta la historia de otro paciente. Si continúas se cerrará sin guardar sus cambios pendientes. ¿Continuar?')) return null;
+      if (typeof window.openClinicalHistory !== 'function') throw new Error('No encontré la ventana de Historia Clínica en la página.');
+      window.openClinicalHistory(patient.id);
+    }
+    if (openClinicalPatientId() !== String(patient.id)) throw new Error('No se pudo abrir la historia clínica del paciente.');
+
+    const stamp = todayLima().split('-').reverse().join('/');
+    const filled = [], skipped = [], marked = [];
+    HC_FIELDS.forEach(f => {
+      const el = $(f.id);
+      const val = typeof data[f.key] === 'string' ? data[f.key].trim() : '';
+      if (!el || !val) return;
+      const current = String(el.value || '').trim();
+      const same = normalizeQuestion(current) === normalizeQuestion(val);
+      if (f.select) {
+        const opt = Array.from(el.options).find(o => normalizeQuestion(o.text) === normalizeQuestion(val));
+        if (!opt) return;
+        if (!current) { el.value = opt.value; filled.push(f.label); marked.push(el); markAiField(el); }
+        else if (!same) skipped.push(f.label);
+        return;
+      }
+      if (!current) { el.value = val; filled.push(f.label); marked.push(el); markAiField(el); return; }
+      if (f.short) { if (!same) skipped.push(f.label); return; }
+      if (!normalizeQuestion(current).includes(normalizeQuestion(val))) {
+        el.value = current + '\n\n[Añadido con IA · ' + stamp + ']\n' + val;
+        filled.push(f.label + ' (añadido al final)'); marked.push(el); markAiField(el);
+      }
+    });
+
+    let noteAdded = false;
+    const ev = data.evolucion || {};
+    const evText = typeof ev.texto === 'string' ? ev.texto.trim() : '';
+    if (evText && typeof window.newClinicalNote === 'function') {
+      window.newClinicalNote({});
+      const cards = document.querySelectorAll('#clinical-notes-container > div');
+      const card = cards[cards.length - 1];
+      if (card) {
+        card.querySelector('.note-date').value = /^\d{4}-\d{2}-\d{2}$/.test(String(ev.fecha || '')) ? ev.fecha : todayLima();
+        card.querySelector('.note-session').value = (ev.sesion && String(ev.sesion).trim()) || ('Sesión ' + cards.length);
+        const ta = card.querySelector('.note-text');
+        ta.value = evText;
+        markAiField(ta);
+        marked.push(card);
+        noteAdded = true;
+      }
+    }
+
+    // Aviso dentro de la ficha para que la revisión sea evidente.
+    const body = modal.querySelector('.overflow-y-auto');
+    if (body) {
+      const old = $('hc-ai-banner'); if (old) old.remove();
+      const banner = document.createElement('div');
+      banner.id = 'hc-ai-banner';
+      banner.className = 'mb-4 p-3 rounded-xl border border-violet-200 bg-violet-50 text-violet-800 text-sm flex items-start justify-between gap-3';
+      banner.innerHTML = '<div>✨ <b>Completado con IA.</b> Revisa los campos resaltados en violeta' + (noteAdded ? ' y la nueva evolución al final' : '') + '; aún <b>no está guardado</b>. Pulsa «Guardar Historia Clínica» cuando estés conforme.</div><button type="button" class="text-violet-500 hover:text-violet-800 text-lg leading-none" onclick="this.parentElement.remove()">×</button>';
+      body.insertBefore(banner, body.firstChild);
+      body.scrollTop = 0;
+      if (marked[0]) setTimeout(() => { try { marked[0].scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) {} }, 300);
+    }
+    return { filled, skipped, noteAdded };
+  }
+
+  async function runClinicalFill(patient, content) {
+    if (!ensureClinicalConsent()) {
+      appendBotMessage('Entendido, no envié nada a Gemini. Puedes escribir la historia manualmente en la ficha.');
+      return;
+    }
+    showTyping();
+    let data;
+    try {
+      data = await extractClinicalWithGemini(content);
+    } catch (e) {
+      console.error(e);
+      hideTyping();
+      appendBotMessage('<div class="assistant-title">⚠️ No pude procesar el contenido</div><div>' + escapeHtml(e.message || 'Error inesperado.') + '</div>');
+      return;
+    }
+    hideTyping();
+    if (!clinicalHasContent(data)) {
+      appendBotMessage('No encontré información clínica que pueda ordenar en ese contenido. Cuéntame un poco más (motivo, situación actual, lo trabajado en sesión…).');
+      return;
+    }
+    let result;
+    try { result = applyClinicalToForm(patient, data); }
+    catch (e) { console.error(e); appendBotMessage('⚠️ ' + escapeHtml(e.message || 'No pude abrir la ficha.')); return; }
+    if (!result) { appendBotMessage('Cancelado. No modifiqué ninguna ficha.'); pendingClinical = content; clinicalPatientId = ''; return; }
+
+    const lines = [];
+    if (result.filled.length) lines.push('<b>Campos:</b> ' + result.filled.map(escapeHtml).join(', '));
+    if (result.noteAdded) lines.push('<b>Nueva evolución</b> agregada.');
+    if (result.skipped.length) lines.push('No sobrescribí (ya tenían otro valor): ' + result.skipped.map(escapeHtml).join(', '));
+    appendBotMessage('<div class="assistant-title">✅ Ficha de ' + escapeHtml(patient.name) + ' completada (sin guardar)</div><div>' + (lines.join('<br>') || 'No había cambios nuevos.') + '</div><div class="mt-2 text-[11px] text-slate-500">Revisa y pulsa «Guardar Historia Clínica».</div>');
+    cancelClinicalMode();
+    setTimeout(closeAssistantModal, 1100);
+  }
+
+  async function handleClinicalInput(content) {
+    const text = (content.text || '').trim();
+    let patient = null;
+    if (clinicalPatientId) patient = patientById(clinicalPatientId);
+    if (!patient) {
+      const r = findPatientInText(text);
+      if (r && r.ambiguous) {
+        pendingClinical = content;
+        appendBotMessage('Hay varios pacientes que coinciden: <b>' + r.ambiguous.map(p => escapeHtml(p.name)).join('</b>, <b>') + '</b>. Escribe el nombre completo del paciente (o «cancelar»).');
+        return;
+      }
+      if (r && r.patient) patient = r.patient;
+    }
+    if (!patient) {
+      const openId = openClinicalPatientId();
+      if (openId) patient = patientById(openId);
+    }
+    if (!patient) {
+      if (!clinicalMode && !content.audio && text.split(/\s+/).length < 8) {
+        startClinicalMode('');
+        return;
+      }
+      pendingClinical = content;
+      appendBotMessage('¿De qué paciente es? Escribe su nombre completo (o «cancelar»).');
+      return;
+    }
+    // Orden corto sin contenido, p. ej. «historia clínica de María»: entra al modo y espera el dictado.
+    if (!clinicalMode && !content.audio && text.split(/\s+/).length < 8) {
+      startClinicalMode(patient.id);
+      return;
+    }
+    clinicalPatientId = String(patient.id);
+    await runClinicalFill(patient, content);
+  }
+
+  async function continuePendingClinical(question) {
+    if (/^\s*(cancelar|cancela|olvidalo|olvídalo|no)\s*[.!]?\s*$/i.test(question)) {
+      pendingClinical = null;
+      appendBotMessage('Listo, descarté ese contenido. No se envió nada a Gemini.');
+      return;
+    }
+    const r = findPatientInText(question);
+    if (!r || !r.patient) {
+      appendBotMessage(r && r.ambiguous
+        ? 'Sigue habiendo más de una coincidencia: ' + r.ambiguous.map(p => escapeHtml(p.name)).join(', ') + '. Escribe el nombre completo.'
+        : 'No encontré ese paciente en tu lista. Escribe su nombre tal como aparece en la agenda (o «cancelar»).');
+      return;
+    }
+    const content = pendingClinical;
+    pendingClinical = null;
+    clinicalPatientId = String(r.patient.id);
+    await runClinicalFill(r.patient, content);
+  }
+
+  // ---- Audio adjunto ----
+  const AUDIO_MIME_BY_EXT = { mp3: 'audio/mp3', wav: 'audio/wav', ogg: 'audio/ogg', oga: 'audio/ogg', opus: 'audio/ogg',
+    m4a: 'audio/mp4', mp4: 'audio/mp4', aac: 'audio/aac', flac: 'audio/flac', aiff: 'audio/aiff', webm: 'audio/webm' };
+
+  function guessAudioMime(file) {
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (AUDIO_MIME_BY_EXT[ext]) return AUDIO_MIME_BY_EXT[ext];
+    if (file.type === 'audio/mpeg') return 'audio/mp3';
+    return file.type || 'audio/ogg';
+  }
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result).split(',')[1] || '');
+      r.onerror = () => reject(new Error('No pude leer el archivo de audio.'));
+      r.readAsDataURL(file);
+    });
+  }
+
+  function pickAssistantAudio() {
+    const input = $('assistant-audio-input');
+    if (input) input.click();
+  }
+
+  async function handleAssistantAudio(inputEl) {
+    const file = inputEl && inputEl.files && inputEl.files[0];
+    if (inputEl) inputEl.value = '';
+    if (!file) return;
+    if (file.size > HC_MAX_AUDIO_BYTES) {
+      setStatus('El audio pesa ' + (file.size / 1048576).toFixed(1) + ' MB y el máximo es 14 MB. Recórtalo o expórtalo en menor calidad.', 'error');
+      return;
+    }
+    ensureGreeting();
+    const q = $('assistant-question');
+    const extra = q ? q.value.trim() : '';
+    if (q) q.value = '';
+    appendUserMessage('🎧 ' + file.name + ' (' + (file.size / 1048576).toFixed(1) + ' MB)' + (extra ? ' — ' + extra : ''));
+    if (pendingClinical) {
+      // Si ya había contenido esperando paciente, el nombre puede venir en el texto acompañante.
+      const r = findPatientInText(extra);
+      if (!r || !r.patient) { appendBotMessage('Primero indícame el paciente del contenido anterior (o «cancelar»).'); return; }
+    }
+    showTyping();
+    try {
+      const audio = { mime: guessAudioMime(file), data: await fileToBase64(file), name: file.name };
+      hideTyping();
+      await handleClinicalInput({ text: extra, audio });
+    } catch (e) {
+      hideTyping();
+      appendBotMessage('⚠️ ' + escapeHtml(e.message || 'No pude procesar el audio.'));
+    }
+  }
+
+  // ---- Dictado largo (modo clínico): continuo, sin enviar solo ----
+  function toggleClinicalDictation(SR) {
+    if (clinicalListening) {
+      clinicalUserStopped = true;
+      try { clinicalRecognition.stop(); } catch (_) {}
+      return;
+    }
+    clinicalUserStopped = false;
+    clinicalListening = true;
+    isListening = true;
+    updateVoiceButton();
+    setStatus('🎙️ Dictando… habla con calma. Pulsa ⏹️ al terminar y luego ➤ para enviar.', 'info');
+    const input = $('assistant-question');
+    const startSession = () => {
+      const base = input ? input.value.trim() : '';
+      let finalText = '';
+      const rec = new SR();
+      clinicalRecognition = rec;
+      rec.lang = 'es-PE';
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.onresult = (event) => {
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const t = event.results[i][0].transcript;
+          if (event.results[i].isFinal) finalText += t; else interim += t;
+        }
+        if (input) input.value = (base + ' ' + finalText + interim).trim();
+      };
+      rec.onend = () => {
+        // Chrome corta el reconocimiento tras silencios: se reanuda hasta que la profesional lo detenga.
+        if (!clinicalUserStopped && clinicalMode) { try { startSession(); return; } catch (_) {} }
+        clinicalListening = false;
+        isListening = false;
+        updateVoiceButton();
+        setStatus('Dictado detenido. Revisa el texto y pulsa ➤ para enviarlo.', 'info');
+      };
+      rec.onerror = (event) => {
+        if (event.error === 'no-speech' || event.error === 'aborted') return;
+        clinicalUserStopped = true;
+        setStatus(event.error === 'not-allowed' ? 'Debes permitir el acceso al micrófono en el navegador.' : 'No se pudo usar el micrófono: ' + event.error, 'error');
+      };
+      rec.start();
+    };
+    startSession();
+  }
+
+  window.startClinicalMode = startClinicalMode;
+  window.cancelClinicalMode = cancelClinicalMode;
+  window.openAssistantForClinical = openAssistantForClinical;
+  window.pickAssistantAudio = pickAssistantAudio;
+  window.handleAssistantAudio = handleAssistantAudio;
 
   console.info('[Asistente IA] versión', APP_VERSION);
   window.openAssistantModal = openAssistantModal;

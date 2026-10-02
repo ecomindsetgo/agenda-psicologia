@@ -24,3 +24,12 @@ Archivos relevantes:
 - assistant.js: motor completo del asistente IA.
 - index.html: interfaz del chat y botón flotante.
 - style.css: estilos del chat y widget.
+
+## Historia clínica asistida por IA (nuevo)
+
+- Botón «✨ Dictar con IA» dentro de la ficha clínica, o chip «🩺 Dictar historia clínica» / órdenes como «anota en la historia de María: …» en el chat.
+- Entrada por texto, dictado de voz continuo (🎙️) o audio adjunto (📎: .ogg/.opus de WhatsApp, .mp3, .m4a, .wav…; máx. 14 MB).
+- Gemini ordena el contenido en los campos de la historia y, si describe una sesión, crea una nueva Evolución.
+- No inventa ni diagnostica; no sobrescribe lo ya escrito (añade debajo en campos largos; en campos cortos solo rellena los vacíos).
+- Nada se guarda solo: los campos quedan resaltados en violeta y la profesional pulsa «Guardar Historia Clínica».
+- Privacidad: solo se envía a Gemini lo que se dicta/adjunta en ese momento, previa confirmación de consentimiento (una vez por navegador). Las historias ya guardadas nunca se envían.
