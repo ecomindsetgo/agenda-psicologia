@@ -1,13 +1,13 @@
 /* Asistente IA administrativo - Agenda Psicología Pro+
-   Gemini interpreta consultas y acciones. Las consultas administrativas se calculan localmente.
-   Las acciones clínicas solo se ejecutan para el paciente identificado y se muestran
-   para confirmación antes de guardar. No se inventan datos clínicos faltantes.
+   Gemini recibe SOLO la pregunta del usuario para clasificar la intención.
+   Los datos administrativos se procesan localmente en el navegador.
+   Nunca se envían historias, notas, diagnósticos ni motivos de consulta.
 */
 (function () {
   'use strict';
 
   const KEY_NAME = 'agenda_pro_gemini_api_key';
-  const APP_VERSION = '2026.10.01.2';
+  const APP_VERSION = '2026.10.01.1';
   const MODEL = 'gemini-2.0-flash';
   let lastAnswerText = '';
   let voiceQueryActive = false;
@@ -22,159 +22,6 @@
     lastPatient: '',
     lastAnswerAt: 0
   };
-
-  // Acción pendiente de confirmación. La IA propone; la aplicación valida y ejecuta.
-  let pendingAction = null;
-
-  const CLINICAL_FIELDS = {
-    patientAge: 'hc-patient-age', civilStatus: 'hc-civil-status', occupation: 'hc-occupation',
-    motivo: 'hc-motivo', problema: 'hc-problema', impacto: 'hc-impacto',
-    historiaPersonal: 'hc-historia-personal', vinculos: 'hc-vinculos', tecnicas: 'hc-tecnicas',
-    conducta: 'hc-conducta', hipotesis: 'hc-hipotesis', recomendaciones: 'hc-recomendaciones',
-    frecuencia: 'hc-frecuencia', enfoque: 'hc-enfoque', duracion: 'hc-duracion', tareas: 'hc-tareas'
-  };
-
-  function currentPatientByName(name) {
-    const data = getData();
-    const patients = Array.isArray(data.patients) ? data.patients : [];
-    const q = normalizeQuestion(name || '').trim();
-    if (!q) return null;
-    const exact = patients.find(p => normalizeQuestion(p.name || '') === q);
-    if (exact) return exact;
-    return patients.find(p => normalizeQuestion(p.name || '').includes(q) || q.includes(normalizeQuestion(p.name || ''))) || null;
-  }
-
-  function getPatientFull(patientId) {
-    try {
-      const snap = window.getAgendaAdminSnapshot ? window.getAgendaAdminSnapshot() : null;
-      const p = (snap && snap.patients || []).find(x => x.id === patientId);
-      return p || null;
-    } catch (_) { return null; }
-  }
-
-  function actionFieldText(v) {
-    return v == null || v === '' ? '—' : String(v);
-  }
-
-  function actionSummary(action) {
-    const p = action.patient || {};
-    if (action.type === 'create_patient') {
-      return `<div class="assistant-title">👤 Nuevo paciente</div><div><b>Nombre:</b> ${escapeHtml(action.name)}<br><b>Teléfono:</b> ${escapeHtml(action.phone || '—')}<br><b>Edad:</b> ${escapeHtml(action.age || '—')}</div>`;
-    }
-    if (action.type === 'schedule_appointment') {
-      const type = action.attentionType === 'pareja' ? 'Pareja' : 'Individual';
-      const mod = action.modality === 'virtual' ? 'Virtual' : 'Presencial';
-      const payment = action.paymentStatus === 'pagado' ? 'Pagado' : 'Pendiente';
-      return `<div class="assistant-title">📅 Nueva cita</div><div><b>Paciente:</b> ${escapeHtml(p.name)}<br><b>Fecha:</b> ${formatDate(action.date)}<br><b>Hora:</b> ${escapeHtml(formatTime12(action.time))}<br><b>Tipo:</b> ${type}<br><b>Modalidad:</b> ${mod}<br><b>Pago:</b> ${payment}<br><b>Tarifa:</b> Se calculará con la tarifa vigente de la agenda.</div>`;
-    }
-    if (action.type === 'update_clinical_history') {
-      const entries = Object.entries(action.fields || {}).filter(([,v]) => v != null && String(v).trim() !== '');
-      return `<div class="assistant-title">🧠 Completar Historia Clínica</div><div><b>Paciente:</b> ${escapeHtml(p.name)}<br><b>Campos a completar:</b> ${entries.length}</div><ul class="assistant-list mt-2">${entries.slice(0,8).map(([k,v]) => `<li><b>${escapeHtml(k)}:</b> ${escapeHtml(String(v).slice(0,180))}</li>`).join('')}</ul>${entries.length>8?'<div class="text-xs text-slate-400">…y más campos.</div>':''}`;
-    }
-    if (action.type === 'add_clinical_note') {
-      return `<div class="assistant-title">📝 Nueva evolución clínica</div><div><b>Paciente:</b> ${escapeHtml(p.name)}<br><b>Sesión:</b> ${escapeHtml(action.session || '—')}<br><b>Fecha:</b> ${formatDate(action.date || todayLima())}</div><div class="mt-2">${escapeHtml(action.evolution || '')}</div>`;
-    }
-    return '';
-  }
-
-  function showActionConfirmation(action) {
-    pendingAction = action;
-    const html = actionSummary(action) + `<div class="mt-3 flex gap-2"><button type="button" onclick="confirmAssistantAction()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-xl text-xs font-bold">✅ Confirmar y guardar</button><button type="button" onclick="cancelAssistantAction()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-semibold">Cancelar</button></div>`;
-    appendBotMessage(html);
-    setStatus('Revisa la acción y confirma antes de guardar.', 'info');
-  }
-
-  function fillInput(id, value, overwrite) {
-    const el = $(id);
-    if (!el || value == null) return;
-    if (!overwrite && String(el.value || '').trim()) return;
-    el.value = String(value);
-    el.dispatchEvent(new Event('input', { bubbles: true }));
-    el.dispatchEvent(new Event('change', { bubbles: true }));
-  }
-
-  async function executeAssistantAction(action) {
-    if (!action || !action.type) throw new Error('Acción no reconocida.');
-    if (action.type === 'create_patient') {
-      if (!action.name || !action.phone) throw new Error('Para crear el paciente necesito nombre y teléfono.');
-      window.openPatientModal(false);
-      fillInput('pat-name', action.name, true);
-      fillInput('pat-dni', action.dni, true);
-      fillInput('pat-phone', action.phone, true);
-      fillInput('pat-birth', action.birth, true);
-      fillInput('pat-age', action.age, true);
-      fillInput('pat-history', action.history, true);
-      fillInput('pat-currency', action.currency || 'PEN', true);
-      document.getElementById('patient-form').requestSubmit();
-      return 'Paciente registrado. La lista se actualizará automáticamente.';
-    }
-    if (action.type === 'schedule_appointment') {
-      const patient = currentPatientByName(action.patientName || (action.patient && action.patient.name));
-      if (!patient) throw new Error('No encontré ese paciente. Primero regístralo o indica el nombre exacto.');
-      if (!action.date || !action.time) throw new Error('Falta fecha u hora para la cita.');
-      window.openAppointmentModal(false);
-      fillInput('app-patient-select', patient.id, true);
-      const sel = $('app-patient-select'); if (sel) sel.value = patient.id;
-      const dateEl = $('app-date'); if (dateEl) dateEl.value = action.date;
-      const timeEl = $('app-time'); if (timeEl) timeEl.value = action.time;
-      const att = action.attentionType === 'pareja' ? 'app-attention-pareja' : 'app-attention-individual';
-      const mod = action.modality === 'virtual' ? 'app-modality-virtual' : 'app-modality-presencial';
-      const attEl = $(att); if (attEl) attEl.checked = true;
-      const modEl = $(mod); if (modEl) modEl.checked = true;
-      const rate = $('app-rate-type'); if (rate) rate.value = action.rateType || 'sesion';
-      const pay = $('app-payment'); if (pay) pay.value = action.paymentStatus === 'pagado' ? 'pagado' : 'pendiente';
-      const status = $('app-status'); if (status) status.value = 'pendiente';
-      if (typeof window.autoSelectPatientPackage === 'function') window.autoSelectPatientPackage();
-      if (typeof window.updateAppointmentPricing === 'function') window.updateAppointmentPricing();
-      await new Promise(r => setTimeout(r, 80));
-      document.getElementById('appointment-form').requestSubmit();
-      return `Cita preparada y registrada para ${patient.name}. La tarifa fue calculada por la agenda.`;
-    }
-    if (action.type === 'update_clinical_history') {
-      const patient = currentPatientByName(action.patientName || (action.patient && action.patient.name));
-      if (!patient) throw new Error('No encontré al paciente para actualizar su Historia Clínica.');
-      window.openClinicalHistory(patient.id);
-      const fields = action.fields || {};
-      Object.entries(CLINICAL_FIELDS).forEach(([key,id]) => {
-        if (fields[key] != null && String(fields[key]).trim() !== '') fillInput(id, fields[key], false);
-      });
-      if (action.patientAge) fillInput('hc-patient-age', action.patientAge, false);
-      await window.saveClinicalHistory();
-      return `Historia Clínica de ${patient.name} actualizada con los datos proporcionados.`;
-    }
-    if (action.type === 'add_clinical_note') {
-      const patient = currentPatientByName(action.patientName || (action.patient && action.patient.name));
-      if (!patient) throw new Error('No encontré al paciente para agregar la evolución.');
-      window.openClinicalHistory(patient.id);
-      window.newClinicalNote({ fecha: action.date || todayLima(), sesion: action.session || '', evolucion: action.evolution || '' });
-      await window.saveClinicalHistory();
-      return `Evolución clínica agregada a ${patient.name}.`;
-    }
-    throw new Error('Acción no soportada: ' + action.type);
-  }
-
-  async function confirmAssistantAction() {
-    if (!pendingAction) return;
-    const action = pendingAction;
-    pendingAction = null;
-    try {
-      setStatus('⏳ Guardando…', 'info');
-      const result = await executeAssistantAction(action);
-      appendBotMessage(`<div class="assistant-title">✅ Listo</div><div>${escapeHtml(result)}</div>`);
-      setStatus('✅ Acción completada.', 'ok');
-    } catch (e) {
-      console.error('[Asistente acción]', e);
-      appendBotMessage(`<div class="assistant-title">⚠️ No se pudo guardar</div><div>${escapeHtml(e.message || 'Error inesperado.')}</div>`);
-      setStatus('No se completó la acción.', 'error');
-    }
-  }
-
-  function cancelAssistantAction() {
-    pendingAction = null;
-    appendBotMessage('<div class="assistant-title">↩️ Acción cancelada</div><div>No se modificó la agenda.</div>');
-    setStatus('Acción cancelada.', 'info');
-  }
-
   function hasFollowUpMarker(q) {
     const x = normalizeQuestion(q);
     return /^(y|y que|y cuanto|y cuánto|y cuales|y cuáles|y la proxima|y la próxima|y el siguiente|y ayer|y manana|y mañana|y hoy|y este mes|y esta semana|tambien|también)/.test(x);
@@ -664,43 +511,6 @@
     return { start, end, label: 'de este mes' };
   }
 
-  async function interpretAssistantCommand(question) {
-    const key = localStorage.getItem(KEY_NAME);
-    if (!key) return null;
-    const today = todayLima();
-    const data = getData();
-    const patientNames = (data.patients || []).map(p => p.name).filter(Boolean).slice(0, 200);
-    const schema = {
-      type: 'object',
-      properties: {
-        mode: { type: 'string', enum: ['query','action'] },
-        action: { type: 'string', enum: ['none','create_patient','schedule_appointment','update_clinical_history','add_clinical_note'] },
-        patientName: { type: 'string' },
-        name: { type: 'string' }, phone: { type: 'string' }, dni: { type: 'string' }, birth: { type: 'string' }, age: { type: 'string' }, history: { type: 'string' }, currency: { type: 'string', enum: ['PEN','USD'] },
-        date: { type: 'string' }, time: { type: 'string' }, attentionType: { type: 'string', enum: ['individual','pareja'] }, modality: { type: 'string', enum: ['presencial','virtual'] }, rateType: { type: 'string', enum: ['sesion','paquete6','paquete8'] }, paymentStatus: { type: 'string', enum: ['pendiente','pagado'] },
-        session: { type: 'string' }, evolution: { type: 'string' },
-        fields: { type: 'object', properties: Object.fromEntries(Object.keys(CLINICAL_FIELDS).map(k => [k,{type:'string'}])) }
-      },
-      required: ['mode','action','patientName','name','phone','dni','birth','age','history','currency','date','time','attentionType','modality','rateType','paymentStatus','session','evolution','fields']
-    };
-    const prompt = `Eres el motor de acciones de una agenda de psicología. Hoy en Lima es ${today}.
-Interpreta la instrucción del profesional. Si pide consultar citas, horarios, pagos, ingresos, pacientes o proyecciones, devuelve mode=query y action=none: NO ejecutes nada; el sistema responderá localmente.
-Si pide registrar/crear/agendar/actualizar, devuelve mode=action y una sola acción.
-Reglas estrictas: no inventes datos. Si un dato no fue proporcionado, deja la cadena vacía. Para fechas relativas usa YYYY-MM-DD y calcula respecto de hoy. Para hora usa HH:MM. Para atención usa individual o pareja. Para modalidad usa presencial o virtual.
-Historia Clínica: solo transforma lo dicho por el profesional; NO diagnostiques ni agregues hipótesis, antecedentes, técnicas o síntomas que no hayan sido proporcionados.
-Si la instrucción dice 'llena todos los campos' pero no hay información para algún campo, déjalo vacío.
-Pacientes existentes (para ayudar a identificar nombres): ${JSON.stringify(patientNames)}
-Esquema JSON obligatorio: ${JSON.stringify(schema)}
-Instrucción: ${question}`;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(key)}`;
-    const response = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{temperature:0, responseMimeType:'application/json', responseSchema:schema, maxOutputTokens:1800} }) });
-    if (!response.ok) throw new Error('Gemini respondió con HTTP ' + response.status);
-    const dataAI = await response.json();
-    const raw = (((dataAI.candidates || [])[0] || {}).content || {}).parts?.[0]?.text || '';
-    if (!raw) return null;
-    return JSON.parse(raw);
-  }
-
   async function classifyWithGemini(question) {
     const key = localStorage.getItem(KEY_NAME);
     if (!key) return null;
@@ -1163,47 +973,8 @@ Pregunta: ${question}`;
     if (btn) { btn.disabled = true; btn.textContent = '…'; }
     showTyping();
     try {
-      let interpreted = null;
-      try { interpreted = await interpretAssistantCommand(question); }
-      catch (e) { console.warn('[Asistente] interpretación avanzada no disponible:', e); }
-
-      if (interpreted && interpreted.mode === 'action' && interpreted.action && interpreted.action !== 'none') {
-        const action = { ...interpreted, type: interpreted.action, patient: { name: interpreted.patientName || interpreted.name } };
-        // Validaciones previas para evitar acciones incompletas.
-        if (action.type === 'create_patient' && (!action.name || !action.phone)) {
-          hideTyping();
-          appendBotMessage('<div class="assistant-title">👤 Me faltan datos</div><div>Para registrar un paciente necesito al menos <b>nombre y teléfono</b>. Dímelos y lo preparo.</div>');
-          return;
-        }
-        if (action.type === 'schedule_appointment') {
-          const p = currentPatientByName(action.patientName);
-          if (!p) { hideTyping(); appendBotMessage(`<div class="assistant-title">👤 Paciente no encontrado</div><div>No encontré a <b>${escapeHtml(action.patientName || 'ese paciente')}</b>. Puedes registrarlo primero desde el botón de Nuevo Paciente o indicarme sus datos.</div>`); return; }
-          action.patient = p;
-          const missing = [];
-          if (!action.date) missing.push('fecha'); if (!action.time) missing.push('hora');
-          if (missing.length) { hideTyping(); appendBotMessage(`<div class="assistant-title">📅 Falta información</div><div>Para agendar necesito: <b>${missing.join(' y ')}</b>.</div>`); return; }
-        }
-        if (action.type === 'update_clinical_history' || action.type === 'add_clinical_note') {
-        let resolved = currentPatientByName(action.patientName);
-        if (!resolved && window._currentHistoryPatientId) {
-          const snap = window.getAgendaAdminSnapshot ? window.getAgendaAdminSnapshot() : null;
-          resolved = (snap && snap.patients || []).find(p => p.id === window._currentHistoryPatientId) || null;
-          if (resolved) action.patientName = resolved.name;
-        }
-        if (!resolved) {
-          hideTyping(); appendBotMessage(`<div class="assistant-title">👤 Paciente no encontrado</div><div>No encontré a <b>${escapeHtml(action.patientName || 'ese paciente')}</b>. Indícame el nombre exacto o abre primero su Historia Clínica.</div>`); return;
-        }
-      }
-        hideTyping();
-        showActionConfirmation(action);
-        const wasVoiceQuery = voiceQueryActive;
-        if (wasVoiceQuery) setStatus('🎙️ Instrucción por voz preparada. Revisa y confirma.', 'ok');
-        voiceQueryActive = false;
-        return;
-      }
-
-      // Las consultas siguen usando el motor local, de modo que cifras y disponibilidad
-      // salen directamente de los datos actuales de Firestore.
+      // Un rango explícito siempre tiene prioridad sobre la clasificación IA.
+      // Así Gemini no puede convertir '07/09 al 03/10' en una consulta genérica de mes.
       let intent = parseDateRange(question) ? 'range' : localIntent(question);
       try {
         const aiIntent = await classifyWithGemini(question);
@@ -1245,8 +1016,6 @@ Pregunta: ${question}`;
   window.openGeminiConfig = openGeminiConfig;
   window.saveGeminiKey = saveGeminiKey;
   window.clearGeminiKey = clearGeminiKey;
-  window.confirmAssistantAction = confirmAssistantAction;
-  window.cancelAssistantAction = cancelAssistantAction;
   window.askAssistant = askAssistant;
   window.toggleAssistantVoice = toggleAssistantVoice;
   window.askAssistantExample = askAssistantExample;
