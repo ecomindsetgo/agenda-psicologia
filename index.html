@@ -676,7 +676,7 @@
                     <div class="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center text-lg">🤖</div>
                     <div>
                         <h3 class="font-bold text-sm leading-tight">Asistente personal</h3>
-                        <p class="text-[11px] text-emerald-100 flex items-center gap-1 mt-0.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-300 inline-block"></span> En línea · solo datos administrativos</p>
+                        <p class="text-[11px] text-emerald-100 flex items-center gap-1 mt-0.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-300 inline-block"></span> En línea · agenda + acciones con confirmación</p>
                     </div>
                 </div>
                 <button onclick="closeAssistantModal()" class="text-emerald-100 hover:text-white transition text-xl leading-none">&times;</button>
@@ -688,6 +688,9 @@
             <div class="border-t border-slate-100 bg-white">
                 <div class="flex flex-wrap gap-1.5 px-3 pt-2.5">
                     <button onclick="askAssistantExample('¿Qué paciente sigue?')" class="assistant-chip">Próximo paciente</button>
+                    <button onclick="askAssistantExample('Agenda a un paciente mañana a las 5, individual presencial')" class="assistant-chip">Agendar cita</button>
+                    <button onclick="askAssistantExample('Completa la historia clínica de este paciente con la información que te dicte')" class="assistant-chip">Historia clínica</button>
+                    <button onclick="askAssistantExample('Agrega una evolución clínica a la historia del paciente')" class="assistant-chip">Evolución</button>
                     <button onclick="askAssistantExample('¿Cuántas citas tuve del 1 al 10?')" class="assistant-chip">Citas del 1 al 10</button>
                     <button onclick="askAssistantExample('¿Cuántas citas tengo hoy?')" class="assistant-chip">Citas de hoy</button>
                     <button onclick="askAssistantExample('¿Tengo espacios libres hoy?')" class="assistant-chip">Espacios libres</button>
@@ -697,7 +700,7 @@
                 </div>
                 <div id="assistant-status" class="hidden text-xs rounded-xl mx-3 mt-2 p-2.5"></div>
                 <div class="p-3 flex gap-2 items-end">
-                    <textarea id="assistant-question" rows="1" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); askAssistant();}" class="flex-1 border border-slate-200 rounded-full px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 max-h-24" placeholder="Escribe tu pregunta…"></textarea>
+                    <textarea id="assistant-question" rows="1" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); askAssistant();}" class="flex-1 border border-slate-200 rounded-full px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 max-h-24" placeholder="Ej.: agenda a Ana mañana a las 5, individual presencial…"></textarea>
                     <button id="assistant-voice-btn" onclick="toggleAssistantVoice()" class="w-10 h-10 shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full font-bold text-lg transition" title="Hablar" aria-label="Hablar">🎙️</button>
                     <button id="assistant-send-btn" onclick="askAssistant()" class="w-10 h-10 shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full font-bold transition" title="Enviar">➤</button>
                 </div>
@@ -709,7 +712,7 @@
                     <span id="assistant-config-state"></span>
                 </div>
                 <div id="gemini-config-box" class="hidden bg-slate-50 border-t border-slate-200 p-4 space-y-3">
-                    <p class="text-xs text-slate-600">Pega tu clave de Gemini API. Se guarda solamente en este navegador. Para mayor seguridad, restringe la clave por dominio desde Google AI Studio/Google Cloud.</p>
+                    <p class="text-xs text-slate-600">Pega tu clave de Gemini API. Se guarda solamente en este navegador. La IA puede interpretar acciones y preparar cambios; siempre pedirá confirmación antes de guardar una cita o información clínica. Para mayor seguridad, restringe la clave por dominio desde Google AI Studio/Google Cloud.</p>
                     <input id="gemini-api-key" type="password" autocomplete="off" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm" placeholder="AIza...">
                     <div class="flex gap-2 justify-end">
                         <button onclick="clearGeminiKey()" class="px-3 py-2 text-xs font-semibold text-red-600">Borrar clave</button>
