@@ -1,8 +1,3 @@
-/* Asistente IA administrativo - Agenda Psicología Pro+
-   Gemini recibe SOLO la pregunta del usuario para clasificar la intención.
-   Los datos administrativos se procesan localmente en el navegador.
-   Nunca se envían historias, notas, diagnósticos ni motivos de consulta.
-*/
 (function () {
   'use strict';
 
