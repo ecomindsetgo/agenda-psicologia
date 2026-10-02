@@ -9,8 +9,8 @@
   'use strict';
 
   const KEY_NAME = 'agenda_pro_gemini_api_key';
-  const APP_VERSION = '2026.10.01.2';
-  const MODEL = 'gemini-2.0-flash';
+  const APP_VERSION = '2026.10.01.3';
+  const MODEL = localStorage.getItem('agenda_pro_gemini_model') || 'gemini-3.8-flash';
   let lastAnswerText = '';
   let voiceQueryActive = false;
   let autoSpeak = true;
@@ -1169,7 +1169,7 @@ Reglas estrictas:
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ role: 'user', parts }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 4096, responseMimeType: 'application/json' }
+        generationConfig: { temperature: 0.2, maxOutputTokens: 8192, responseMimeType: 'application/json' }
       })
     });
     if (!response.ok) {
