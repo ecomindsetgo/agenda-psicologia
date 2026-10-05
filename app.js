@@ -3027,7 +3027,7 @@ window.printClinicalHistory = function() {
             finally { btn.disabled = false; }
         });
         function blockDayMarkup(date) {
-            return state.scheduleBlocks.filter(b => b.date === date).map(b => `<div class="rounded-lg bg-amber-50 text-amber-800 px-3 py-2 text-sm font-semibold">🔒 ${b.label === 'Feriado' ? 'Feriado' : 'Ocupado'} · ${b.allDay ? 'Todo el día' : b.start + ' – ' + b.end}</div>`).join('');
+            return state.scheduleBlocks.filter(b => b.date === date).map(b => `<div class="rounded-lg ${b.label === 'Feriado' ? 'bg-violet-200 text-violet-900' : 'bg-amber-200 text-amber-900'} px-3 py-2 text-sm font-semibold">🔒 ${b.label === 'Feriado' ? 'Feriado' : 'Ocupado'} · ${b.allDay ? 'Todo el día' : b.start + ' – ' + b.end}</div>`).join('');
 
         }
 
@@ -3126,8 +3126,9 @@ window.printClinicalHistory = function() {
                     const manualBlock = findScheduleBlock(dateStr, slot);
                     const occupied = bloqueadoPorDefecto || tieneCita || yaPaso || manualBlock || !state.blocksReady;
                     const slotLabel = !state.blocksReady ? 'Cargando…' : manualBlock && manualBlock.label === 'Feriado' ? 'Feriado' : 'Ocupado';
+                    const slotColors = !state.blocksReady ? 'bg-slate-100 text-slate-600' : manualBlock ? (manualBlock.label === 'Feriado' ? 'bg-violet-200 text-violet-900' : 'bg-amber-200 text-amber-900') : 'bg-rose-300 text-rose-800';
                     html += occupied
-                        ? `<div class="flex items-center justify-center py-2.5 rounded-xl bg-rose-300 text-rose-800 font-extrabold text-[11px] uppercase tracking-wide">${slotLabel}</div>`
+                        ? `<div class="flex items-center justify-center py-2.5 rounded-xl ${slotColors} font-extrabold text-[11px] uppercase tracking-wide">${slotLabel}</div>`
                         : `<div class="flex items-center justify-center py-2.5 rounded-xl bg-emerald-100 text-emerald-700 font-extrabold text-[11px] uppercase tracking-wide">Libre</div>`;
                 });
             });
