@@ -12,3 +12,6 @@ Se permite crear o editar citas en fechas y horarios marcados, también virtuale
 INSTALACIÓN
 Reemplaza los archivos del sitio con los de esta carpeta. Recarga la página con Ctrl+F5; en móvil, cierra la pestaña y vuelve a abrirla.
 Los bloqueos se sincronizan en Firebase por cuenta, igual que las citas. La colección es artifacts/psicologia-agenda-default-v2/users/{uid}/scheduleBlocks. Si tus reglas solo autorizan colecciones concretas, añade scheduleBlocks con los mismos permisos de lectura y escritura del propietario que appointments. Si ya autorizan las subcolecciones de cada usuario, no necesitas cambiarlas. Se muestra un error si no se pueden cargar o guardar los bloqueos.
+
+LISTADO DE TODOS LOS PACIENTES
+En «Directorio de Pacientes», pulsa «Imprimir todos los pacientes». Incluye a todos los registrados, incluso si hay una búsqueda activa, ordenados alfabéticamente. Muestra nombre, DNI, teléfono, nacimiento, edad registrada y total. El formato A4 repite los encabezados de tabla en cada página. En la ventana de impresión puedes elegir una impresora o «Guardar como PDF».

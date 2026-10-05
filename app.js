@@ -78,6 +78,7 @@ if (app) {
             scheduleBlocks: [],
             blocksReady: false,
             patients: [],
+            patientsReady: false,
             histories: [],
             notes:[],
             activeTab: 'citas',
@@ -288,6 +289,7 @@ if (app) {
                 state.scheduleBlocks = [];
                 state.blocksReady = false;
                 state.patients = [];
+                state.patientsReady = false;
                 renderAll();
             }
         });
@@ -325,6 +327,7 @@ if (app) {
                 console.error('[Bloqueos]', error);
             });
             const appointmentsRef = collection(db, 'artifacts', appId, 'users', userId, 'appointments');
+            state.patientsReady = false;
             const patientsRef     = collection(db, 'artifacts', appId, 'users', userId, 'patients');
             const historiesRef = collection(db, 'artifacts', appId, 'users', userId, 'clinicalHistories');
             const notesRef = collection(db, 'artifacts', appId, 'users', userId, 'clinicalNotes');
@@ -338,6 +341,7 @@ if (app) {
 
             const unsubPatients = onSnapshot(patientsRef, (snapshot) => {
                 state.patients = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                state.patientsReady = true;
                 renderPatients();
                 updatePatientDropdowns();
                 updateStatsDashboard();
@@ -576,7 +580,7 @@ window.deleteClinicalNoteCard = async function(noteId, btnEl) {
 };
 
 function hideAllPrintSections(){
-    ['print-section','print-section-finance','print-section-reception','print-patient-card','print-clinical-history'].forEach(id=>{
+    ['print-section','print-section-finance','print-section-reception','print-patient-card','print-clinical-history','print-all-patients'].forEach(id=>{
         const el=document.getElementById(id); if(el) el.classList.add('hidden');
     });
 }
@@ -3027,7 +3031,7 @@ window.printClinicalHistory = function() {
             finally { btn.disabled = false; }
         });
         function blockDayMarkup(date) {
-            return state.scheduleBlocks.filter(b => b.date === date).map(b => `<div class="rounded-lg ${b.label === 'Feriado' ? 'bg-violet-200 text-violet-900' : 'bg-amber-200 text-amber-900'} px-3 py-2 text-sm font-semibold">🔒 ${b.label === 'Feriado' ? 'Feriado' : 'Ocupado'} · ${b.allDay ? 'Todo el día' : b.start + ' – ' + b.end}</div>`).join('');
+            return state.scheduleBlocks.filter(b => b.date === date).map(b => `<div class="rounded-lg ${b.label === 'Feriado' ? 'bg-violet-200 text-violet-900' : 'bg-rose-300 text-rose-800'} px-3 py-2 text-sm font-semibold">🔒 ${b.label === 'Feriado' ? 'Feriado' : 'Ocupado'} · ${b.allDay ? 'Todo el día' : b.start + ' – ' + b.end}</div>`).join('');
 
         }
 
@@ -3126,7 +3130,7 @@ window.printClinicalHistory = function() {
                     const manualBlock = findScheduleBlock(dateStr, slot);
                     const occupied = bloqueadoPorDefecto || tieneCita || yaPaso || manualBlock || !state.blocksReady;
                     const slotLabel = !state.blocksReady ? 'Cargando…' : manualBlock && manualBlock.label === 'Feriado' ? 'Feriado' : 'Ocupado';
-                    const slotColors = !state.blocksReady ? 'bg-slate-100 text-slate-600' : manualBlock ? (manualBlock.label === 'Feriado' ? 'bg-violet-200 text-violet-900' : 'bg-amber-200 text-amber-900') : 'bg-rose-300 text-rose-800';
+                    const slotColors = !state.blocksReady ? 'bg-slate-100 text-slate-600' : manualBlock ? (manualBlock.label === 'Feriado' ? 'bg-violet-200 text-violet-900' : 'bg-rose-300 text-rose-800') : 'bg-rose-300 text-rose-800';
                     html += occupied
                         ? `<div class="flex items-center justify-center py-2.5 rounded-xl ${slotColors} font-extrabold text-[11px] uppercase tracking-wide">${slotLabel}</div>`
                         : `<div class="flex items-center justify-center py-2.5 rounded-xl bg-emerald-100 text-emerald-700 font-extrabold text-[11px] uppercase tracking-wide">Libre</div>`;
@@ -3397,4 +3401,36 @@ window.printClinicalHistory = function() {
                 area.style.maxWidth = prevAreaMaxWidth;
                 if (btn) { btn.disabled = false; btn.innerHTML = originalLabel; }
             }
+        };
+
+
+        window.printAllPatients = function() {
+            if (!state.currentUser || !state.patientsReady) { alert('Espera a que se cargue el directorio de pacientes.'); return; }
+            const patients = state.patients.slice().sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'es', { sensitivity: 'base', numeric: true }));
+            if (!patients.length) { alert('No hay pacientes registrados para imprimir.'); return; }
+            const tbody = document.getElementById('print-all-patients-rows');
+            tbody.replaceChildren();
+            patients.forEach((patient, index) => {
+                const row = document.createElement('tr');
+                [index + 1, patient.name || 'Sin nombre', patient.dni, patient.phone, patient.birth ? patient.birth.split('-').reverse().join('/') : '', patient.age].forEach(value => {
+                    const cell = document.createElement('td');
+                    cell.textContent = value === undefined || value === null || value === '' ? '—' : String(value);
+                    row.appendChild(cell);
+                });
+                tbody.appendChild(row);
+            });
+            document.getElementById('print-all-patients-total').textContent = patients.length;
+            document.getElementById('print-all-patients-date').textContent = new Date().toLocaleString('es-PE');
+            document.getElementById('print-all-patients-specialist').textContent = document.getElementById('header-user-name').textContent;
+            hideAllPrintSections();
+            const section = document.getElementById('print-all-patients');
+            section.classList.remove('hidden');
+            document.body.classList.add('printing-all-patients');
+            const cleanup = () => {
+                document.body.classList.remove('printing-all-patients');
+                section.classList.add('hidden');
+                window.removeEventListener('afterprint', cleanup);
+            };
+            window.addEventListener('afterprint', cleanup);
+            setTimeout(() => { try { window.print(); } catch (error) { cleanup(); alert('No se pudo abrir la impresión.'); } }, 150);
         };
