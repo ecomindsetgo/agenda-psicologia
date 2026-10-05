@@ -75,6 +75,8 @@ if (app) {
 
         let state = {
             appointments: [],
+            scheduleBlocks: [],
+            blocksReady: false,
             patients: [],
             histories: [],
             notes:[],
@@ -108,6 +110,7 @@ if (app) {
                     paymentStatus: a.paymentStatus || 'pendiente',
                     modality: a.modality || ''
                 })),
+                scheduleBlocks: state.scheduleBlocks.map(b => ({ date: b.date, allDay: b.allDay, start: b.start, end: b.end, label: b.label })),
                 patients: patients.map(p => ({ id: p.id, name: p.name || '' }))
             };
         };
@@ -282,6 +285,8 @@ if (app) {
                 activeListeners.forEach(u => u());
                 activeListeners = [];
                 state.appointments = [];
+                state.scheduleBlocks = [];
+                state.blocksReady = false;
                 state.patients = [];
                 renderAll();
             }
@@ -306,6 +311,19 @@ if (app) {
 
         // ─── FIRESTORE SYNC ───────────────────────────────────────────────────────
         function setupFirestoreSync(userId) {
+            activeListeners.forEach(u => u());
+            activeListeners = [];
+            state.scheduleBlocks = [];
+            state.blocksReady = false;
+            const unsubBlocks = onSnapshot(collection(db, 'artifacts', appId, 'users', userId, 'scheduleBlocks'), snapshot => {
+                state.scheduleBlocks = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
+                state.blocksReady = true;
+                refreshScheduleBlocks();
+            }, error => {
+                state.blocksReady = false;
+                document.getElementById('schedule-block-status').textContent = 'No se pudieron cargar los bloqueos. Revisa los permisos de Firestore para scheduleBlocks.';
+                console.error('[Bloqueos]', error);
+            });
             const appointmentsRef = collection(db, 'artifacts', appId, 'users', userId, 'appointments');
             const patientsRef     = collection(db, 'artifacts', appId, 'users', userId, 'patients');
             const historiesRef = collection(db, 'artifacts', appId, 'users', userId, 'clinicalHistories');
@@ -313,6 +331,7 @@ if (app) {
             const unsubAppts = onSnapshot(appointmentsRef, (snapshot) => {
                 state.appointments = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                 renderAppointments();
+                actualizarGridHorarios();
                 if (state.citasView === 'mes') renderMonthView();
                 updateStatsDashboard();
             });
@@ -350,7 +369,7 @@ id:doc.id,
 }
 );
 
-  activeListeners.push(unsubAppts, unsubPatients, unsubHistories, unsubNotes);
+  activeListeners.push(unsubBlocks, unsubAppts, unsubPatients, unsubHistories, unsubNotes);
         }
 
         // ─── CRUD PACIENTES ───────────────────────────────────────────────────────
@@ -1558,8 +1577,10 @@ window.printClinicalHistory = function() {
             );
             filtered.sort((a, b) => a.time.localeCompare(b.time));
 
+            const blocksMarkup = blockDayMarkup(dateFilter);
             if (!filtered.length) {
                 container.innerHTML = `<div class="text-center p-8 bg-white rounded-2xl border border-graphite-100 text-graphite-400 text-sm">No hay citas programadas para este filtro o fecha.</div>`;
+                container.insertAdjacentHTML('afterbegin', blocksMarkup);
                 return;
             }
             container.innerHTML = filtered.map(a => {
@@ -1606,6 +1627,7 @@ window.printClinicalHistory = function() {
                     </div>
                 </div>`;
             }).join('');
+            container.insertAdjacentHTML('afterbegin', blocksMarkup);
         };
 
         // ─── RECORDATORIO POR WHATSAPP ──────────────────────────────────────────────
@@ -1696,6 +1718,7 @@ window.printClinicalHistory = function() {
                 if (!byDate[a.date]) byDate[a.date] = [];
                 byDate[a.date].push(a);
             });
+            state.scheduleBlocks.filter(b => b.date.startsWith(state.monthViewDate)).forEach(b => { if (!byDate[b.date]) byDate[b.date] = []; });
             const dates = Object.keys(byDate).sort();
 
             const container = document.getElementById('month-view-list');
@@ -1728,7 +1751,7 @@ window.printClinicalHistory = function() {
                         <h4 class="font-bold text-graphite-800 text-sm">📅 ${dayLabel}</h4>
                         <span class="text-xs font-semibold text-sage-600 bg-sage-50 px-2 py-1 rounded-lg">${apps.length} cita${apps.length !== 1 ? 's' : ''} · Ver día ▶</span>
                     </div>
-                    <div>${rows}</div>
+                    <div>${blockDayMarkup(dateStr)}${rows}</div>
                 </div>`;
             }).join('');
         }
@@ -2925,6 +2948,89 @@ window.printClinicalHistory = function() {
             }, 300);
         };
 
+
+        // Bloqueos independientes de pacientes, pagos y estadísticas.
+        function timeMinutes(t) { const [h, m] = String(t).split(':').map(Number); return h * 60 + m; }
+        function blockOverlaps(b, date, start, end) {
+            return b.date === date && (b.allDay || (start < timeMinutes(b.end) && end > timeMinutes(b.start)));
+        }
+        function findScheduleBlock(date, time) {
+            const start = timeMinutes(time);
+            return state.scheduleBlocks.find(b => blockOverlaps(b, date, start, start + 60));
+        }
+        window.isAgendaSlotBlocked = (date, time) => !state.blocksReady || !!findScheduleBlock(date, time);
+        function refreshScheduleBlocks() {
+            actualizarGridHorarios();
+            renderScheduleBlocks();
+            renderAppointments();
+            if (state.citasView === 'mes') renderMonthView();
+        }
+        window.resetScheduleBlockForm = function() {
+            document.getElementById('schedule-block-form').reset();
+            document.getElementById('block-id').value = '';
+            document.getElementById('block-date').value = document.getElementById('date-filter').value || horarioDateStr(new Date());
+            document.getElementById('block-start').value = '10:00';
+            document.getElementById('block-end').value = '11:00';
+            document.getElementById('block-save').textContent = 'Guardar bloqueo';
+            toggleBlockTimes();
+        };
+        window.toggleBlockTimes = function() {
+            const allDay = document.getElementById('block-all-day').checked;
+            ['block-start', 'block-end'].forEach(id => { const el = document.getElementById(id); el.disabled = allDay; el.required = !allDay; });
+            document.getElementById('block-times').style.opacity = allDay ? '0.5' : '1';
+        };
+        function renderScheduleBlocks() {
+            const list = document.getElementById('schedule-block-list');
+            list.replaceChildren();
+            document.getElementById('schedule-block-status').textContent = state.blocksReady ? '' : 'Cargando bloqueos…';
+            const selected = document.getElementById('block-month').value;
+            const blocks = state.scheduleBlocks.filter(b => !selected || b.date.startsWith(selected)).sort((a,b) => (a.date + (a.start || '')).localeCompare(b.date + (b.start || '')));
+            if (!blocks.length) { list.textContent = 'Sin bloqueos para este mes.'; return; }
+            blocks.forEach(b => {
+                const row = document.createElement('div'); row.className = 'flex items-center gap-2 flex-wrap border-b py-2 text-sm';
+                const text = document.createElement('span'); text.className = 'flex-1';
+                text.textContent = b.date + ' · ' + b.label + ' · ' + (b.allDay ? 'Todo el día' : b.start + ' – ' + b.end);
+                row.append(text);
+                const edit = document.createElement('button'); edit.type = 'button'; edit.textContent = 'Editar'; edit.className = 'px-3 py-1 rounded-lg bg-indigo-100 text-indigo-700';
+                edit.onclick = () => {
+                    document.getElementById('block-id').value = b.id;
+                    document.getElementById('block-date').value = b.date;
+                    document.getElementById('block-label').value = b.label;
+                    document.getElementById('block-all-day').checked = b.allDay;
+                    document.getElementById('block-start').value = b.start || '10:00';
+                    document.getElementById('block-end').value = b.end || '11:00';
+                    document.getElementById('block-save').textContent = 'Guardar cambios'; toggleBlockTimes();
+                }; row.append(edit);
+                const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Desbloquear'; remove.className = 'px-3 py-1 rounded-lg bg-rose-100 text-rose-700';
+                remove.onclick = async () => {
+                    if (!state.currentUser || !confirm('¿Quitar este bloqueo del ' + b.date + '?')) return;
+                    remove.disabled = true;
+                    try { await deleteDoc(doc(db, 'artifacts', appId, 'users', state.currentUser.uid, 'scheduleBlocks', b.id)); if (document.getElementById('block-id').value === b.id) resetScheduleBlockForm(); }
+                    catch (_) { alert('No se pudo quitar el bloqueo. Revisa tu conexión y los permisos de Firestore.'); }
+                    finally { remove.disabled = false; }
+                }; row.append(remove); list.append(row);
+            });
+        }
+        window.renderScheduleBlocks = renderScheduleBlocks;
+        document.getElementById('schedule-block-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            if (!state.currentUser || !state.blocksReady) { alert('Los bloqueos todavía no están disponibles.'); return; }
+            const id = document.getElementById('block-id').value || 'block_' + crypto.randomUUID();
+            const b = { date: document.getElementById('block-date').value, label: document.getElementById('block-label').value, allDay: document.getElementById('block-all-day').checked, start: document.getElementById('block-start').value, end: document.getElementById('block-end').value };
+            if (!b.date || (!b.allDay && (!b.start || !b.end || timeMinutes(b.end) <= timeMinutes(b.start)))) { alert('Elige una fecha y una hora final posterior al inicio.'); return; }
+            if (b.allDay) { b.start = ''; b.end = ''; }
+            const start = b.allDay ? 0 : timeMinutes(b.start), end = b.allDay ? 1440 : timeMinutes(b.end);
+            if (state.scheduleBlocks.some(other => other.id !== id && blockOverlaps(other, b.date, start, end))) { alert('Ya hay un bloqueo en esta franja. Edita o quita el existente.'); return; }
+            const btn = document.getElementById('block-save'); btn.disabled = true;
+            try { await setDoc(doc(db, 'artifacts', appId, 'users', state.currentUser.uid, 'scheduleBlocks', id), { ...b, updatedAt: new Date().toISOString() }); resetScheduleBlockForm(); }
+            catch (_) { alert('No se pudo guardar el bloqueo. Revisa tu conexión y los permisos de Firestore para scheduleBlocks.'); }
+            finally { btn.disabled = false; }
+        });
+        function blockDayMarkup(date) {
+            return state.scheduleBlocks.filter(b => b.date === date).map(b => `<div class="rounded-lg bg-amber-50 text-amber-800 px-3 py-2 text-sm font-semibold">🔒 ${b.label === 'Feriado' ? 'Feriado' : 'Ocupado'} · ${b.allDay ? 'Todo el día' : b.start + ' – ' + b.end}</div>`).join('');
+
+        }
+
         // ─── HORARIO SEMANAL (Modal "Revisar Horario") ─────────────────────────────
         const HORARIO_SLOTS = ['10:00','11:00','12:00','16:00','17:00','18:00','19:00'];
         const HORARIO_DAYS  = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -2945,6 +3051,9 @@ window.printClinicalHistory = function() {
             const baseDateStr = document.getElementById('date-filter') ? document.getElementById('date-filter').value : '';
             const baseDate = baseDateStr ? new Date(baseDateStr + 'T00:00:00') : new Date();
             state.horarioWeekStart = getMondayOf(baseDate);
+            resetScheduleBlockForm();
+            document.getElementById('block-month').value = horarioDateStr(baseDate).slice(0,7);
+            renderScheduleBlocks();
             document.getElementById('modal-horario').classList.remove('hidden');
             actualizarGridHorarios();
         };
@@ -3014,9 +3123,11 @@ window.printClinicalHistory = function() {
                     slotDateTime.setHours(h, m, 0, 0);
                     const yaPaso = slotDateTime.getTime() < now.getTime();
 
-                    const occupied = bloqueadoPorDefecto || tieneCita || yaPaso;
+                    const manualBlock = findScheduleBlock(dateStr, slot);
+                    const occupied = bloqueadoPorDefecto || tieneCita || yaPaso || manualBlock || !state.blocksReady;
+                    const slotLabel = !state.blocksReady ? 'Cargando…' : manualBlock && manualBlock.label === 'Feriado' ? 'Feriado' : 'Ocupado';
                     html += occupied
-                        ? `<div class="flex items-center justify-center py-2.5 rounded-xl bg-rose-300 text-rose-800 font-extrabold text-[11px] uppercase tracking-wide">Ocupado</div>`
+                        ? `<div class="flex items-center justify-center py-2.5 rounded-xl bg-rose-300 text-rose-800 font-extrabold text-[11px] uppercase tracking-wide">${slotLabel}</div>`
                         : `<div class="flex items-center justify-center py-2.5 rounded-xl bg-emerald-100 text-emerald-700 font-extrabold text-[11px] uppercase tracking-wide">Libre</div>`;
                 });
             });

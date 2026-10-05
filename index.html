@@ -1513,6 +1513,24 @@
             </div>
         </div>
 
+        <section class="mb-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+<h3 class="font-bold text-slate-800">🔒 Bloquear horarios y feriados</h3>
+<p class="text-xs text-slate-500 mt-1 mb-3">Selecciona cualquier fecha. No necesitas registrar un paciente. Puedes seguir agendando citas en días o franjas marcados, por ejemplo para atención virtual.</p>
+<form id="schedule-block-form" class="space-y-3">
+<input id="block-id" type="hidden">
+<div class="flex flex-wrap gap-3">
+<label class="text-sm">Fecha<input id="block-date" type="date" required class="block border rounded-lg p-2"></label>
+<label class="text-sm">Mostrar como<select id="block-label" class="block border rounded-lg p-2"><option>Ocupado</option><option>Feriado</option></select></label>
+<label class="text-sm flex items-center gap-2"><input id="block-all-day" type="checkbox" checked onchange="toggleBlockTimes()"> Todo el día</label>
+<div id="block-times" class="flex gap-3"><label class="text-sm">Desde<input id="block-start" type="time" class="block border rounded-lg p-2"></label><label class="text-sm">Hasta<input id="block-end" type="time" class="block border rounded-lg p-2"></label></div>
+</div>
+<div class="flex gap-2"><button id="block-save" type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 text-white font-bold text-sm">Guardar bloqueo</button><button type="button" onclick="resetScheduleBlockForm()" class="px-4 py-2 rounded-lg bg-white border text-sm">Nuevo / Cancelar edición</button></div>
+</form>
+<p id="schedule-block-status" role="status" class="text-sm text-rose-700 mt-2"></p>
+<div class="flex items-center gap-3 mt-4 mb-2"><h4 class="font-semibold text-sm">Bloqueos guardados</h4><input id="block-month" type="month" aria-label="Mes de los bloqueos" onchange="renderScheduleBlocks()" class="border rounded-lg p-1 text-sm"></div>
+<div id="schedule-block-list" class="max-h-48 overflow-y-auto"></div>
+</section>
+
         <div id="horario-capture-area" class="bg-white p-4 rounded-2xl">
             <div class="flex items-center gap-4 mb-4">
                 <img src="logo-lisbeth.png" alt="Lisbeth Méndez Psicóloga" class="h-16 w-auto object-contain shrink-0">
@@ -1539,8 +1557,8 @@
 
     <!-- SheetJS: generación de archivos Excel (.xlsx) -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-    <script type="module" src="app.js?v=20261001-3"></script>
-    <script src="assistant.js?v=20261001-3"></script>
+    <script type="module" src="app.js?v=20261005-bloqueos-1"></script>
+    <script src="assistant.js?v=20261005-bloqueos-1"></script>
     <script src="ui.js"></script>
 </body>
 </html>

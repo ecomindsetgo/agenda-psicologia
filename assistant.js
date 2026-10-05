@@ -514,57 +514,6 @@
     return { start, end, label: 'de este mes' };
   }
 
-  /* ── Llamada robusta a Gemini ─────────────────────────────────────────
-     - 503/500/504 (saturación): reintenta con espera y luego prueba modelos de respaldo.
-     - 429 (límite de uso) y 404 (modelo inexistente): prueba el siguiente modelo.
-     - 400/401/402/403: falla de inmediato con un mensaje claro en español. */
-  const FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
-
-  function friendlyGeminiError(status, detail) {
-    const d = detail ? ' (' + detail + ')' : '';
-    if (status === 402) return 'Tu clave de Gemini se quedó sin crédito. Revisa la facturación en AI Studio o usa una clave nueva en ⚙️ Gemini.' + d;
-    if (status === 401 || status === 403) return 'Gemini rechazó la clave. Verifica que esté bien copiada y activa en ⚙️ Gemini.' + d;
-    if (status === 400) return 'Gemini no pudo procesar esta solicitud (HTTP 400).' + d;
-    if (status === 429) return 'Llegaste al límite de uso gratuito de Gemini. Espera unos minutos e inténtalo de nuevo.' + d;
-    if (status === 404) return 'El modelo de Gemini configurado no está disponible en tu cuenta.' + d;
-    if (status === 500 || status === 503 || status === 504) return 'Gemini está saturado en este momento. Inténtalo de nuevo en un minuto.' + d;
-    return 'Gemini respondió con HTTP ' + status + '.' + d;
-  }
-
-  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-
-  async function callGemini(body, opts) {
-    opts = opts || {};
-    const key = localStorage.getItem(KEY_NAME);
-    if (!key) throw new Error('Configura tu clave de Gemini (botón ⚙️ Gemini, abajo) para usar esta función.');
-    const models = opts.fallback === false ? [MODEL] : [MODEL].concat(FALLBACK_MODELS.filter(m => m !== MODEL));
-    const retries = opts.retries == null ? 2 : opts.retries;
-    let lastStatus = 0, lastDetail = '';
-    for (const model of models) {
-      for (let attempt = 0; attempt <= retries; attempt++) {
-        let response;
-        try {
-          response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
-          });
-        } catch (netErr) {
-          throw new Error('No hay conexión con Gemini. Revisa tu internet e inténtalo de nuevo.');
-        }
-        if (response.ok) {
-          if (model !== MODEL) console.info('[Asistente] Usando modelo de respaldo:', model);
-          return response.json();
-        }
-        lastStatus = response.status;
-        lastDetail = '';
-        try { const err = await response.json(); lastDetail = (err && err.error && err.error.message) || ''; } catch (_) {}
-        if ([400, 401, 402, 403].includes(lastStatus)) throw new Error(friendlyGeminiError(lastStatus, lastDetail));
-        if ([500, 503, 504].includes(lastStatus) && attempt < retries) { await sleep(1500 * (attempt + 1)); continue; }
-        break; // 404, 429 o reintentos agotados: pasar al siguiente modelo
-      }
-    }
-    throw new Error(friendlyGeminiError(lastStatus, lastDetail));
-  }
-
   async function classifyWithGemini(question) {
     const key = localStorage.getItem(KEY_NAME);
     if (!key) return null;
@@ -576,7 +525,13 @@ Reglas: rango explícito de fechas = range; cuánto cobré/recibí/ingresé = re
 No inventes datos. Categorías permitidas: ${allowed.join(', ')}.
 Responde únicamente con la categoría.
 Pregunta: ${question}`;
-    const data = await callGemini({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0, maxOutputTokens: 10 } }, { retries: 0, fallback: false });
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(key)}`;
+    const response = await fetch(url, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0, maxOutputTokens: 10 } })
+    });
+    if (!response.ok) throw new Error('Gemini respondió con HTTP ' + response.status);
+    const data = await response.json();
     const text = (((data.candidates || [])[0] || {}).content || {}).parts?.[0]?.text || '';
     return allowed.includes(text.trim().toLowerCase()) ? text.trim().toLowerCase() : null;
   }
@@ -759,7 +714,7 @@ Pregunta: ${question}`;
       for (let d = scope.start; d < scope.end; d = addDays(d, 1)) days.push(d);
       const rows = days.map(d => {
         const slots = daySlots(d);
-        const free = slots.filter(s => !all.some(a => a.date === d && isActiveAppointment(a) && a.time && a.time.slice(0, 5) === s));
+        const free = slots.filter(s => !(typeof window.isAgendaSlotBlocked === 'function' && window.isAgendaSlotBlocked(d, s)) && !all.some(a => a.date === d && isActiveAppointment(a) && a.time && a.time.slice(0, 5) === s));
         return { date: d, slots, free };
       });
       if (rows.length === 1) {
@@ -1209,10 +1164,20 @@ Reglas estrictas:
     const parts = [{ text: buildClinicalPrompt(!!content.audio) }];
     if (content.text) parts.push({ text: 'CONTENIDO:\n' + content.text });
     if (content.audio) parts.push({ inline_data: { mime_type: content.audio.mime, data: content.audio.data } });
-    const data = await callGemini({
-      contents: [{ role: 'user', parts }],
-      generationConfig: { temperature: 0.2, maxOutputTokens: 8192, responseMimeType: 'application/json' }
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(key)}`;
+    const response = await fetch(url, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 8192, responseMimeType: 'application/json' }
+      })
     });
+    if (!response.ok) {
+      let detail = '';
+      try { const err = await response.json(); detail = (err && err.error && err.error.message) || ''; } catch (_) {}
+      throw new Error('Gemini respondió con HTTP ' + response.status + (detail ? ': ' + detail : ''));
+    }
+    const data = await response.json();
     const raw = (((data.candidates || [])[0] || {}).content || {}).parts?.map(p => p.text || '').join('') || '';
     if (!raw) throw new Error('Gemini no devolvió contenido. Prueba con un texto o audio más claro.');
     return parseJsonLoose(raw);
