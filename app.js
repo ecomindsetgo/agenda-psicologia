@@ -79,6 +79,7 @@ if (app) {
             blocksReady: false,
             patients: [],
             patientsReady: false,
+            appointmentsReady: false,
             histories: [],
             notes:[],
             activeTab: 'citas',
@@ -100,8 +101,11 @@ if (app) {
             const byId = {};
             patients.forEach(p => { if (p && p.id) byId[p.id] = p.name || ''; });
             return {
+                ready: !!state.currentUser && state.appointmentsReady && state.patientsReady,
+                blocksReady: state.blocksReady,
                 appointments: (state.appointments || []).map(a => ({
                     id: a.id,
+                    patientId: a.patientId || '',
                     date: a.date || '',
                     time: a.time || '',
                     patientName: a.patientName || byId[a.patientId] || 'Paciente',
@@ -286,6 +290,7 @@ if (app) {
                 activeListeners.forEach(u => u());
                 activeListeners = [];
                 state.appointments = [];
+                state.appointmentsReady = false;
                 state.scheduleBlocks = [];
                 state.blocksReady = false;
                 state.patients = [];
@@ -326,6 +331,7 @@ if (app) {
                 document.getElementById('schedule-block-status').textContent = 'No se pudieron cargar los bloqueos. Revisa los permisos de Firestore para scheduleBlocks.';
                 console.error('[Bloqueos]', error);
             });
+            state.appointmentsReady = false;
             const appointmentsRef = collection(db, 'artifacts', appId, 'users', userId, 'appointments');
             state.patientsReady = false;
             const patientsRef     = collection(db, 'artifacts', appId, 'users', userId, 'patients');
@@ -333,6 +339,7 @@ if (app) {
             const notesRef = collection(db, 'artifacts', appId, 'users', userId, 'clinicalNotes');
             const unsubAppts = onSnapshot(appointmentsRef, (snapshot) => {
                 state.appointments = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                state.appointmentsReady = true;
                 renderAppointments();
                 actualizarGridHorarios();
                 if (state.citasView === 'mes') renderMonthView();
