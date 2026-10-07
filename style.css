@@ -78,19 +78,3 @@
 .chat-typing span:nth-child(2){animation-delay:.15s}
 .chat-typing span:nth-child(3){animation-delay:.3s}
 @keyframes chat-typing-bounce{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-3px);opacity:1}}
-
-/* Reporte completo de pacientes: multipágina A4, aislado de otros reportes. */
-@media print {
-  @page patients-list { size: A4 portrait; margin: 14mm 12mm; }
-  #print-all-patients.hidden { display: none !important; }
-  body.printing-all-patients > :not(#print-all-patients) { display: none !important; }
-  body.printing-all-patients #print-all-patients { display: block !important; page: patients-list; font-family: Arial, sans-serif; font-size: 10pt; }
-  #print-all-patients h1 { font-size: 20pt; font-weight: 700; margin: 0 0 3mm; color: #273752; }
-  #print-all-patients .patients-report-header { margin-bottom: 6mm; break-inside: avoid; }
-  #print-all-patients p { margin: 2mm 0; }
-  #print-all-patients table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 9pt; }
-  #print-all-patients thead { display: table-header-group; }
-  #print-all-patients tr { break-inside: avoid; page-break-inside: avoid; }
-  #print-all-patients th, #print-all-patients td { border: 1px solid #aab3bf; padding: 2.5mm 2mm; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
-  #print-all-patients th { font-weight: 700; background: #eef1f5; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-}

@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20261005-ia-2">
+    <link rel="stylesheet" href="style.css">
 <style>
 .assistant-chip{padding:.45rem .7rem;border:1px solid #e2e8f0;background:#fff;color:#475569;border-radius:.7rem;font-size:.72rem;font-weight:700;transition:.15s}.assistant-chip:hover{background:#f5f3ff;border-color:#c4b5fd;color:#6d28d9}.assistant-result{border:1px solid #e2e8f0;border-radius:1rem;overflow:hidden}.assistant-result table{width:100%;font-size:.75rem;border-collapse:collapse}.assistant-result th{background:#f8fafc;text-align:left;padding:.55rem;color:#64748b;font-weight:800}.assistant-result td{padding:.55rem;border-top:1px solid #f1f5f9;color:#334155}.assistant-kpi{background:#f8fafc;border:1px solid #e2e8f0;border-radius:.8rem;padding:.65rem}.assistant-kpi strong{display:block;font-size:1rem;color:#0f172a}.assistant-kpi span{font-size:.65rem;color:#64748b}.assistant-loading{display:inline-flex;gap:4px}.assistant-loading i{width:6px;height:6px;border-radius:50%;background:#8b5cf6;animation:assistantPulse 1s infinite}.assistant-loading i:nth-child(2){animation-delay:.15s}.assistant-loading i:nth-child(3){animation-delay:.3s}@keyframes assistantPulse{0%,80%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
 </style>
@@ -343,12 +343,9 @@
                         <h2 class="text-lg font-bold text-slate-800">Directorio Clínico de Pacientes</h2>
                         <p class="text-xs text-slate-500">Registra pacientes, revisa datos de contacto e historial clínico.</p>
                     </div>
-                    <div class="flex flex-wrap gap-2 w-full sm:w-auto">
-                    <button type="button" onclick="printAllPatients()" class="w-full sm:w-auto bg-slate-700 hover:bg-slate-600 text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition-all">🖨️ Imprimir todos los pacientes</button>
                     <button onclick="openPatientModal()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
                         ➕ Nuevo Paciente
                     </button>
-                    </div>
                 </div>
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
                     <div class="relative">
@@ -1516,24 +1513,6 @@
             </div>
         </div>
 
-        <section class="mb-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-<h3 class="font-bold text-slate-800">🔒 Bloquear horarios y feriados</h3>
-<p class="text-xs text-slate-500 mt-1 mb-3">Selecciona cualquier fecha. No necesitas registrar un paciente. Puedes seguir agendando citas en días o franjas marcados, por ejemplo para atención virtual.</p>
-<form id="schedule-block-form" class="space-y-3">
-<input id="block-id" type="hidden">
-<div class="flex flex-wrap gap-3">
-<label class="text-sm">Fecha<input id="block-date" type="date" required class="block border rounded-lg p-2"></label>
-<label class="text-sm">Mostrar como<select id="block-label" class="block border rounded-lg p-2"><option>Ocupado</option><option>Feriado</option></select></label>
-<label class="text-sm flex items-center gap-2"><input id="block-all-day" type="checkbox" checked onchange="toggleBlockTimes()"> Todo el día</label>
-<div id="block-times" class="flex gap-3"><label class="text-sm">Desde<input id="block-start" type="time" class="block border rounded-lg p-2"></label><label class="text-sm">Hasta<input id="block-end" type="time" class="block border rounded-lg p-2"></label></div>
-</div>
-<div class="flex gap-2"><button id="block-save" type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 text-white font-bold text-sm">Guardar bloqueo</button><button type="button" onclick="resetScheduleBlockForm()" class="px-4 py-2 rounded-lg bg-white border text-sm">Nuevo / Cancelar edición</button></div>
-</form>
-<p id="schedule-block-status" role="status" class="text-sm text-rose-700 mt-2"></p>
-<div class="flex items-center gap-3 mt-4 mb-2"><h4 class="font-semibold text-sm">Bloqueos guardados</h4><input id="block-month" type="month" aria-label="Mes de los bloqueos" onchange="renderScheduleBlocks()" class="border rounded-lg p-1 text-sm"></div>
-<div id="schedule-block-list" class="max-h-48 overflow-y-auto"></div>
-</section>
-
         <div id="horario-capture-area" class="bg-white p-4 rounded-2xl">
             <div class="flex items-center gap-4 mb-4">
                 <img src="logo-lisbeth.png" alt="Lisbeth Méndez Psicóloga" class="h-16 w-auto object-contain shrink-0">
@@ -1544,11 +1523,9 @@
                 </div>
             </div>
 
-            <div class="flex flex-wrap items-center gap-4 mb-4 text-xs font-bold text-slate-500">
+            <div class="flex items-center gap-4 mb-4 text-xs font-bold text-slate-500">
                 <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-md bg-emerald-100 border border-emerald-300 inline-block"></span> Libre</span>
                 <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-md bg-rose-300 border border-rose-400 inline-block"></span> Ocupado</span>
-                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-md bg-violet-200 border border-violet-400 inline-block"></span> Feriado</span>
-                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-md bg-rose-300 border border-rose-400 inline-block"></span> Ocupado (bloqueo manual)</span>
             </div>
 
             <div id="horario-scroll-wrap" class="overflow-x-auto pb-2">
@@ -1562,17 +1539,8 @@
 
     <!-- SheetJS: generación de archivos Excel (.xlsx) -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-    <script type="module" src="app.js?v=20261005-ia-2"></script>
-    <script src="assistant.js?v=20261005-ia-2"></script>
+    <script type="module" src="app.js?v=20261006-1"></script>
+    <script src="assistant.js?v=20261001-3"></script>
     <script src="ui.js"></script>
-<section id="print-all-patients" class="print-only hidden">
-    <header class="patients-report-header">
-        <h1>Listado de pacientes</h1>
-        <p>Consultorio Psicológico · <span id="print-all-patients-specialist"></span></p>
-        <p>Fecha de emisión: <span id="print-all-patients-date"></span></p>
-        <p><strong>Total de pacientes: <span id="print-all-patients-total"></span></strong> · Orden alfabético</p>
-    </header>
-    <table><colgroup><col style="width:6%"><col style="width:32%"><col style="width:15%"><col style="width:20%"><col style="width:18%"><col style="width:9%"></colgroup><thead><tr><th>N.º</th><th>Paciente</th><th>DNI</th><th>Teléfono</th><th>Nacimiento</th><th>Edad</th></tr></thead><tbody id="print-all-patients-rows"></tbody></table>
-</section>
 </body>
 </html>
