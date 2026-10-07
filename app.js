@@ -75,7 +75,11 @@ if (app) {
 
         let state = {
             appointments: [],
+            scheduleBlocks: [],
+            blocksReady: false,
             patients: [],
+            patientsReady: false,
+            appointmentsReady: false,
             histories: [],
             notes:[],
             activeTab: 'citas',
@@ -97,8 +101,11 @@ if (app) {
             const byId = {};
             patients.forEach(p => { if (p && p.id) byId[p.id] = p.name || ''; });
             return {
+                ready: !!state.currentUser && state.appointmentsReady && state.patientsReady,
+                blocksReady: state.blocksReady,
                 appointments: (state.appointments || []).map(a => ({
                     id: a.id,
+                    patientId: a.patientId || '',
                     date: a.date || '',
                     time: a.time || '',
                     patientName: a.patientName || byId[a.patientId] || 'Paciente',
@@ -108,6 +115,7 @@ if (app) {
                     paymentStatus: a.paymentStatus || 'pendiente',
                     modality: a.modality || ''
                 })),
+                scheduleBlocks: state.scheduleBlocks.map(b => ({ date: b.date, allDay: b.allDay, start: b.start, end: b.end, label: b.label })),
                 patients: patients.map(p => ({ id: p.id, name: p.name || '' }))
             };
         };
@@ -282,7 +290,11 @@ if (app) {
                 activeListeners.forEach(u => u());
                 activeListeners = [];
                 state.appointments = [];
+                state.appointmentsReady = false;
+                state.scheduleBlocks = [];
+                state.blocksReady = false;
                 state.patients = [];
+                state.patientsReady = false;
                 renderAll();
             }
         });
@@ -306,19 +318,37 @@ if (app) {
 
         // ─── FIRESTORE SYNC ───────────────────────────────────────────────────────
         function setupFirestoreSync(userId) {
+            activeListeners.forEach(u => u());
+            activeListeners = [];
+            state.scheduleBlocks = [];
+            state.blocksReady = false;
+            const unsubBlocks = onSnapshot(collection(db, 'artifacts', appId, 'users', userId, 'scheduleBlocks'), snapshot => {
+                state.scheduleBlocks = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
+                state.blocksReady = true;
+                refreshScheduleBlocks();
+            }, error => {
+                state.blocksReady = false;
+                document.getElementById('schedule-block-status').textContent = 'No se pudieron cargar los bloqueos. Revisa los permisos de Firestore para scheduleBlocks.';
+                console.error('[Bloqueos]', error);
+            });
+            state.appointmentsReady = false;
             const appointmentsRef = collection(db, 'artifacts', appId, 'users', userId, 'appointments');
+            state.patientsReady = false;
             const patientsRef     = collection(db, 'artifacts', appId, 'users', userId, 'patients');
             const historiesRef = collection(db, 'artifacts', appId, 'users', userId, 'clinicalHistories');
             const notesRef = collection(db, 'artifacts', appId, 'users', userId, 'clinicalNotes');
             const unsubAppts = onSnapshot(appointmentsRef, (snapshot) => {
                 state.appointments = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                state.appointmentsReady = true;
                 renderAppointments();
+                actualizarGridHorarios();
                 if (state.citasView === 'mes') renderMonthView();
                 updateStatsDashboard();
             });
 
             const unsubPatients = onSnapshot(patientsRef, (snapshot) => {
                 state.patients = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                state.patientsReady = true;
                 renderPatients();
                 updatePatientDropdowns();
                 updateStatsDashboard();
@@ -350,7 +380,7 @@ id:doc.id,
 }
 );
 
-  activeListeners.push(unsubAppts, unsubPatients, unsubHistories, unsubNotes);
+  activeListeners.push(unsubBlocks, unsubAppts, unsubPatients, unsubHistories, unsubNotes);
         }
 
         // ─── CRUD PACIENTES ───────────────────────────────────────────────────────
@@ -557,7 +587,7 @@ window.deleteClinicalNoteCard = async function(noteId, btnEl) {
 };
 
 function hideAllPrintSections(){
-    ['print-section','print-section-finance','print-section-reception','print-patient-card','print-clinical-history'].forEach(id=>{
+    ['print-section','print-section-finance','print-section-reception','print-patient-card','print-clinical-history','print-all-patients'].forEach(id=>{
         const el=document.getElementById(id); if(el) el.classList.add('hidden');
     });
 }
@@ -1558,8 +1588,10 @@ window.printClinicalHistory = function() {
             );
             filtered.sort((a, b) => a.time.localeCompare(b.time));
 
+            const blocksMarkup = blockDayMarkup(dateFilter);
             if (!filtered.length) {
                 container.innerHTML = `<div class="text-center p-8 bg-white rounded-2xl border border-graphite-100 text-graphite-400 text-sm">No hay citas programadas para este filtro o fecha.</div>`;
+                container.insertAdjacentHTML('afterbegin', blocksMarkup);
                 return;
             }
             container.innerHTML = filtered.map(a => {
@@ -1588,7 +1620,7 @@ window.printClinicalHistory = function() {
                         <div class="flex items-center gap-2 flex-wrap">
                             <span class="text-sm font-bold text-graphite-700 bg-graphite-100 px-2 py-0.5 rounded-lg">⏰ ${a.time}</span>
                             <h4 class="font-extrabold text-graphite-800 text-base">${a.patientName}</h4>
-                            <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${(a.status || 'programada').toUpperCase()}</span>
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${a.status.toUpperCase()}</span>
                             ${modalityBadge}
                         </div>
                         <p class="text-xs text-graphite-500 italic">"${a.notes || 'Sin observaciones para esta sesión'}"</p>
@@ -1606,6 +1638,7 @@ window.printClinicalHistory = function() {
                     </div>
                 </div>`;
             }).join('');
+            container.insertAdjacentHTML('afterbegin', blocksMarkup);
         };
 
         // ─── RECORDATORIO POR WHATSAPP ──────────────────────────────────────────────
@@ -1696,6 +1729,7 @@ window.printClinicalHistory = function() {
                 if (!byDate[a.date]) byDate[a.date] = [];
                 byDate[a.date].push(a);
             });
+            state.scheduleBlocks.filter(b => b.date.startsWith(state.monthViewDate)).forEach(b => { if (!byDate[b.date]) byDate[b.date] = []; });
             const dates = Object.keys(byDate).sort();
 
             const container = document.getElementById('month-view-list');
@@ -1718,7 +1752,7 @@ window.printClinicalHistory = function() {
                         <div class="flex items-center gap-2 flex-wrap">
                             <span class="text-xs font-bold text-graphite-600 bg-graphite-100 px-2 py-0.5 rounded-lg">⏰ ${a.time}</span>
                             <span class="text-sm font-semibold text-graphite-700">${modalityIcon} ${a.patientName}</span>
-                            <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${(a.status || 'programada').toUpperCase()}</span>
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${a.status.toUpperCase()}</span>
                         </div>
                         <span class="text-xs font-semibold text-graphite-500">${formatApptCostLabel(a)}</span>
                     </div>`;
@@ -1728,7 +1762,7 @@ window.printClinicalHistory = function() {
                         <h4 class="font-bold text-graphite-800 text-sm">📅 ${dayLabel}</h4>
                         <span class="text-xs font-semibold text-sage-600 bg-sage-50 px-2 py-1 rounded-lg">${apps.length} cita${apps.length !== 1 ? 's' : ''} · Ver día ▶</span>
                     </div>
-                    <div>${rows}</div>
+                    <div>${blockDayMarkup(dateStr)}${rows}</div>
                 </div>`;
             }).join('');
         }
@@ -2419,17 +2453,12 @@ window.printClinicalHistory = function() {
         window.executeReportPrint = function() {
             const printType = window._printType || 'dia';
             const printCategory = window._printCategory || 'citas';
-            try {
-                if (printCategory === 'finanzas') {
-                    executeFinanceReportPrint(printType);
-                } else if (printCategory === 'recepcion') {
-                    executeReceptionReportPrint(printType);
-                } else {
-                    executeAppointmentsReportPrint(printType);
-                }
-            } catch (error) {
-                console.error('[Error al generar reporte]', { printType, printCategory, error });
-                alert('No se pudo generar el reporte. Se detectó un error interno y fue registrado en la consola.');
+            if (printCategory === 'finanzas') {
+                executeFinanceReportPrint(printType);
+            } else if (printCategory === 'recepcion') {
+                executeReceptionReportPrint(printType);
+            } else {
+                executeAppointmentsReportPrint(printType);
             }
         };
 
@@ -2439,22 +2468,8 @@ window.printClinicalHistory = function() {
             let periodLabel = '';
             const isMonth = printType === 'mes';
             const isWeek  = printType === 'semana';
-            const isCustom = printType === 'personalizado';
 
-            if (isCustom) {
-                const start = document.getElementById('print-custom-start').value;
-                const end = document.getElementById('print-custom-end').value;
-                if (!start || !end || start > end) {
-                    alert('Selecciona un rango de fechas válido.');
-                    return;
-                }
-                reportApps = state.appointments
-                    .filter(a => a.date >= start && a.date <= end)
-                    .sort((a, b) => ((a.date || '') + (a.time || '')).localeCompare((b.date || '') + (b.time || '')));
-                periodLabel = formatDateRangeLabel(start, end);
-                document.getElementById('print-title-main').innerText = 'REPORTE DE AGENDA POR RANGO';
-                document.getElementById('print-head-date-label').innerText = 'PERIODO';
-            } else if (isMonth) {
+            if (isMonth) {
                 const monthVal = document.getElementById('print-month-select').value; // YYYY-MM
                 reportApps = state.appointments
                     .filter(a => a.date.startsWith(monthVal))
@@ -2476,7 +2491,7 @@ window.printClinicalHistory = function() {
                 document.getElementById('print-head-date-label').innerText = 'PERIODO';
             } else {
                 const targetDate = document.getElementById('print-date-select').value;
-                reportApps = state.appointments.filter(a => a.date === targetDate).sort((a, b) => String(a.time || '').localeCompare(String(b.time || '')));
+                reportApps = state.appointments.filter(a => a.date === targetDate).sort((a, b) => a.time.localeCompare(b.time));
                 periodLabel = new Date(targetDate + 'T00:00:00')
                     .toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
                 document.getElementById('print-title-main').innerText = 'REPORTE DIARIO DE AGENDA';
@@ -2520,11 +2535,11 @@ window.printClinicalHistory = function() {
                     ? reportApps.map(a => `
                         <tr class="border-b">
                             <td class="py-2.5 px-2 font-bold whitespace-nowrap">${a.date}</td>
-                            <td class="py-2.5 px-2 font-bold">${a.time || '—'}</td>
+                            <td class="py-2.5 px-2 font-bold">${a.time}</td>
                             <td class="py-2.5 px-2">${modalityLabel(a)}</td>
-                            <td class="py-2.5 px-2 font-semibold">${a.patientName || 'Paciente'}</td>
-                            <td class="py-2.5 px-2">${formatApptCostLabel(a)} (${(a.paymentStatus || 'pendiente').toUpperCase()})</td>
-                            <td class="py-2.5 px-2 font-medium">${(a.status || 'programada').toUpperCase()}</td>
+                            <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
+                            <td class="py-2.5 px-2">${formatApptCostLabel(a)} (${a.paymentStatus.toUpperCase()})</td>
+                            <td class="py-2.5 px-2 font-medium">${a.status.toUpperCase()}</td>
                             <td class="py-2.5 px-2 text-graphite-600">${a.notes || 'Sin observaciones.'}</td>
                         </tr>`).join('')
                     : `<tr><td colspan="7" class="py-4 text-center text-graphite-400">No hay consultas agendadas para este periodo.</td></tr>`;
@@ -2533,11 +2548,11 @@ window.printClinicalHistory = function() {
                 tbody.innerHTML = reportApps.length
                     ? reportApps.map(a => `
                         <tr class="border-b">
-                            <td class="py-2.5 px-2 font-bold">${a.time || '—'}</td>
+                            <td class="py-2.5 px-2 font-bold">${a.time}</td>
                             <td class="py-2.5 px-2">${modalityLabel(a)}</td>
-                            <td class="py-2.5 px-2 font-semibold">${a.patientName || 'Paciente'}</td>
-                            <td class="py-2.5 px-2">${formatApptCostLabel(a)} (${(a.paymentStatus || 'pendiente').toUpperCase()})</td>
-                            <td class="py-2.5 px-2 font-medium">${(a.status || 'programada').toUpperCase()}</td>
+                            <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
+                            <td class="py-2.5 px-2">${formatApptCostLabel(a)} (${a.paymentStatus.toUpperCase()})</td>
+                            <td class="py-2.5 px-2 font-medium">${a.status.toUpperCase()}</td>
                             <td class="py-2.5 px-2 text-graphite-600">${a.notes || 'Sin observaciones.'}</td>
                         </tr>`).join('')
                     : `<tr><td colspan="6" class="py-4 text-center text-graphite-400">No hay consultas agendadas para esta fecha.</td></tr>`;
@@ -2736,22 +2751,8 @@ window.printClinicalHistory = function() {
             let periodLabel = '';
             const isMonth = printType === 'mes';
             const isWeek  = printType === 'semana';
-            const isCustom = printType === 'personalizado';
 
-            if (isCustom) {
-                const start = document.getElementById('print-custom-start').value;
-                const end = document.getElementById('print-custom-end').value;
-                if (!start || !end || start > end) {
-                    alert('Selecciona un rango de fechas válido.');
-                    return;
-                }
-                reportApps = state.appointments
-                    .filter(a => a.date >= start && a.date <= end)
-                    .sort((a, b) => ((a.date || '') + (a.time || '')).localeCompare((b.date || '') + (b.time || '')));
-                periodLabel = formatDateRangeLabel(start, end);
-                document.getElementById('pr-title-main').innerText = 'LISTA DE CITAS POR RANGO';
-                document.getElementById('pr-head-date-label').innerText = 'PERIODO';
-            } else if (isMonth) {
+            if (isMonth) {
                 const monthVal = document.getElementById('print-month-select').value; // YYYY-MM
                 reportApps = state.appointments
                     .filter(a => a.date.startsWith(monthVal))
@@ -2773,7 +2774,7 @@ window.printClinicalHistory = function() {
                 document.getElementById('pr-head-date-label').innerText = 'PERIODO';
             } else {
                 const targetDate = document.getElementById('print-date-select').value;
-                reportApps = state.appointments.filter(a => a.date === targetDate).sort((a, b) => String(a.time || '').localeCompare(String(b.time || '')));
+                reportApps = state.appointments.filter(a => a.date === targetDate).sort((a, b) => a.time.localeCompare(b.time));
                 periodLabel = new Date(targetDate + 'T00:00:00')
                     .toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
                 document.getElementById('pr-title-main').innerText = 'LISTA DE CITAS DEL DÍA';
@@ -2958,6 +2959,89 @@ window.printClinicalHistory = function() {
             }, 300);
         };
 
+
+        // Bloqueos independientes de pacientes, pagos y estadísticas.
+        function timeMinutes(t) { const [h, m] = String(t).split(':').map(Number); return h * 60 + m; }
+        function blockOverlaps(b, date, start, end) {
+            return b.date === date && (b.allDay || (start < timeMinutes(b.end) && end > timeMinutes(b.start)));
+        }
+        function findScheduleBlock(date, time) {
+            const start = timeMinutes(time);
+            return state.scheduleBlocks.find(b => blockOverlaps(b, date, start, start + 60));
+        }
+        window.isAgendaSlotBlocked = (date, time) => !state.blocksReady || !!findScheduleBlock(date, time);
+        function refreshScheduleBlocks() {
+            actualizarGridHorarios();
+            renderScheduleBlocks();
+            renderAppointments();
+            if (state.citasView === 'mes') renderMonthView();
+        }
+        window.resetScheduleBlockForm = function() {
+            document.getElementById('schedule-block-form').reset();
+            document.getElementById('block-id').value = '';
+            document.getElementById('block-date').value = document.getElementById('date-filter').value || horarioDateStr(new Date());
+            document.getElementById('block-start').value = '10:00';
+            document.getElementById('block-end').value = '11:00';
+            document.getElementById('block-save').textContent = 'Guardar bloqueo';
+            toggleBlockTimes();
+        };
+        window.toggleBlockTimes = function() {
+            const allDay = document.getElementById('block-all-day').checked;
+            ['block-start', 'block-end'].forEach(id => { const el = document.getElementById(id); el.disabled = allDay; el.required = !allDay; });
+            document.getElementById('block-times').style.opacity = allDay ? '0.5' : '1';
+        };
+        function renderScheduleBlocks() {
+            const list = document.getElementById('schedule-block-list');
+            list.replaceChildren();
+            document.getElementById('schedule-block-status').textContent = state.blocksReady ? '' : 'Cargando bloqueos…';
+            const selected = document.getElementById('block-month').value;
+            const blocks = state.scheduleBlocks.filter(b => !selected || b.date.startsWith(selected)).sort((a,b) => (a.date + (a.start || '')).localeCompare(b.date + (b.start || '')));
+            if (!blocks.length) { list.textContent = 'Sin bloqueos para este mes.'; return; }
+            blocks.forEach(b => {
+                const row = document.createElement('div'); row.className = 'flex items-center gap-2 flex-wrap border-b py-2 text-sm';
+                const text = document.createElement('span'); text.className = 'flex-1';
+                text.textContent = b.date + ' · ' + b.label + ' · ' + (b.allDay ? 'Todo el día' : b.start + ' – ' + b.end);
+                row.append(text);
+                const edit = document.createElement('button'); edit.type = 'button'; edit.textContent = 'Editar'; edit.className = 'px-3 py-1 rounded-lg bg-indigo-100 text-indigo-700';
+                edit.onclick = () => {
+                    document.getElementById('block-id').value = b.id;
+                    document.getElementById('block-date').value = b.date;
+                    document.getElementById('block-label').value = b.label;
+                    document.getElementById('block-all-day').checked = b.allDay;
+                    document.getElementById('block-start').value = b.start || '10:00';
+                    document.getElementById('block-end').value = b.end || '11:00';
+                    document.getElementById('block-save').textContent = 'Guardar cambios'; toggleBlockTimes();
+                }; row.append(edit);
+                const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Desbloquear'; remove.className = 'px-3 py-1 rounded-lg bg-rose-100 text-rose-700';
+                remove.onclick = async () => {
+                    if (!state.currentUser || !confirm('¿Quitar este bloqueo del ' + b.date + '?')) return;
+                    remove.disabled = true;
+                    try { await deleteDoc(doc(db, 'artifacts', appId, 'users', state.currentUser.uid, 'scheduleBlocks', b.id)); if (document.getElementById('block-id').value === b.id) resetScheduleBlockForm(); }
+                    catch (_) { alert('No se pudo quitar el bloqueo. Revisa tu conexión y los permisos de Firestore.'); }
+                    finally { remove.disabled = false; }
+                }; row.append(remove); list.append(row);
+            });
+        }
+        window.renderScheduleBlocks = renderScheduleBlocks;
+        document.getElementById('schedule-block-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            if (!state.currentUser || !state.blocksReady) { alert('Los bloqueos todavía no están disponibles.'); return; }
+            const id = document.getElementById('block-id').value || 'block_' + crypto.randomUUID();
+            const b = { date: document.getElementById('block-date').value, label: document.getElementById('block-label').value, allDay: document.getElementById('block-all-day').checked, start: document.getElementById('block-start').value, end: document.getElementById('block-end').value };
+            if (!b.date || (!b.allDay && (!b.start || !b.end || timeMinutes(b.end) <= timeMinutes(b.start)))) { alert('Elige una fecha y una hora final posterior al inicio.'); return; }
+            if (b.allDay) { b.start = ''; b.end = ''; }
+            const start = b.allDay ? 0 : timeMinutes(b.start), end = b.allDay ? 1440 : timeMinutes(b.end);
+            if (state.scheduleBlocks.some(other => other.id !== id && blockOverlaps(other, b.date, start, end))) { alert('Ya hay un bloqueo en esta franja. Edita o quita el existente.'); return; }
+            const btn = document.getElementById('block-save'); btn.disabled = true;
+            try { await setDoc(doc(db, 'artifacts', appId, 'users', state.currentUser.uid, 'scheduleBlocks', id), { ...b, updatedAt: new Date().toISOString() }); resetScheduleBlockForm(); }
+            catch (_) { alert('No se pudo guardar el bloqueo. Revisa tu conexión y los permisos de Firestore para scheduleBlocks.'); }
+            finally { btn.disabled = false; }
+        });
+        function blockDayMarkup(date) {
+            return state.scheduleBlocks.filter(b => b.date === date).map(b => `<div class="rounded-lg ${b.label === 'Feriado' ? 'bg-violet-200 text-violet-900' : 'bg-rose-300 text-rose-800'} px-3 py-2 text-sm font-semibold">🔒 ${b.label === 'Feriado' ? 'Feriado' : 'Ocupado'} · ${b.allDay ? 'Todo el día' : b.start + ' – ' + b.end}</div>`).join('');
+
+        }
+
         // ─── HORARIO SEMANAL (Modal "Revisar Horario") ─────────────────────────────
         const HORARIO_SLOTS = ['10:00','11:00','12:00','16:00','17:00','18:00','19:00'];
         const HORARIO_DAYS  = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -2978,6 +3062,9 @@ window.printClinicalHistory = function() {
             const baseDateStr = document.getElementById('date-filter') ? document.getElementById('date-filter').value : '';
             const baseDate = baseDateStr ? new Date(baseDateStr + 'T00:00:00') : new Date();
             state.horarioWeekStart = getMondayOf(baseDate);
+            resetScheduleBlockForm();
+            document.getElementById('block-month').value = horarioDateStr(baseDate).slice(0,7);
+            renderScheduleBlocks();
             document.getElementById('modal-horario').classList.remove('hidden');
             actualizarGridHorarios();
         };
@@ -3047,9 +3134,12 @@ window.printClinicalHistory = function() {
                     slotDateTime.setHours(h, m, 0, 0);
                     const yaPaso = slotDateTime.getTime() < now.getTime();
 
-                    const occupied = bloqueadoPorDefecto || tieneCita || yaPaso;
+                    const manualBlock = findScheduleBlock(dateStr, slot);
+                    const occupied = bloqueadoPorDefecto || tieneCita || yaPaso || manualBlock || !state.blocksReady;
+                    const slotLabel = !state.blocksReady ? 'Cargando…' : manualBlock && manualBlock.label === 'Feriado' ? 'Feriado' : 'Ocupado';
+                    const slotColors = !state.blocksReady ? 'bg-slate-100 text-slate-600' : manualBlock ? (manualBlock.label === 'Feriado' ? 'bg-violet-200 text-violet-900' : 'bg-rose-300 text-rose-800') : 'bg-rose-300 text-rose-800';
                     html += occupied
-                        ? `<div class="flex items-center justify-center py-2.5 rounded-xl bg-rose-300 text-rose-800 font-extrabold text-[11px] uppercase tracking-wide">Ocupado</div>`
+                        ? `<div class="flex items-center justify-center py-2.5 rounded-xl ${slotColors} font-extrabold text-[11px] uppercase tracking-wide">${slotLabel}</div>`
                         : `<div class="flex items-center justify-center py-2.5 rounded-xl bg-emerald-100 text-emerald-700 font-extrabold text-[11px] uppercase tracking-wide">Libre</div>`;
                 });
             });
@@ -3318,4 +3408,36 @@ window.printClinicalHistory = function() {
                 area.style.maxWidth = prevAreaMaxWidth;
                 if (btn) { btn.disabled = false; btn.innerHTML = originalLabel; }
             }
+        };
+
+
+        window.printAllPatients = function() {
+            if (!state.currentUser || !state.patientsReady) { alert('Espera a que se cargue el directorio de pacientes.'); return; }
+            const patients = state.patients.slice().sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'es', { sensitivity: 'base', numeric: true }));
+            if (!patients.length) { alert('No hay pacientes registrados para imprimir.'); return; }
+            const tbody = document.getElementById('print-all-patients-rows');
+            tbody.replaceChildren();
+            patients.forEach((patient, index) => {
+                const row = document.createElement('tr');
+                [index + 1, patient.name || 'Sin nombre', patient.dni, patient.phone, patient.birth ? patient.birth.split('-').reverse().join('/') : '', patient.age].forEach(value => {
+                    const cell = document.createElement('td');
+                    cell.textContent = value === undefined || value === null || value === '' ? '—' : String(value);
+                    row.appendChild(cell);
+                });
+                tbody.appendChild(row);
+            });
+            document.getElementById('print-all-patients-total').textContent = patients.length;
+            document.getElementById('print-all-patients-date').textContent = new Date().toLocaleString('es-PE');
+            document.getElementById('print-all-patients-specialist').textContent = document.getElementById('header-user-name').textContent;
+            hideAllPrintSections();
+            const section = document.getElementById('print-all-patients');
+            section.classList.remove('hidden');
+            document.body.classList.add('printing-all-patients');
+            const cleanup = () => {
+                document.body.classList.remove('printing-all-patients');
+                section.classList.add('hidden');
+                window.removeEventListener('afterprint', cleanup);
+            };
+            window.addEventListener('afterprint', cleanup);
+            setTimeout(() => { try { window.print(); } catch (error) { cleanup(); alert('No se pudo abrir la impresión.'); } }, 150);
         };
