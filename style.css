@@ -111,3 +111,8 @@
  .hc-paginated .hc-print-page:last-child{break-after:auto;page-break-after:auto}
  .hc-paginated section{break-inside:avoid;page-break-inside:avoid}
 }
+
+@media print {
+ body.printing-clinical-history > :not(#print-clinical-history){display:none!important}
+ body.printing-clinical-history #print-clinical-history{display:block!important}
+}

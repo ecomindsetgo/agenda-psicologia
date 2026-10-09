@@ -8,3 +8,5 @@ Cambios de historia clínica
 Reemplaza los archivos del proyecto por esta versión. Abre la historia clínica y pulsa Imprimir; selecciona Guardar como PDF. El navegador controla el diálogo, la carpeta y permite modificar el nombre.
 
 Validación: sintaxis JavaScript comprobada. La impresión final debe revisarse en Chrome o Edge; el entorno de revisión no dispone de un ejecutable de navegador para generar una prueba visual.
+
+Corrección de preparación de impresión: se usa la ventana principal y la hoja de estilos ya cargada. Se actualizan los identificadores de versión de app.js y style.css para evitar archivos anteriores en caché. Actualiza index.html, app.js y style.css juntos y recarga con Ctrl+F5.

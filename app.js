@@ -728,38 +728,50 @@ window.printClinicalHistory = function() {
     const date = `${part('year')}-${part('month')}-${part('day')}`;
     const name = (patient.name || 'Paciente').replace(/[<>:"/\\|?*\x00-\x1f]/g, '').trim();
     const filename = `${name}_${date}`;
-    const frame = document.createElement('iframe');
-    frame.title = 'Imprimir historia clínica';
-    frame.style.cssText = 'position:fixed;width:1px;height:1px;left:-10000px;border:0';
-    document.body.appendChild(frame);
-    const output = frame.contentDocument;
-    output.open();
-    output.write('<!doctype html><html><head><meta charset="utf-8"></head><body></body></html>');
-    output.close();
-    output.title = filename;
-    const css = output.createElement('link');
-    css.rel = 'stylesheet'; css.href = new URL('style.css', location.href).href;
-    const cssReady = new Promise((resolve, reject) => { css.onload = resolve; css.onerror = reject; });
-    output.head.appendChild(css);
-    const copy = document.getElementById('print-clinical-history').cloneNode(true);
-    copy.classList.remove('hidden');
-    output.body.appendChild(copy);
+    if (window._clinicalPrintBusy) return;
+    window._clinicalPrintBusy = true;
+    const original = document.getElementById('print-clinical-history');
+    const staging = original.cloneNode(true);
+    staging.removeAttribute('id');
+    staging.classList.remove('hidden');
+    staging.classList.add('hc-paginated', 'no-print');
+    staging.style.cssText = 'position:absolute;left:-10000px;top:0;width:210mm;display:block!important';
+    document.body.appendChild(staging);
     const previousTitle = document.title;
-    frame.contentWindow.addEventListener('afterprint', () => { document.title = previousTitle; frame.remove(); }, {once:true});
-    Promise.all([cssReady, ...Array.from(copy.querySelectorAll('img')).map(img =>
-        img.decode().catch(() => {}))]).then(async () => {
-        await output.fonts.ready;
-        frame.style.width = "210mm";
-        frame.style.height = "297mm";
-        // Medir con el estilo A4, antes de abrir el diálogo de impresión.
-        copy.classList.add("hc-paginated");
-        paginateClinicalDocument(copy);
+    let savedChildren = null;
+    let cleaned = false;
+    const cleanup = () => {
+        if (cleaned) return;
+        cleaned = true;
+        staging.remove();
+        document.body.classList.remove('printing-clinical-history');
+        document.title = previousTitle;
+        if (savedChildren) original.replaceChildren(...savedChildren);
+        original.classList.remove('hc-paginated');
+        original.classList.add('hidden');
+        window._clinicalPrintBusy = false;
+        window.removeEventListener('afterprint', cleanup);
+    };
+    (async () => {
+        if (document.fonts) await document.fonts.ready;
+        await Promise.all(Array.from(staging.querySelectorAll('img')).map(img =>
+            typeof img.decode === 'function' ? img.decode().catch(() => {}) : Promise.resolve()));
+        paginateClinicalDocument(staging);
+        savedChildren = Array.from(original.childNodes);
+        original.replaceChildren(...Array.from(staging.childNodes));
+        staging.remove();
+        hideAllPrintSections();
+        original.classList.add('hc-paginated');
+        original.classList.remove('hidden');
+        document.body.classList.add('printing-clinical-history');
         document.title = filename;
-        frame.contentWindow.focus();
-        frame.contentWindow.print();
-    }).catch(error => {
-        frame.remove(); console.error(error);
-        alert('No se pudo preparar la impresión. Vuelve a intentarlo.');
+        window.addEventListener('afterprint', cleanup, {once:true});
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        window.print();
+    })().catch(error => {
+        cleanup();
+        console.error('[Preparación de historia clínica]', error);
+        alert('No se pudo preparar la impresión: ' + (error?.message || 'error desconocido'));
     });
 };
 
