@@ -1081,6 +1081,7 @@
 
         <div class="overflow-y-auto max-h-[80vh] p-6 bg-slate-50">
             <input type="hidden" id="hc-patient-id">
+            <label class="hc-label">Código de historia clínica</label><input id="hc-code" class="hc-input" readonly aria-label="Código automático de historia clínica">
 
             <div class="hc-form-section">
                 <div class="hc-section-title">DATOS GENERALES</div>
@@ -1451,7 +1452,7 @@
             <div class="hc-wave hc-wave-top"></div>
             <div class="hc-print-content">
                 <div class="hc-print-brand"><img src="logo-lisbeth.png" alt="Lisbeth Méndez Psicóloga"></div>
-                <h1>HISTORIA CLÍNICA PSICOLÓGICA</h1>
+                <h1>HISTORIA CLÍNICA PSICOLÓGICA</h1><div class="hc-code-print">Código: <strong id="pch-code"></strong></div>
                 <section><h2>DATOS GENERALES</h2><div class="hc-data-grid">
                     <div><b>Nombre completo</b><span id="pch-name"></span></div><div><b>Fecha de Primera sesión</b><span id="pch-first-session"></span></div>
                     <div><b>Fecha de nacimiento</b><span id="pch-birth"></span></div><div><b>Edad</b><span id="pch-age"></span></div>
@@ -1469,7 +1470,6 @@
         <div class="hc-print-page hc-page-2">
             <div class="hc-wave hc-wave-top"></div><div class="hc-print-content hc-continuation">
                 <div class="hc-print-brand"><img src="logo-lisbeth.png" alt="Lisbeth Méndez Psicóloga"></div>
-                <section><h2>HISTORIA PERSONAL RELEVANTE</h2><p id="pch-historia-personal-2"></p></section>
                 <section><h2>VÍNCULOS Y RELACIONES <small>¿Cómo son sus relaciones actualmente? ¿Qué patrones se repiten? ¿Qué suele necesitar emocionalmente?</small></h2><p id="pch-vinculos"></p></section>
                 <section><h2>TÉCNICAS E INSTRUMENTOS APLICADOS</h2><p id="pch-tecnicas"></p></section>
                 <section><h2>OBSERVACIÓN DE CONDUCTA <small>Actitud en sesión / Nivel de apertura · Resistencias / Insight</small></h2><p id="pch-conducta"></p></section>

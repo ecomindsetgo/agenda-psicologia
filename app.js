@@ -415,6 +415,11 @@ id:doc.id,
                 await deleteDoc(doc(db, 'artifacts', appId, 'users', state.currentUser.uid, 'patients', pid));
             }
         };
+function clinicalHistoryCode(patientId, history = {}) {
+    // El identificador del documento es estable y único dentro de la cuenta.
+    return history.code || ('HC-' + encodeURIComponent(String(patientId)));
+}
+
 window.openClinicalHistory = function(patientId){
     try {
         const patients = Array.isArray(state.patients) ? state.patients : [];
@@ -438,6 +443,7 @@ window.openClinicalHistory = function(patientId){
         };
 
         setValue("hc-patient-id", patientId);
+        setValue("hc-code", clinicalHistoryCode(patientId, history));
         setValue("hc-patient-name", patient.name || "");
         setValue("hc-patient-dni", patient.dni || "");
         setValue("hc-patient-phone", patient.phone || "");
@@ -513,6 +519,7 @@ window.saveClinicalHistory = async function(){
         const patientId = document.getElementById("hc-patient-id").value;
         if(!patientId) return;
         const data = {
+            code: clinicalHistoryCode(patientId, state.histories.find(h => String(h.id) === String(patientId)) || {}),
             firstSession: document.getElementById("hc-first-session").value,
             patientAge: document.getElementById("hc-patient-age").value.trim(),
             civilStatus: document.getElementById("hc-civil-status").value,
@@ -608,6 +615,7 @@ window.printClinicalHistory = function() {
 
     setPrintText('pch-specialist-foot', specialistName);
     setPrintText('pch-specialist-foot-2', specialistName);
+    setPrintText('pch-code', clinicalHistoryCode(patientId, history));
     setPrintText('pch-name', patient.name);
     setPrintText('pch-dni', patient.dni);
     setPrintText('pch-phone', patient.phone);
@@ -636,15 +644,50 @@ window.printClinicalHistory = function() {
     if(notesData.length){ notesData.forEach(n=>{ const tr=document.createElement('tr'); [n.fecha,n.sesion,n.evolucion||'—'].forEach((v,i)=>{const td=document.createElement('td'); td.innerText=v; tr.appendChild(td);}); tbody.appendChild(tr); }); }
     else tbody.innerHTML='<tr><td colspan="3">Sin evolución clínica registrada.</td></tr>';
 
-    hideAllPrintSections();
-    const clinicalModal=document.getElementById('clinical-history-modal');
-    clinicalModal.classList.add('hidden'); clinicalModal.classList.remove('flex');
-    document.getElementById('print-clinical-history').classList.remove('hidden');
-    setTimeout(()=>{
-        window.print();
-        document.getElementById('print-clinical-history').classList.add('hidden');
-        clinicalModal.classList.remove('hidden'); clinicalModal.classList.add('flex');
-    },300);
+    const code = clinicalHistoryCode(patientId, history);
+    // Asignar también a historias anteriores sin modificar sus campos clínicos.
+    if (!history.code && state.currentUser) {
+        setDoc(doc(db, 'artifacts', appId, 'users', state.currentUser.uid, 'clinicalHistories', patientId),
+            {code}, {merge:true}).catch(error => {
+                console.error('[Código de historia clínica]', error);
+                alert('No se pudo guardar el código de la historia. Comprueba la conexión y vuelve a guardar.');
+            });
+    }
+    const dateParts = new Intl.DateTimeFormat('en-CA', {
+        timeZone:'America/Lima', year:'numeric', month:'2-digit', day:'2-digit'
+    }).formatToParts(new Date());
+    const part = type => dateParts.find(p => p.type === type).value;
+    const date = `${part('year')}-${part('month')}-${part('day')}`;
+    const name = (patient.name || 'Paciente').replace(/[<>:"/\\|?*\x00-\x1f]/g, '').trim();
+    const filename = `${name}_${date}`;
+    const frame = document.createElement('iframe');
+    frame.title = 'Imprimir historia clínica';
+    frame.style.cssText = 'position:fixed;width:1px;height:1px;left:-10000px;border:0';
+    document.body.appendChild(frame);
+    const output = frame.contentDocument;
+    output.open();
+    output.write('<!doctype html><html><head><meta charset="utf-8"></head><body></body></html>');
+    output.close();
+    output.title = filename;
+    const css = output.createElement('link');
+    css.rel = 'stylesheet'; css.href = new URL('style.css', location.href).href;
+    const cssReady = new Promise((resolve, reject) => { css.onload = resolve; css.onerror = reject; });
+    output.head.appendChild(css);
+    const copy = document.getElementById('print-clinical-history').cloneNode(true);
+    copy.classList.remove('hidden');
+    output.body.appendChild(copy);
+    const previousTitle = document.title;
+    frame.contentWindow.addEventListener('afterprint', () => { document.title = previousTitle; frame.remove(); }, {once:true});
+    Promise.all([cssReady, ...Array.from(copy.querySelectorAll('img')).map(img =>
+        img.decode().catch(() => {}))]).then(async () => {
+        await output.fonts.ready;
+        document.title = filename;
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+    }).catch(error => {
+        frame.remove(); console.error(error);
+        alert('No se pudo preparar la impresión. Vuelve a intentarlo.');
+    });
 };
 
         window.editPatient = function(pid) {

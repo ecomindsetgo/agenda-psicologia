@@ -94,3 +94,31 @@
   #print-all-patients th, #print-all-patients td { border: 1px solid #aab3bf; padding: 2.5mm 2mm; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
   #print-all-patients th { font-weight: 700; background: #eef1f5; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 }
+
+/* El navegador pagina el contenido, sin alturas fijas ni recortes. */
+@media print {
+  @page clinical-history { size:A4 portrait; margin:18mm 18mm 20mm; }
+  #print-clinical-history { page:clinical-history; font-family:Arial,sans-serif; }
+  #print-clinical-history .hc-print-page { width:auto; height:auto; min-height:0; overflow:visible; padding:0; break-after:auto; page-break-after:auto; }
+  #print-clinical-history .hc-print-content { padding:0; }
+  #print-clinical-history .hc-print-brand { break-inside:avoid; }
+  #print-clinical-history .hc-page-2 .hc-print-brand,
+  #print-clinical-history .hc-page-3 .hc-print-brand,
+  #print-clinical-history .hc-page-4 .hc-print-brand,
+  #print-clinical-history .hc-wave { display:none; }
+  #print-clinical-history section { break-inside:auto; page-break-inside:auto; }
+  #print-clinical-history h2 { break-after:avoid; page-break-after:avoid; }
+  #print-clinical-history p { min-height:0; overflow-wrap:anywhere; orphans:3; widows:3; }
+  #print-clinical-history table { table-layout:fixed; }
+  #print-clinical-history td { white-space:pre-wrap; overflow-wrap:anywhere; }
+  #print-clinical-history th:first-child { width:22mm; }
+  #print-clinical-history th:nth-child(2) { width:22mm; }
+  #print-clinical-history thead { display:table-header-group; }
+  #print-clinical-history .hc-data-grid { break-inside:avoid; }
+  #print-clinical-history .hc-data-grid>div { min-width:0; flex-wrap:wrap; }
+  #print-clinical-history span { min-width:0; overflow-wrap:anywhere; }
+  #print-clinical-history .hc-print-footer { position:static; width:100%; height:auto; min-height:14mm; margin:5mm 0; padding:3mm; break-inside:avoid; }
+  #print-clinical-history .hc-print-footer em { position:static; }
+  #print-clinical-history .hc-signature { break-inside:avoid; margin-top:10mm; }
+  #print-clinical-history .hc-code-print { margin-bottom:5mm; font-size:9pt; overflow-wrap:anywhere; }
+}
