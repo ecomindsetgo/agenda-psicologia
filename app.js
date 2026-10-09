@@ -603,6 +603,74 @@ function setPrintText(id, value){
     const el=document.getElementById(id); if(el) el.innerText=value || '—';
 }
 
+function paginateClinicalDocument(root) {
+    const originals = Array.from(root.querySelectorAll('.hc-print-page'));
+    const template = originals[0];
+    const brand = template.querySelector('.hc-print-brand');
+    const footer = template.querySelector('.hc-print-footer');
+    const wave = template.querySelector('.hc-wave');
+    const groups = originals.map(page => Array.from(page.querySelector('.hc-print-content').children)
+        .filter(node => !node.classList.contains('hc-print-brand')).map(node => node.cloneNode(true)));
+    root.replaceChildren();
+    root.classList.add('hc-paginated');
+    let content;
+    function newPage() {
+        const page = document.createElement('div'); page.className = 'hc-print-page';
+        page.appendChild(wave.cloneNode(true));
+        content = document.createElement('div'); content.className = 'hc-print-content';
+        content.appendChild(brand.cloneNode(true));
+        page.appendChild(content); page.appendChild(footer.cloneNode(true)); root.appendChild(page);
+    }
+    function fits() {
+        const last = content.lastElementChild;
+        const bottom = content.getBoundingClientRect().bottom - parseFloat(content.ownerDocument.defaultView.getComputedStyle(content).paddingBottom);
+        return last.getBoundingClientRect().bottom <= bottom + 0.2;
+    }
+    function add(node) {
+        content.appendChild(node);
+        if (fits()) return;
+        node.remove();
+        // Intentar primero mantener cada bloque completo en la siguiente página.
+        if (content.children.length > 1) { newPage(); content.appendChild(node); if (fits()) return; node.remove(); }
+        const paragraph = node.querySelector('p');
+        const row = node.querySelector('tbody tr');
+        const textElement = paragraph || (row && row.lastElementChild) || node.querySelector('.hc-plan-grid span');
+        if (!textElement) { throw new Error('Un bloque no cabe en la página. Revisa los datos generales.'); }
+        // Las tablas se dividen por filas; las evoluciones extensas también por texto.
+        if (row && node.querySelectorAll('tbody tr').length > 1) {
+            const rows = Array.from(node.querySelectorAll('tbody tr'));
+            for (const item of rows) {
+                const single = node.cloneNode(true); single.querySelector('tbody').replaceChildren(item.cloneNode(true)); add(single);
+            }
+            return;
+        }
+        const text = textElement.textContent;
+        let offset = 0;
+        while (offset < text.length) {
+            const fragment = node.cloneNode(true);
+            fragment.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+            const target = paragraph ? fragment.querySelector('p') : row ? fragment.querySelector('tbody tr').lastElementChild : fragment.querySelector('.hc-plan-grid span');
+            if (offset) { const heading = fragment.querySelector('h2'); if (heading) heading.appendChild(document.createTextNode(' (continuación)')); }
+            content.appendChild(fragment);
+            let low = 0, high = text.length - offset;
+            while (low < high) {
+                const mid = Math.ceil((low + high) / 2); target.textContent = text.slice(offset, offset + mid);
+                if (fits()) low = mid; else high = mid - 1;
+            }
+            if (!low) { fragment.remove(); throw new Error('No se pudo distribuir el contenido de la historia.'); }
+            // Preferir cortes entre palabras sin eliminar espacios ni saltos.
+            let count = low;
+            if (offset + count < text.length) {
+                const boundary = text.slice(offset, offset + count).search(/\s+\S*$/);
+                if (boundary > count / 2) count = boundary + 1;
+            }
+            target.textContent = text.slice(offset, offset + count); offset += count;
+            if (offset < text.length) newPage();
+        }
+    }
+    groups.forEach(nodes => { newPage(); nodes.forEach(add); });
+}
+
 window.printClinicalHistory = function() {
     const patientId = document.getElementById("hc-patient-id").value;
     const patient = state.patients.find(p => p.id === patientId);
@@ -681,6 +749,11 @@ window.printClinicalHistory = function() {
     Promise.all([cssReady, ...Array.from(copy.querySelectorAll('img')).map(img =>
         img.decode().catch(() => {}))]).then(async () => {
         await output.fonts.ready;
+        frame.style.width = "210mm";
+        frame.style.height = "297mm";
+        // Medir con el estilo A4, antes de abrir el diálogo de impresión.
+        copy.classList.add("hc-paginated");
+        paginateClinicalDocument(copy);
         document.title = filename;
         frame.contentWindow.focus();
         frame.contentWindow.print();

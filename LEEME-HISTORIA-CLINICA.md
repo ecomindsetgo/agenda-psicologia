@@ -1,6 +1,6 @@
 Cambios de historia clínica
 
-- Impresión A4 con márgenes de 18 mm y paginación automática según el contenido.
+- Impresión A4 con el diseño original: logo, encabezado con onda turquesa y pie turquesa en cada página. El contenido se mide antes de imprimir y se crean páginas de continuación cuando es necesario, reservando el espacio del pie.
 - Se conserva el texto completo y se elimina la repetición de historia personal.
 - Código automático HC basado en el identificador único del paciente, estable entre descargas. Se guarda junto a la historia al guardar o imprimir; también funciona con historias anteriores.
 - Nombre propuesto al guardar como PDF: Nombre del paciente_AAAA-MM-DD.pdf. La fecha corresponde a America/Lima.
