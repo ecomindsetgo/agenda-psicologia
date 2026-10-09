@@ -665,12 +665,18 @@ function paginateClinicalDocument(root) {
         content.appendChild(node);
         if (fits()) return;
         node.remove();
-        // Intentar primero mantener cada bloque completo en la siguiente página.
-        if (content.children.length > 1) { newPage(); content.appendChild(node); if (fits()) return; node.remove(); }
         const paragraph = node.querySelector('p');
         const row = node.querySelector('tbody tr');
-        const textElement = paragraph || (row && row.lastElementChild) || node.querySelector('.hc-plan-grid span');
-        if (!textElement) { throw new Error('Un bloque no cabe en la página. Revisa los datos generales.'); }
+        const textElement = paragraph || (row && row.lastElementChild);
+        if (!textElement || !textElement.textContent) {
+            // Mantener juntos los datos generales, el plan y la firma.
+            if (content.children.length > 1) {
+                newPage(); content.appendChild(node);
+                if (fits()) return;
+                node.remove();
+            }
+            throw new Error('Un bloque no cabe en la página. Revisa los datos generales.');
+        }
         // Las tablas se dividen por filas; las evoluciones extensas también por texto.
         if (row && node.querySelectorAll('tbody tr').length > 1) {
             const rows = Array.from(node.querySelectorAll('tbody tr'));
@@ -692,7 +698,17 @@ function paginateClinicalDocument(root) {
                 const mid = Math.ceil((low + high) / 2); target.textContent = text.slice(offset, offset + mid);
                 if (fits()) low = mid; else high = mid - 1;
             }
-            if (!low) { fragment.remove(); throw new Error('No se pudo distribuir el contenido de la historia.'); }
+            if (!low) {
+                fragment.remove();
+                if (content.children.length > 1) { newPage(); continue; }
+                throw new Error('No se pudo distribuir el contenido de la historia.');
+            }
+            target.textContent = text.slice(offset, offset + low);
+            const lineHeight = parseFloat(target.ownerDocument.defaultView.getComputedStyle(target).lineHeight) || 16;
+            if (offset + low < text.length && target.getBoundingClientRect().height < lineHeight * 2 && content.children.length > 2) {
+                // Evitar que el título quede al final con una sola línea de texto.
+                fragment.remove(); newPage(); continue;
+            }
             // Preferir cortes entre palabras sin eliminar espacios ni saltos.
             let count = low;
             if (offset + count < text.length) {
@@ -703,7 +719,8 @@ function paginateClinicalDocument(root) {
             if (offset < text.length) newPage();
         }
     }
-    groups.forEach(nodes => { newPage(); nodes.forEach(add); });
+    newPage();
+    groups.flat().forEach(add);
 }
 
 window.printClinicalHistory = async function() {

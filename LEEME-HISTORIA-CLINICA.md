@@ -12,3 +12,5 @@ Validación: sintaxis JavaScript comprobada. La impresión final debe revisarse 
 Corrección de preparación de impresión: se usa la ventana principal y la hoja de estilos ya cargada. Se actualizan los identificadores de versión de app.js y style.css para evitar archivos anteriores en caché. Actualiza index.html, app.js y style.css juntos y recarga con Ctrl+F5.
 
 Encabezado compacto: logo de 42 mm, título de 16 puntos y menor espacio superior. Se aplica también a las páginas de continuación.
+
+Distribución continua: se eliminan los saltos obligatorios entre las secciones originales. El texto utiliza el espacio disponible de la hoja actual y continúa en otra solo cuando llega al límite reservado sobre el pie. Se repiten logo y pie en cada hoja.
