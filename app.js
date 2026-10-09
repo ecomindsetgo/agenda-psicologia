@@ -26,7 +26,7 @@ import {
     EmailAuthProvider, reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import {
-    getFirestore, doc, setDoc, deleteDoc,
+    getFirestore, doc, setDoc, deleteDoc, getDocs, runTransaction,
     onSnapshot, collection, updateDoc
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -357,7 +357,7 @@ if (app) {
             historiesRef,
             (snapshot) => {
 
-            state.histories = snapshot.docs.map(doc => ({
+            state.histories = snapshot.docs.filter(doc => doc.id !== '_hcCodeCounter').map(doc => ({
             id: doc.id,
             ...doc.data()
             }));
@@ -416,8 +416,37 @@ id:doc.id,
             }
         };
 function clinicalHistoryCode(patientId, history = {}) {
-    // El identificador del documento es estable y único dentro de la cuenta.
-    return history.code || ('HC-' + encodeURIComponent(String(patientId)));
+    return /^HC-\d{4}$/.test(history.code || '') && Number(history.code.slice(3)) >= 101 ? history.code : '';
+}
+
+async function ensureClinicalHistoryCode(patientId) {
+    if (!state.currentUser) throw new Error('Inicia sesión para asignar el código.');
+    const uid = state.currentUser.uid;
+    const historiesRef = collection(db, 'artifacts', appId, 'users', uid, 'clinicalHistories');
+    const historyRef = doc(historiesRef, String(patientId));
+    const counterRef = doc(historiesRef, '_hcCodeCounter');
+    // Recupera el máximo existente al inicializar o recuperar el contador.
+    const existing = await getDocs(historiesRef);
+    const maxExisting = existing.docs.reduce((max, item) => {
+        const code = item.data().code || '';
+        return /^HC-\d{4}$/.test(code) ? Math.max(max, Number(code.slice(3))) : max;
+    }, 0);
+    const code = await runTransaction(db, async transaction => {
+        const historySnapshot = await transaction.get(historyRef);
+        const counterSnapshot = await transaction.get(counterRef);
+        const history = historySnapshot.exists() ? historySnapshot.data() : {};
+        if (/^HC-\d{4}$/.test(history.code || '') && Number(history.code.slice(3)) >= 101) return history.code;
+        const lastNumber = counterSnapshot.exists() ? Number(counterSnapshot.data().lastNumber) || 0 : 0;
+        const next = Math.max(100, lastNumber, maxExisting) + 1;
+        if (next > 9999) throw new Error('Se alcanzó el límite de 9999 códigos de historia clínica.');
+        const generated = 'HC-' + String(next).padStart(4, '0');
+        transaction.set(counterRef, {lastNumber: next}, {merge:true});
+        transaction.set(historyRef, {code: generated}, {merge:true});
+        return generated;
+    });
+    const local = state.histories.find(item => String(item.id) === String(patientId));
+    if (local) local.code = code;
+    return code;
 }
 
 window.openClinicalHistory = function(patientId){
@@ -443,7 +472,13 @@ window.openClinicalHistory = function(patientId){
         };
 
         setValue("hc-patient-id", patientId);
-        setValue("hc-code", clinicalHistoryCode(patientId, history));
+        setValue("hc-code", clinicalHistoryCode(patientId, history) || 'Asignando código…');
+        ensureClinicalHistoryCode(patientId).then(code => {
+            if (document.getElementById('hc-patient-id').value === String(patientId)) setValue('hc-code', code);
+        }).catch(error => {
+            if (document.getElementById('hc-patient-id').value === String(patientId)) setValue('hc-code', 'Pendiente de asignación');
+            alert('No se pudo asignar el código: ' + error.message);
+        });
         setValue("hc-patient-name", patient.name || "");
         setValue("hc-patient-dni", patient.dni || "");
         setValue("hc-patient-phone", patient.phone || "");
@@ -519,7 +554,7 @@ window.saveClinicalHistory = async function(){
         const patientId = document.getElementById("hc-patient-id").value;
         if(!patientId) return;
         const data = {
-            code: clinicalHistoryCode(patientId, state.histories.find(h => String(h.id) === String(patientId)) || {}),
+            code: await ensureClinicalHistoryCode(patientId),
             firstSession: document.getElementById("hc-first-session").value,
             patientAge: document.getElementById("hc-patient-age").value.trim(),
             civilStatus: document.getElementById("hc-civil-status").value,
@@ -671,11 +706,14 @@ function paginateClinicalDocument(root) {
     groups.forEach(nodes => { newPage(); nodes.forEach(add); });
 }
 
-window.printClinicalHistory = function() {
+window.printClinicalHistory = async function() {
     const patientId = document.getElementById("hc-patient-id").value;
     const patient = state.patients.find(p => p.id === patientId);
     if (!patient) { alert("No se encontró el paciente."); return; }
 
+    let code;
+    try { code = await ensureClinicalHistoryCode(patientId); }
+    catch (error) { alert('No se pudo asignar el código: ' + error.message); return; }
     const history = state.histories.find(h=>h.id===patientId) || {};
     const user = window._profileState && window._profileState.currentUser;
     let specialistName='Especialista';
@@ -683,7 +721,7 @@ window.printClinicalHistory = function() {
 
     setPrintText('pch-specialist-foot', specialistName);
     setPrintText('pch-specialist-foot-2', specialistName);
-    setPrintText('pch-code', clinicalHistoryCode(patientId, history));
+    setPrintText('pch-code', code);
     setPrintText('pch-name', patient.name);
     setPrintText('pch-dni', patient.dni);
     setPrintText('pch-phone', patient.phone);
@@ -712,15 +750,6 @@ window.printClinicalHistory = function() {
     if(notesData.length){ notesData.forEach(n=>{ const tr=document.createElement('tr'); [n.fecha,n.sesion,n.evolucion||'—'].forEach((v,i)=>{const td=document.createElement('td'); td.innerText=v; tr.appendChild(td);}); tbody.appendChild(tr); }); }
     else tbody.innerHTML='<tr><td colspan="3">Sin evolución clínica registrada.</td></tr>';
 
-    const code = clinicalHistoryCode(patientId, history);
-    // Asignar también a historias anteriores sin modificar sus campos clínicos.
-    if (!history.code && state.currentUser) {
-        setDoc(doc(db, 'artifacts', appId, 'users', state.currentUser.uid, 'clinicalHistories', patientId),
-            {code}, {merge:true}).catch(error => {
-                console.error('[Código de historia clínica]', error);
-                alert('No se pudo guardar el código de la historia. Comprueba la conexión y vuelve a guardar.');
-            });
-    }
     const dateParts = new Intl.DateTimeFormat('en-CA', {
         timeZone:'America/Lima', year:'numeric', month:'2-digit', day:'2-digit'
     }).formatToParts(new Date());

@@ -116,3 +116,14 @@
  body.printing-clinical-history > :not(#print-clinical-history){display:none!important}
  body.printing-clinical-history #print-clinical-history{display:block!important}
 }
+
+/* Encabezado compacto en todas las páginas de la historia clínica. */
+.hc-paginated .hc-print-content{padding-top:18mm}
+.hc-paginated .hc-print-brand img{width:42mm;max-height:17mm;margin-bottom:3mm}
+.hc-paginated .hc-print-content h1{font-size:16pt;line-height:1.15;margin-bottom:4mm}
+.hc-paginated .hc-code-print{font-size:8pt;margin-bottom:3mm}
+@media print{
+ .hc-paginated .hc-print-content{padding-top:18mm}
+ .hc-paginated .hc-print-brand img{width:42mm;max-height:17mm;margin-bottom:3mm}
+ .hc-paginated .hc-print-content h1{font-size:16pt;line-height:1.15;margin-bottom:4mm}
+}
