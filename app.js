@@ -110,7 +110,7 @@ if (app) {
                     time: a.time || '',
                     patientName: a.patientName || byId[a.patientId] || 'Paciente',
                     status: a.status || 'pendiente',
-                    cost: Number(a.cost || 0),
+                    cost: safeAppointmentCost(a),
                     currency: a.currency === 'USD' ? 'USD' : 'PEN',
                     paymentStatus: a.paymentStatus || 'pendiente',
                     modality: a.modality || ''
@@ -888,6 +888,19 @@ window.printClinicalHistory = async function() {
         }
         // Citas sin "currency" guardado (creadas antes de este cambio) se
         // asumen en soles, igual que siempre.
+        // Lectura compatible con citas antiguas y nuevas: nunca convierte un dato inválido en NaN.
+        function safeAppointmentCost(a) {
+            const raw = a && a.cost;
+            if (typeof raw === 'number') return Number.isFinite(raw) ? raw : 0;
+            if (typeof raw !== 'string') return 0;
+            let txt = raw.trim().replace(/(?:S\/|PEN|USD|\$)/gi, '').replace(/\s/g, '');
+            if (txt.includes(',') && txt.includes('.')) txt = txt.lastIndexOf(',') > txt.lastIndexOf('.') ? txt.replace(/\./g, '').replace(',', '.') : txt.replace(/,/g, '');
+            else if (txt.includes(',')) txt = txt.replace(',', '.');
+            const value = Number(txt);
+            return Number.isFinite(value) ? value : 0;
+        }
+        function safeAppointmentTime(a) { return String(a && (a.time || a.startTime || a.start || '') || ''); }
+        function sortAppointmentsByTime(a, b) { return safeAppointmentTime(a).localeCompare(safeAppointmentTime(b)); }
         function isPenAppt(a) { return a.currency !== 'USD'; }
         function isUsdAppt(a) { return a.currency === 'USD'; }
 
@@ -930,7 +943,7 @@ window.printClinicalHistory = async function() {
             (apps || []).forEach(a => {
                 const cur  = isUsdAppt(a) ? 'USD' : 'PEN';
                 const b    = m[cur];
-                const cost = Number(a.cost || 0);
+                const cost = safeAppointmentCost(a);
 
                 m.citas++;
                 if (a.patientId) m._pacientes.add(a.patientId);
@@ -971,11 +984,11 @@ window.printClinicalHistory = async function() {
             // Ticket promedio: sobre citas facturables (no canceladas) y con monto > 0,
             // porque las sesiones incluidas en un paquete ya pagado valen 0 y
             // distorsionarían el promedio hacia abajo.
-            const facturables = (apps || []).filter(a => a.status !== 'cancelada' && Number(a.cost || 0) > 0);
+            const facturables = (apps || []).filter(a => a.status !== 'cancelada' && safeAppointmentCost(a) > 0);
             const tickPen = facturables.filter(isPenAppt);
             const tickUsd = facturables.filter(isUsdAppt);
-            m.ticketPromedioPEN = tickPen.length ? tickPen.reduce((s, a) => s + Number(a.cost || 0), 0) / tickPen.length : 0;
-            m.ticketPromedioUSD = tickUsd.length ? tickUsd.reduce((s, a) => s + Number(a.cost || 0), 0) / tickUsd.length : 0;
+            m.ticketPromedioPEN = tickPen.length ? tickPen.reduce((s, a) => s + safeAppointmentCost(a), 0) / tickPen.length : 0;
+            m.ticketPromedioUSD = tickUsd.length ? tickUsd.reduce((s, a) => s + safeAppointmentCost(a), 0) / tickUsd.length : 0;
 
             // Tasa de asistencia sobre las citas ya resueltas (completadas + canceladas).
             const resueltas = m.completadas + m.canceladas;
@@ -1058,7 +1071,7 @@ window.printClinicalHistory = async function() {
             (apps || [])
                 .filter(a => a.status === 'completada'
                           && a.paymentStatus === 'pendiente'
-                          && Number(a.cost || 0) > 0)
+                          && safeAppointmentCost(a) > 0)
                 .forEach(a => {
                     const key = a.patientId || a.patientName || 'sin-id';
                     if (!byPatient[key]) {
@@ -1070,7 +1083,7 @@ window.printClinicalHistory = async function() {
                     }
                     const r = byPatient[key];
                     r.sesiones++;
-                    if (isUsdAppt(a)) r.usd += Number(a.cost || 0); else r.pen += Number(a.cost || 0);
+                    if (isUsdAppt(a)) r.usd += safeAppointmentCost(a); else r.pen += safeAppointmentCost(a);
                     if (a.date < r.masAntigua)  r.masAntigua  = a.date;
                     if (a.date > r.masReciente) r.masReciente = a.date;
                 });
@@ -1094,7 +1107,7 @@ window.printClinicalHistory = async function() {
                 if (!byPatient[key]) byPatient[key] = { nombre: a.patientName || 'Paciente', sesiones: 0, cobradoPen: 0, cobradoUsd: 0, pendientePen: 0, pendienteUsd: 0 };
                 const r = byPatient[key];
                 if (a.status === 'completada') r.sesiones++;
-                const cost = Number(a.cost || 0);
+                const cost = safeAppointmentCost(a);
                 const usd  = isUsdAppt(a);
                 if (a.paymentStatus === 'pagado') { if (usd) r.cobradoUsd += cost; else r.cobradoPen += cost; }
                 else                              { if (usd) r.pendienteUsd += cost; else r.pendientePen += cost; }
@@ -1117,7 +1130,7 @@ window.printClinicalHistory = async function() {
                 const t = (a.time || '00:00').slice(0, 5);
                 const f = franjas.find(fr => t >= fr.from && t <= fr.to) || franjas[0];
                 f.citas++;
-                if (isUsdAppt(a)) f.ingresosUsd += Number(a.cost || 0); else f.ingresos += Number(a.cost || 0);
+                if (isUsdAppt(a)) f.ingresosUsd += safeAppointmentCost(a); else f.ingresos += safeAppointmentCost(a);
             });
             return franjas;
         }
@@ -1757,10 +1770,10 @@ window.printClinicalHistory = async function() {
             let filtered = state.appointments.filter(a => a.date === dateFilter);
             if (state.filterStatus !== 'todas') filtered = filtered.filter(a => a.status === state.filterStatus);
             if (searchVal) filtered = filtered.filter(a =>
-                a.patientName.toLowerCase().includes(searchVal) ||
-                (a.notes || '').toLowerCase().includes(searchVal)
+                String(a.patientName || '').toLowerCase().includes(searchVal) ||
+                String(a.notes || '').toLowerCase().includes(searchVal)
             );
-            filtered.sort((a, b) => a.time.localeCompare(b.time));
+            filtered.sort((a, b) => sortAppointmentsByTime(a, b));
 
             const blocksMarkup = blockDayMarkup(dateFilter);
             if (!filtered.length) {
@@ -1794,7 +1807,7 @@ window.printClinicalHistory = async function() {
                         <div class="flex items-center gap-2 flex-wrap">
                             <span class="text-sm font-bold text-graphite-700 bg-graphite-100 px-2 py-0.5 rounded-lg">⏰ ${a.time}</span>
                             <h4 class="font-extrabold text-graphite-800 text-base">${a.patientName}</h4>
-                            <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${a.status.toUpperCase()}</span>
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${String(a.status || 'pendiente').toUpperCase()}</span>
                             ${modalityBadge}
                         </div>
                         <p class="text-xs text-graphite-500 italic">"${a.notes || 'Sin observaciones para esta sesión'}"</p>
@@ -1889,13 +1902,13 @@ window.printClinicalHistory = async function() {
             monthLabel = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
             document.getElementById('month-view-label').innerText = monthLabel;
 
-            const monthApps = state.appointments.filter(a => a.date.startsWith(state.monthViewDate));
+            const monthApps = state.appointments.filter(a => String(a.date || '').startsWith(state.monthViewDate));
             document.getElementById('month-view-total').innerText = monthApps.length;
             document.getElementById('month-view-completed').innerText = monthApps.filter(a => a.status === 'completada').length;
             // Solo se suman las citas en soles; las de pacientes extranjeros (USD)
             // no se mezclan en este total para no dar una cifra sin sentido.
-            const rev = monthApps.filter(a => a.status === 'completada' && isPenAppt(a)).reduce((s, a) => s + a.cost, 0);
-            const revUsd = monthApps.filter(a => a.status === 'completada' && isUsdAppt(a)).reduce((s, a) => s + a.cost, 0);
+            const rev = monthApps.filter(a => a.status === 'completada' && isPenAppt(a)).reduce((s, a) => s + safeAppointmentCost(a), 0);
+            const revUsd = monthApps.filter(a => a.status === 'completada' && isUsdAppt(a)).reduce((s, a) => s + safeAppointmentCost(a), 0);
             document.getElementById('month-view-revenue').innerText = `S/ ${rev.toFixed(2)}` + (revUsd > 0 ? ` (+ $ ${revUsd.toFixed(2)})` : '');
 
             const byDate = {};
@@ -1903,7 +1916,7 @@ window.printClinicalHistory = async function() {
                 if (!byDate[a.date]) byDate[a.date] = [];
                 byDate[a.date].push(a);
             });
-            state.scheduleBlocks.filter(b => b.date.startsWith(state.monthViewDate)).forEach(b => { if (!byDate[b.date]) byDate[b.date] = []; });
+            state.scheduleBlocks.filter(b => String(b.date || '').startsWith(state.monthViewDate)).forEach(b => { if (!byDate[b.date]) byDate[b.date] = []; });
             const dates = Object.keys(byDate).sort();
 
             const container = document.getElementById('month-view-list');
@@ -1912,7 +1925,7 @@ window.printClinicalHistory = async function() {
                 return;
             }
             container.innerHTML = dates.map(dateStr => {
-                const apps = byDate[dateStr].sort((a, b) => a.time.localeCompare(b.time));
+                const apps = byDate[dateStr].sort((a, b) => sortAppointmentsByTime(a, b));
                 let dayLabel = new Date(dateStr + 'T00:00:00').toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
                 dayLabel = dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1);
                 const rows = apps.map(a => {
@@ -1926,7 +1939,7 @@ window.printClinicalHistory = async function() {
                         <div class="flex items-center gap-2 flex-wrap">
                             <span class="text-xs font-bold text-graphite-600 bg-graphite-100 px-2 py-0.5 rounded-lg">⏰ ${a.time}</span>
                             <span class="text-sm font-semibold text-graphite-700">${modalityIcon} ${a.patientName}</span>
-                            <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${a.status.toUpperCase()}</span>
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${String(a.status || 'pendiente').toUpperCase()}</span>
                         </div>
                         <span class="text-xs font-semibold text-graphite-500">${formatApptCostLabel(a)}</span>
                     </div>`;
@@ -2030,9 +2043,9 @@ window.printClinicalHistory = async function() {
             const grid      = document.getElementById('patients-grid');
             const searchVal = document.getElementById('patient-search-input').value.toLowerCase().trim();
             let filtered    = state.patients.filter(p =>
-                !searchVal || p.name.toLowerCase().includes(searchVal) || p.phone.includes(searchVal)
+                !searchVal || String(p.name || '').toLowerCase().includes(searchVal) || String(p.phone || '').includes(searchVal)
             );
-            filtered.sort((a, b) => a.name.localeCompare(b.name));
+            filtered.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
 
             if (!filtered.length) {
                 grid.innerHTML = `<p class="text-graphite-400 text-sm col-span-2 text-center py-8">No hay registros de pacientes.</p>`;
@@ -2178,13 +2191,13 @@ window.printClinicalHistory = async function() {
             // Recaudación Estimada: proyección de lo que se recaudaría si se completan
             // todas las citas del día que siguen en pie (se excluyen las canceladas,
             // ya que esas no van a generar ingreso).
-            const ingresosHoy = todayApps.filter(a => a.status !== 'cancelada' && isPenAppt(a)).reduce((s, a) => s + a.cost, 0);
-            const ingresosHoyUsd = todayApps.filter(a => a.status !== 'cancelada' && isUsdAppt(a)).reduce((s, a) => s + a.cost, 0);
+            const ingresosHoy = todayApps.filter(a => a.status !== 'cancelada' && isPenAppt(a)).reduce((s, a) => s + safeAppointmentCost(a), 0);
+            const ingresosHoyUsd = todayApps.filter(a => a.status !== 'cancelada' && isUsdAppt(a)).reduce((s, a) => s + safeAppointmentCost(a), 0);
             document.getElementById('stat-citas-ingresos').innerText   = `S/ ${ingresosHoy.toFixed(2)}` + (ingresosHoyUsd > 0 ? ` (+ $ ${ingresosHoyUsd.toFixed(2)})` : '');
 
             // Recaudación Real: solo las citas del día que ya están efectivamente pagadas.
-            const ingresosHoyReal = todayApps.filter(a => a.paymentStatus === 'pagado' && isPenAppt(a)).reduce((s, a) => s + a.cost, 0);
-            const ingresosHoyRealUsd = todayApps.filter(a => a.paymentStatus === 'pagado' && isUsdAppt(a)).reduce((s, a) => s + a.cost, 0);
+            const ingresosHoyReal = todayApps.filter(a => a.paymentStatus === 'pagado' && isPenAppt(a)).reduce((s, a) => s + safeAppointmentCost(a), 0);
+            const ingresosHoyRealUsd = todayApps.filter(a => a.paymentStatus === 'pagado' && isUsdAppt(a)).reduce((s, a) => s + safeAppointmentCost(a), 0);
             const elIngresosReal = document.getElementById('stat-citas-ingresos-real');
             if (elIngresosReal) {
                 elIngresosReal.innerText = `S/ ${ingresosHoyReal.toFixed(2)}` + (ingresosHoyRealUsd > 0 ? ` (+ $ ${ingresosHoyRealUsd.toFixed(2)})` : '');
@@ -2271,9 +2284,9 @@ window.printClinicalHistory = async function() {
             if (dashPatientsEl) dashPatientsEl.innerText = state.patients.length;
 
             const monthStr    = todayStr.substring(0, 7);
-            const monthApps   = state.appointments.filter(a => a.date.startsWith(monthStr));
-            const monthRev    = monthApps.filter(a => a.status === 'completada' && isPenAppt(a)).reduce((s, a) => s + a.cost, 0);
-            const monthRevUsd = monthApps.filter(a => a.status === 'completada' && isUsdAppt(a)).reduce((s, a) => s + a.cost, 0);
+            const monthApps   = state.appointments.filter(a => String(a.date || '').startsWith(monthStr));
+            const monthRev    = monthApps.filter(a => a.status === 'completada' && isPenAppt(a)).reduce((s, a) => s + safeAppointmentCost(a), 0);
+            const monthRevUsd = monthApps.filter(a => a.status === 'completada' && isUsdAppt(a)).reduce((s, a) => s + safeAppointmentCost(a), 0);
             const dashIngresosEl = document.getElementById('dash-ingresos-mes');
             if (dashIngresosEl) {
                 dashIngresosEl.innerText = `S/ ${monthRev.toFixed(2)}` + (monthRevUsd > 0 ? ` (+ $ ${monthRevUsd.toFixed(2)})` : '');
@@ -2453,8 +2466,8 @@ window.printClinicalHistory = async function() {
                 const sub = activas.filter(pred);
                 return {
                     citas: sub.length,
-                    pen: sub.reduce((s, a) => s + (isPenAppt(a) ? Number(a.cost || 0) : 0), 0),
-                    usd: sub.reduce((s, a) => s + (isUsdAppt(a) ? Number(a.cost || 0) : 0), 0)
+                    pen: sub.reduce((s, a) => s + (isPenAppt(a) ? safeAppointmentCost(a) : 0), 0),
+                    usd: sub.reduce((s, a) => s + (isUsdAppt(a) ? safeAppointmentCost(a) : 0), 0)
                 };
             };
             const pres = calc(a => a.modality !== 'virtual');
@@ -2646,8 +2659,8 @@ window.printClinicalHistory = async function() {
             if (isMonth) {
                 const monthVal = document.getElementById('print-month-select').value; // YYYY-MM
                 reportApps = state.appointments
-                    .filter(a => a.date.startsWith(monthVal))
-                    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+                    .filter(a => String(a.date || '').startsWith(monthVal))
+                    .sort((a, b) => (String(a.date || '') + safeAppointmentTime(a)).localeCompare(String(b.date || '') + safeAppointmentTime(b)));
                 const [y, m] = monthVal.split('-').map(Number);
                 let lbl = new Date(y, m - 1, 1).toLocaleDateString('es-PE', { month: 'long', year: 'numeric' });
                 periodLabel = lbl.charAt(0).toUpperCase() + lbl.slice(1);
@@ -2658,14 +2671,14 @@ window.printClinicalHistory = async function() {
                 const [lunes, domingo] = getWeekRangeStr(refDate);
                 reportApps = state.appointments
                     .filter(a => a.date >= lunes && a.date <= domingo)
-                    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+                    .sort((a, b) => (String(a.date || '') + safeAppointmentTime(a)).localeCompare(String(b.date || '') + safeAppointmentTime(b)));
                 const fmt = (s) => new Date(s + 'T00:00:00').toLocaleDateString('es-PE', { day: 'numeric', month: 'long' });
                 periodLabel = `Semana del ${fmt(lunes)} al ${fmt(domingo)}`;
                 document.getElementById('print-title-main').innerText = 'REPORTE SEMANAL DE AGENDA';
                 document.getElementById('print-head-date-label').innerText = 'PERIODO';
             } else {
                 const targetDate = document.getElementById('print-date-select').value;
-                reportApps = state.appointments.filter(a => a.date === targetDate).sort((a, b) => a.time.localeCompare(b.time));
+                reportApps = state.appointments.filter(a => a.date === targetDate).sort((a, b) => sortAppointmentsByTime(a, b));
                 periodLabel = new Date(targetDate + 'T00:00:00')
                     .toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
                 document.getElementById('print-title-main').innerText = 'REPORTE DIARIO DE AGENDA';
@@ -2712,8 +2725,8 @@ window.printClinicalHistory = async function() {
                             <td class="py-2.5 px-2 font-bold">${a.time}</td>
                             <td class="py-2.5 px-2">${modalityLabel(a)}</td>
                             <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
-                            <td class="py-2.5 px-2">${formatApptCostLabel(a)} (${a.paymentStatus.toUpperCase()})</td>
-                            <td class="py-2.5 px-2 font-medium">${a.status.toUpperCase()}</td>
+                            <td class="py-2.5 px-2">${formatApptCostLabel(a)} (${String(a.paymentStatus || 'pendiente').toUpperCase()})</td>
+                            <td class="py-2.5 px-2 font-medium">${String(a.status || 'pendiente').toUpperCase()}</td>
                             <td class="py-2.5 px-2 text-graphite-600">${a.notes || 'Sin observaciones.'}</td>
                         </tr>`).join('')
                     : `<tr><td colspan="7" class="py-4 text-center text-graphite-400">No hay consultas agendadas para este periodo.</td></tr>`;
@@ -2725,8 +2738,8 @@ window.printClinicalHistory = async function() {
                             <td class="py-2.5 px-2 font-bold">${a.time}</td>
                             <td class="py-2.5 px-2">${modalityLabel(a)}</td>
                             <td class="py-2.5 px-2 font-semibold">${a.patientName}</td>
-                            <td class="py-2.5 px-2">${formatApptCostLabel(a)} (${a.paymentStatus.toUpperCase()})</td>
-                            <td class="py-2.5 px-2 font-medium">${a.status.toUpperCase()}</td>
+                            <td class="py-2.5 px-2">${formatApptCostLabel(a)} (${String(a.paymentStatus || 'pendiente').toUpperCase()})</td>
+                            <td class="py-2.5 px-2 font-medium">${String(a.status || 'pendiente').toUpperCase()}</td>
                             <td class="py-2.5 px-2 text-graphite-600">${a.notes || 'Sin observaciones.'}</td>
                         </tr>`).join('')
                     : `<tr><td colspan="6" class="py-4 text-center text-graphite-400">No hay consultas agendadas para esta fecha.</td></tr>`;
@@ -2823,7 +2836,7 @@ window.printClinicalHistory = async function() {
                 document.getElementById('pf-head-date-label').innerText = 'PERIODO';
             } else if (isMonth) {
                 const monthVal = document.getElementById('print-month-select').value; // YYYY-MM
-                reportApps = state.appointments.filter(a => a.date.startsWith(monthVal));
+                reportApps = state.appointments.filter(a => String(a.date || '').startsWith(monthVal));
                 const [y, m] = monthVal.split('-').map(Number);
                 let lbl = new Date(y, m - 1, 1).toLocaleDateString('es-PE', { month: 'long', year: 'numeric' });
                 periodLabel = lbl.charAt(0).toUpperCase() + lbl.slice(1);
@@ -2929,8 +2942,8 @@ window.printClinicalHistory = async function() {
             if (isMonth) {
                 const monthVal = document.getElementById('print-month-select').value; // YYYY-MM
                 reportApps = state.appointments
-                    .filter(a => a.date.startsWith(monthVal))
-                    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+                    .filter(a => String(a.date || '').startsWith(monthVal))
+                    .sort((a, b) => (String(a.date || '') + safeAppointmentTime(a)).localeCompare(String(b.date || '') + safeAppointmentTime(b)));
                 const [y, m] = monthVal.split('-').map(Number);
                 let lbl = new Date(y, m - 1, 1).toLocaleDateString('es-PE', { month: 'long', year: 'numeric' });
                 periodLabel = lbl.charAt(0).toUpperCase() + lbl.slice(1);
@@ -2941,14 +2954,14 @@ window.printClinicalHistory = async function() {
                 const [lunes, domingo] = getWeekRangeStr(refDate);
                 reportApps = state.appointments
                     .filter(a => a.date >= lunes && a.date <= domingo)
-                    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+                    .sort((a, b) => (String(a.date || '') + safeAppointmentTime(a)).localeCompare(String(b.date || '') + safeAppointmentTime(b)));
                 const fmt = (s) => new Date(s + 'T00:00:00').toLocaleDateString('es-PE', { day: 'numeric', month: 'long' });
                 periodLabel = `Semana del ${fmt(lunes)} al ${fmt(domingo)}`;
                 document.getElementById('pr-title-main').innerText = 'LISTA DE CITAS DE LA SEMANA';
                 document.getElementById('pr-head-date-label').innerText = 'PERIODO';
             } else {
                 const targetDate = document.getElementById('print-date-select').value;
-                reportApps = state.appointments.filter(a => a.date === targetDate).sort((a, b) => a.time.localeCompare(b.time));
+                reportApps = state.appointments.filter(a => a.date === targetDate).sort((a, b) => sortAppointmentsByTime(a, b));
                 periodLabel = new Date(targetDate + 'T00:00:00')
                     .toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
                 document.getElementById('pr-title-main').innerText = 'LISTA DE CITAS DEL DÍA';
@@ -3033,7 +3046,7 @@ window.printClinicalHistory = async function() {
             // Citas del paciente ordenadas por fecha desc
             const appts = state.appointments
                 .filter(a => a.patientId === pid)
-                .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+                .sort((a, b) => (String(b.date || '') + safeAppointmentTime(b)).localeCompare(String(a.date || '') + safeAppointmentTime(a)));
 
             document.getElementById('hist-count').innerText = appts.length;
 
@@ -3057,7 +3070,7 @@ window.printClinicalHistory = async function() {
                         <div class="flex flex-wrap gap-2 items-center">
                             <span class="text-xs font-bold text-graphite-700">📅 ${a.date}</span>
                             <span class="text-xs font-semibold text-graphite-600 bg-graphite-200 px-2 py-0.5 rounded-lg">⏰ ${a.time}</span>
-                            <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${a.status.toUpperCase()}</span>
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${badge}">${String(a.status || 'pendiente').toUpperCase()}</span>
                             ${modalityBadge}
                             <span class="text-xs font-semibold px-2 py-0.5 rounded-xl border ${payBadge}">${a.paymentStatus === 'pagado' ? '💳 Pagado' : '⏳ Pendiente'} — ${formatApptCostLabel(a)}</span>
                         </div>
@@ -3103,7 +3116,7 @@ window.printClinicalHistory = async function() {
 
             const appts = state.appointments
                 .filter(a => a.patientId === pid)
-                .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+                .sort((a, b) => (String(a.date || '') + safeAppointmentTime(a)).localeCompare(String(b.date || '') + safeAppointmentTime(b)));
 
             const tbody = document.getElementById('print-card-appointments');
             tbody.innerHTML = appts.length
@@ -3112,8 +3125,8 @@ window.printClinicalHistory = async function() {
                         <td class="py-1.5 px-2 font-semibold">${a.date}</td>
                         <td class="py-1.5 px-2">${a.time}</td>
                         <td class="py-1.5 px-2">${a.modality === 'virtual' ? '💻 Virtual' : '🏢 Presencial'}</td>
-                        <td class="py-1.5 px-2 font-medium">${a.status.toUpperCase()}</td>
-                        <td class="py-1.5 px-2">${a.paymentStatus.toUpperCase()}</td>
+                        <td class="py-1.5 px-2 font-medium">${String(a.status || 'pendiente').toUpperCase()}</td>
+                        <td class="py-1.5 px-2">${String(a.paymentStatus || 'pendiente').toUpperCase()}</td>
                         <td class="py-1.5 px-2">${formatApptCostLabel(a)}</td>
                         <td class="py-1.5 px-2 text-graphite-500">${a.notes || '—'}</td>
                     </tr>`).join('')
@@ -3169,7 +3182,7 @@ window.printClinicalHistory = async function() {
             list.replaceChildren();
             document.getElementById('schedule-block-status').textContent = state.blocksReady ? '' : 'Cargando bloqueos…';
             const selected = document.getElementById('block-month').value;
-            const blocks = state.scheduleBlocks.filter(b => !selected || b.date.startsWith(selected)).sort((a,b) => (a.date + (a.start || '')).localeCompare(b.date + (b.start || '')));
+            const blocks = state.scheduleBlocks.filter(b => !selected || String(b.date || '').startsWith(selected)).sort((a,b) => (a.date + (a.start || '')).localeCompare(b.date + (b.start || '')));
             if (!blocks.length) { list.textContent = 'Sin bloqueos para este mes.'; return; }
             blocks.forEach(b => {
                 const row = document.createElement('div'); row.className = 'flex items-center gap-2 flex-wrap border-b py-2 text-sm';
@@ -3376,7 +3389,7 @@ window.printClinicalHistory = async function() {
             let totalCobrado = 0;
 
             weeklyAppointments.forEach((a, index) => {
-                const cost = Number(a.cost || 0);
+                const cost = safeAppointmentCost(a);
                 const paid = a.paymentStatus === 'pagado';
                 const currency = a.currency === 'USD' ? 'USD' : 'PEN';
                 const symbol = currency === 'USD' ? '$' : 'S/';
