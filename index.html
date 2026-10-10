@@ -1552,6 +1552,8 @@
             </div>
 
             <div id="horario-scroll-wrap" class="overflow-x-auto pb-2">
+                <p id="horario-load-status" role="status" class="hidden text-sm text-rose-700 mb-2"></p>
+                <button id="horario-retry" type="button" onclick="retryHorarioSync()" class="hidden px-4 py-2 mb-3 rounded-lg bg-indigo-600 text-white font-bold">Reintentar carga</button>
                 <div id="schedule-occupancy-grid" class="min-w-[760px]">
                     <!-- Se llena dinámicamente vía actualizarGridHorarios() -->
                 </div>
@@ -1562,7 +1564,7 @@
 
     <!-- SheetJS: generación de archivos Excel (.xlsx) -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-    <script type="module" src="app.js?v=hc-print-20261009-7"></script>
+    <script type="module" src="app.js?v=horario-carga-20261010-1"></script>
     <script src="assistant.js?v=20261005-ia-2"></script>
     <script src="ui.js"></script>
 <section id="print-all-patients" class="print-only hidden">

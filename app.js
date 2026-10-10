@@ -77,6 +77,8 @@ if (app) {
             appointments: [],
             scheduleBlocks: [],
             blocksReady: false,
+            blocksError: "",
+            appointmentsError: "",
             patients: [],
             patientsReady: false,
             appointmentsReady: false,
@@ -317,27 +319,61 @@ if (app) {
         });
 
         // ─── FIRESTORE SYNC ───────────────────────────────────────────────────────
+        function watchHorarioCollection(ref, readyKey, errorKey, label, onData) {
+            let active = true;
+            const refresh = () => { actualizarGridHorarios(); renderScheduleBlocks(); };
+            const timer = setTimeout(() => {
+                if (!active || state[readyKey]) return;
+                state[errorKey] = `La carga de ${label} está tardando demasiado. Revisa tu conexión y pulsa Reintentar.`;
+                refresh();
+            }, 15000);
+            const unsubscribe = onSnapshot(ref, snapshot => {
+                if (!active) return;
+                clearTimeout(timer);
+                state[readyKey] = true;
+                state[errorKey] = '';
+                onData(snapshot);
+                refresh();
+            }, error => {
+                if (!active) return;
+                clearTimeout(timer);
+                state[readyKey] = false;
+                state[errorKey] = error.code === 'permission-denied'
+                    ? `Firebase no permite leer ${label}. Revisa los permisos de esta cuenta en Firestore y pulsa Reintentar.`
+                    : `No se pudieron cargar ${label}. Revisa tu conexión y pulsa Reintentar.`;
+                console.error('[Horario]', error);
+                refresh();
+            });
+            return () => { active = false; clearTimeout(timer); unsubscribe(); };
+        }
+
+        window.retryHorarioSync = function () {
+            if (!state.currentUser) return;
+            setupFirestoreSync(state.currentUser.uid);
+            actualizarGridHorarios();
+            renderScheduleBlocks();
+        };
+
         function setupFirestoreSync(userId) {
             activeListeners.forEach(u => u());
             activeListeners = [];
             state.scheduleBlocks = [];
             state.blocksReady = false;
-            const unsubBlocks = onSnapshot(collection(db, 'artifacts', appId, 'users', userId, 'scheduleBlocks'), snapshot => {
-                state.scheduleBlocks = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
-                state.blocksReady = true;
-                refreshScheduleBlocks();
-            }, error => {
-                state.blocksReady = false;
-                document.getElementById('schedule-block-status').textContent = 'No se pudieron cargar los bloqueos. Revisa los permisos de Firestore para scheduleBlocks.';
-                console.error('[Bloqueos]', error);
-            });
+            state.blocksError = '';
             state.appointmentsReady = false;
+            state.appointmentsError = '';
+            const unsubBlocks = watchHorarioCollection(
+                collection(db, 'artifacts', appId, 'users', userId, 'scheduleBlocks'),
+                'blocksReady', 'blocksError', 'los bloqueos', snapshot => {
+                    state.scheduleBlocks = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
+                    refreshScheduleBlocks();
+                });
             const appointmentsRef = collection(db, 'artifacts', appId, 'users', userId, 'appointments');
             state.patientsReady = false;
             const patientsRef     = collection(db, 'artifacts', appId, 'users', userId, 'patients');
             const historiesRef = collection(db, 'artifacts', appId, 'users', userId, 'clinicalHistories');
             const notesRef = collection(db, 'artifacts', appId, 'users', userId, 'clinicalNotes');
-            const unsubAppts = onSnapshot(appointmentsRef, (snapshot) => {
+            const unsubAppts = watchHorarioCollection(appointmentsRef, 'appointmentsReady', 'appointmentsError', 'las citas', (snapshot) => {
                 state.appointments = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                 state.appointmentsReady = true;
                 renderAppointments();
@@ -3180,10 +3216,10 @@ window.printClinicalHistory = async function() {
         function renderScheduleBlocks() {
             const list = document.getElementById('schedule-block-list');
             list.replaceChildren();
-            document.getElementById('schedule-block-status').textContent = state.blocksReady ? '' : 'Cargando bloqueos…';
+            document.getElementById('schedule-block-status').textContent = state.blocksError || (state.blocksReady ? '' : 'Cargando bloqueos…');
             const selected = document.getElementById('block-month').value;
             const blocks = state.scheduleBlocks.filter(b => !selected || String(b.date || '').startsWith(selected)).sort((a,b) => (a.date + (a.start || '')).localeCompare(b.date + (b.start || '')));
-            if (!blocks.length) { list.textContent = 'Sin bloqueos para este mes.'; return; }
+            if (!blocks.length) { list.textContent = state.blocksReady ? 'Sin bloqueos para este mes.' : ''; return; }
             blocks.forEach(b => {
                 const row = document.createElement('div'); row.className = 'flex items-center gap-2 flex-wrap border-b py-2 text-sm';
                 const text = document.createElement('span'); text.className = 'flex-1';
@@ -3272,6 +3308,14 @@ window.printClinicalHistory = async function() {
             const container = document.getElementById('schedule-occupancy-grid');
             if (!container) return;
             if (!state.horarioWeekStart) state.horarioWeekStart = getMondayOf(new Date());
+            const status = document.getElementById('horario-load-status');
+            const loadError = state.blocksError || state.appointmentsError;
+            if (status) {
+                status.textContent = loadError || ((!state.blocksReady || !state.appointmentsReady) ? 'Cargando citas y bloqueos…' : '');
+                status.classList.toggle('hidden', !status.textContent);
+            }
+            const retry = document.getElementById('horario-retry');
+            if (retry) retry.classList.toggle('hidden', !loadError);
             const weekStart = state.horarioWeekStart;
 
             const dayDates = HORARIO_DAYS.map((_, i) => {
@@ -3322,9 +3366,13 @@ window.printClinicalHistory = async function() {
                     const yaPaso = slotDateTime.getTime() < now.getTime();
 
                     const manualBlock = findScheduleBlock(dateStr, slot);
-                    const occupied = bloqueadoPorDefecto || tieneCita || yaPaso || manualBlock || !state.blocksReady;
-                    const slotLabel = !state.blocksReady ? 'Cargando…' : manualBlock && manualBlock.label === 'Feriado' ? 'Feriado' : 'Ocupado';
-                    const slotColors = !state.blocksReady ? 'bg-slate-100 text-slate-600' : manualBlock ? (manualBlock.label === 'Feriado' ? 'bg-violet-200 text-violet-900' : 'bg-rose-300 text-rose-800') : 'bg-rose-300 text-rose-800';
+                    const knownOccupied = bloqueadoPorDefecto || tieneCita || yaPaso || manualBlock;
+                    const unresolved = !state.blocksReady || !state.appointmentsReady;
+                    const occupied = knownOccupied || unresolved;
+                    const slotLabel = knownOccupied
+                        ? (manualBlock && manualBlock.label === 'Feriado' ? 'Feriado' : 'Ocupado')
+                        : (loadError ? 'Sin verificar' : 'Cargando…');
+                    const slotColors = !knownOccupied ? 'bg-slate-100 text-slate-600' : manualBlock && manualBlock.label === 'Feriado' ? 'bg-violet-200 text-violet-900' : 'bg-rose-300 text-rose-800';
                     html += occupied
                         ? `<div class="flex items-center justify-center py-2.5 rounded-xl ${slotColors} font-extrabold text-[11px] uppercase tracking-wide">${slotLabel}</div>`
                         : `<div class="flex items-center justify-center py-2.5 rounded-xl bg-emerald-100 text-emerald-700 font-extrabold text-[11px] uppercase tracking-wide">Libre</div>`;
@@ -3341,6 +3389,10 @@ window.printClinicalHistory = async function() {
         // Los datos corresponden exclusivamente a la semana mostrada en el modal
         // (lunes a sábado). Los totales también se calculan sobre ese mismo rango.
         window.downloadHorarioExcel = function () {
+            if (!state.appointmentsReady) {
+                alert('No se han podido cargar las citas. Pulsa Reintentar antes de descargar.');
+                return;
+            }
             const btn = document.getElementById('btn-descargar-horario-excel');
 
             if (typeof XLSX === 'undefined') {
@@ -3539,6 +3591,10 @@ window.printClinicalHistory = async function() {
         };
 
         window.downloadHorarioImage = async function () {
+            if (!state.blocksReady || !state.appointmentsReady) {
+                alert('Todavía no se ha podido verificar el horario completo. Revisa el aviso y pulsa Reintentar antes de descargar.');
+                return;
+            }
             const btn = document.getElementById('btn-descargar-horario');
             const area = document.getElementById('horario-capture-area');
             const scrollWrap = document.getElementById('horario-scroll-wrap');
